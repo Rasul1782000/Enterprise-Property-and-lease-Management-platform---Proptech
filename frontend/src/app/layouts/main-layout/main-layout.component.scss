@@ -1,0 +1,29 @@
+:host { display:block; height:100%; }
+    .portal-shell { height:100vh; background:#f8faff; }
+    .portal-sidenav { width:218px; background:#fff; border-right:1px solid #edf0f5; padding:20px 10px 16px; box-sizing:border-box; }
+    .brand-lockup { display:flex; align-items:center; gap:7px; padding:4px 12px 30px; color:#131b2b; font-weight:800; font-size:18px; letter-spacing:-.04em; }
+    .brand-mark { width:18px; height:18px; display:grid; place-items:center; color:#f49a12; }
+    .brand-mark mat-icon { font-size:20px; width:20px; height:20px; }
+    .primary-nav { display:grid; gap:4px; }
+    .primary-nav a, .logout-link { display:flex; align-items:center; gap:10px; min-height:34px; padding:0 10px; border-radius:5px; color:#727988; text-decoration:none; font-size:10px; font-weight:500; border:0; background:transparent; font-family:inherit; cursor:pointer; text-align:left; }
+    .primary-nav a mat-icon, .logout-link mat-icon { font-size:15px; width:17px; height:17px; }
+    .primary-nav a.is-active { color:#fff; background:#ff9f08; box-shadow:0 5px 10px rgba(255,159,8,.18); }
+    .nav-badge { margin-left:auto; width:16px; height:16px; display:grid; place-items:center; background:#6338df; color:#fff; border-radius:50%; font-size:9px; }
+    .nav-new { margin-left:auto; color:#7956de; font-size:8px; }
+    .protection-card { position:absolute; left:10px; right:10px; bottom:55px; min-height:90px; padding:11px 10px; box-sizing:border-box; overflow:hidden; border-radius:6px; background:linear-gradient(135deg,#fff6dc,#ffdda0); color:#263249; }
+    .protection-card strong, .protection-card small { display:block; position:relative; z-index:1; }
+    .protection-card strong { font-size:8px; letter-spacing:.02em; }
+    .protection-card small { margin-top:2px; font-size:7px; color:#6f6c63; }
+    .protection-card button { position:relative; z-index:1; margin-top:13px; border:0; border-radius:3px; padding:5px 8px; color:#fff; background:#f49a12; font-size:7px; cursor:pointer; }
+    .protection-icon { position:absolute; right:9px; bottom:13px; width:31px; height:35px; color:#fff; display:grid; place-items:center; background:#f5a51a; clip-path:polygon(50% 0, 100% 18%, 92% 80%, 50% 100%, 8% 80%, 0 18%); }
+    .protection-icon mat-icon { font-size:19px; width:19px; height:19px; }
+    .logout-link { position:absolute; bottom:14px; left:10px; color:#e27c87; }
+    .portal-content { background:#f8faff; }
+    .portal-header { height:58px; display:flex; align-items:center; padding:0 28px; background:#fff; border-bottom:1px solid #edf0f5; box-sizing:border-box; }
+    .header-spacer { flex:1; }
+    .profile-button { display:flex; align-items:center; gap:7px; padding:4px 0 4px 8px; border:0; background:none; color:#6f7480; font:500 10px inherit; cursor:pointer; }
+    .profile-button mat-icon { font-size:15px; width:15px; height:15px; }
+    .avatar { width:21px; height:21px; display:grid; place-items:center; border-radius:50%; background:#e2a073; color:#fff; font-size:9px; font-weight:700; }
+    .mobile-brand { display:none; font-weight:800; color:#131b2b; }
+    .portal-main { max-width:1120px; margin:0 auto; padding:28px 30px 50px; }
+    @media (max-width: 760px) { .portal-sidenav { width:180px; } .portal-main { padding:20px 16px 40px; } .portal-header { padding:0 16px; } }

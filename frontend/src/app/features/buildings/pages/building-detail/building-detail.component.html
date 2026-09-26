@@ -1,0 +1,47 @@
+  @if (loading()) { <div class="flex justify-center py-12"><mat-spinner diameter="40"></mat-spinner></div> }
+  @else if (building()) {
+    <div class="space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 class="page-title">{{ building()!.name }}</h1>
+          <p class="text-slate-500">{{ building()!.address }}, {{ building()!.city }}, {{ building()!.state }} {{ building()!.zip }}</p>
+        </div>
+        <div class="flex gap-2"><button mat-stroked-button (click)="editBuilding()"><mat-icon>edit</mat-icon> Edit</button></div>
+      </div>
+
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <mat-card class="stat-card"><mat-card-content><div class="flex items-center justify-between"><div><p class="text-sm text-slate-500">Floors</p><p class="text-2xl font-bold">{{ building()!.floors }}</p></div><mat-icon class="text-blue-500 text-3xl">layers</mat-icon></div></mat-card-content></mat-card>
+        <mat-card class="stat-card"><mat-card-content><div class="flex items-center justify-between"><div><p class="text-sm text-slate-500">Units</p><p class="text-2xl font-bold">{{ building()!.units_count }}</p></div><mat-icon class="text-emerald-500 text-3xl">home</mat-icon></div></mat-card-content></mat-card>
+        <mat-card class="stat-card"><mat-card-content><div class="flex items-center justify-between"><div><p class="text-sm text-slate-500">Status</p><p class="text-2xl font-bold capitalize">{{ building()!.status }}</p></div><mat-icon class="text-purple-500 text-3xl">info</mat-icon></div></mat-card-content></mat-card>
+        <mat-card class="stat-card"><mat-card-content><div class="flex items-center justify-between"><div><p class="text-sm text-slate-500">Property</p><p class="text-2xl font-bold">{{ building()!.property?.name }}</p></div><mat-icon class="text-amber-500 text-3xl">apartment</mat-icon></div></mat-card-content></mat-card>
+      </div>
+
+      <mat-tab-group dynamicHeight>
+        <mat-tab label="Units">
+          <div class="p-4">
+            @if (unitsLoading()) { <div class="flex justify-center py-8"><mat-spinner></mat-spinner></div> }
+            @else {
+              <div class="flex justify-between items-center mb-4"><h3>Units ({{ units().length }})</h3><button mat-flat-button color="primary" routerLink="/units" [queryParams]="{building_id: building()!.id}"><mat-icon>add</mat-icon> Add Unit</button></div>
+              <table mat-table [dataSource]="units()" class="w-full">
+                <ng-container matColumnDef="code"><th mat-header-cell *matHeaderCellDef>Code</th><td mat-cell *matCellDef="let u"><span class="font-mono text-xs">{{u.code}}</span></td></ng-container>
+                <ng-container matColumnDef="name"><th mat-header-cell *matHeaderCellDef>Name</th><td mat-cell *matCellDef="let u">{{u.name}}</td></ng-container>
+                <ng-container matColumnDef="type"><th mat-header-cell *matHeaderCellDef>Type</th><td mat-cell *matCellDef="let u"><span class="text-xs border px-2 py-1 rounded">{{u.type}}</span></td></ng-container>
+                <ng-container matColumnDef="floor"><th mat-header-cell *matHeaderCellDef>Floor</th><td mat-cell *matCellDef="let u">{{u.floor}}</td></ng-container>
+                <ng-container matColumnDef="base_rent"><th mat-header-cell *matHeaderCellDef>Base Rent</th><td mat-cell *matCellDef="let u">${{u.base_rent}}</td></ng-container>
+                <ng-container matColumnDef="status"><th mat-header-cell *matHeaderCellDef>Status</th><td mat-cell *matCellDef="let u"><span class="text-xs px-2 py-1 rounded" [ngClass]="getUnitStatusClass(u.status)">{{u.status}}</span></td></ng-container>
+                <ng-container matColumnDef="actions"><th mat-header-cell *matHeaderCellDef></th><td mat-cell *matCellDef="let u"><button mat-icon-button [routerLink]="['/units', u.id]"><mat-icon>visibility</mat-icon></button></td></ng-container>
+                <tr mat-header-row *matHeaderRowDef="unitCols"></tr>
+                <tr mat-row *matRowDef="let row; columns: unitCols;" class="hover:bg-slate-50"></tr>
+              </table>
+            }
+          </div>
+        </mat-tab>
+        <mat-tab label="Details">
+          <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div><h4 class="font-medium mb-2">Building Info</h4><dl class="space-y-2"><div class="grid grid-cols-2 gap-2"><dt class="text-slate-500">Code</dt><dd class="font-medium">{{ building()!.code }}</dd><dt class="text-slate-500">Floors</dt><dd class="font-medium">{{ building()!.floors }}</dd><dt class="text-slate-500">Status</dt><dd class="font-medium">{{ building()!.status }}</dd></div></dl></div>
+            <div><h4 class="font-medium mb-2">Address</h4><dl class="space-y-2"><div class="grid grid-cols-2 gap-2"><dt class="text-slate-500">Street</dt><dd class="font-medium">{{ building()!.address }}</dd><dt class="text-slate-500">City</dt><dd class="font-medium">{{ building()!.city }}</dd><dt class="text-slate-500">State</dt><dd class="font-medium">{{ building()!.state }}</dd><dt class="text-slate-500">ZIP</dt><dd class="font-medium">{{ building()!.zip }}</dd></div></dl></div>
+          </div>
+        </mat-tab>
+      </mat-tab-group>
+    </div>
+  }

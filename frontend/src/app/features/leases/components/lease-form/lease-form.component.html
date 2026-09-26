@@ -1,0 +1,23 @@
+  <h2 mat-dialog-title>{{ data.mode === 'create' ? 'Add Lease' : 'Edit Lease' }}</h2>
+  <mat-dialog-content class="min-w-[600px] max-h-[80vh] overflow-y-auto">
+    <form [formGroup]="form" class="space-y-4 p-2">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <mat-form-field appearance="outline" class="w-full"><mat-label>Code *</mat-label><input matInput formControlName="code" required maxlength="50"><mat-error *ngIf="form.get('code')?.hasError('required')">Code is required</mat-error></mat-form-field>
+        <mat-form-field appearance="outline" class="w-full"><mat-label>Type *</mat-label><mat-select formControlName="type" required><mat-option value="fixed">Fixed Term</mat-option><mat-option value="periodic">Periodic</mat-option><mat-option value="commercial">Commercial</mat-option><mat-option value="residential">Residential</mat-option></mat-select></mat-form-field>
+        <mat-form-field appearance="outline" class="w-full"><mat-label>Start Date *</mat-label><input matInput [matDatepicker]="startPicker" formControlName="start_date" required><mat-datepicker-toggle matSuffix [for]="startPicker"></mat-datepicker-toggle><mat-datepicker #startPicker></mat-datepicker></mat-form-field>
+        <mat-form-field appearance="outline" class="w-full"><mat-label>End Date *</mat-label><input matInput [matDatepicker]="endPicker" formControlName="end_date" required><mat-datepicker-toggle matSuffix [for]="endPicker"></mat-datepicker-toggle><mat-datepicker #endPicker></mat-datepicker></mat-form-field>
+        <mat-form-field appearance="outline" class="w-full"><mat-label>Rent Amount *</mat-label><input matInput type="number" formControlName="rent_amount" required min="0" step="0.01"></mat-form-field>
+        <mat-form-field appearance="outline" class="w-full"><mat-label>Deposit Amount *</mat-label><input matInput type="number" formControlName="deposit_amount" required min="0" step="0.01"></mat-form-field>
+        <mat-form-field appearance="outline" class="w-full"><mat-label>Payment Frequency *</mat-label><mat-select formControlName="payment_frequency" required><mat-option value="monthly">Monthly</mat-option><mat-option value="quarterly">Quarterly</mat-option><mat-option value="annually">Annually</mat-option></mat-select></mat-form-field>
+        <mat-form-field appearance="outline" class="w-full"><mat-label>Escalation Clause</mat-label><input matInput formControlName="escalation_clause" placeholder="e.g., 3% annual increase"></mat-form-field>
+        <mat-form-field appearance="outline" class="w-full"><mat-label>Renewal Options (months)</mat-label><input matInput type="number" formControlName="renewal_options" min="0" max="60"></mat-form-field>
+      </div>
+      <mat-form-field appearance="outline" class="w-full"><mat-label>Terms & Conditions</mat-label><textarea matInput formControlName="terms" rows="4"></textarea></mat-form-field>
+    </form>
+  </mat-dialog-content>
+  <mat-dialog-actions align="end" class="gap-2">
+    <button mat-button (click)="onCancel()">Cancel</button>
+    <button mat-flat-button color="primary" (click)="onSubmit()" [disabled]="form.invalid || loading()">
+      @if (loading()) { <mat-spinner diameter="20"></mat-spinner> } @else { {{ data.mode === 'create' ? 'Create' : 'Update' }} }
+    </button>
+  </mat-dialog-actions>

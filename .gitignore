@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.angular/
+vendor/
+.env
+.env.backup
+.env.production
+*.log
+*.pid
+*.out
+*.err
+.DS_Store
+Thumbs.db
+/storage/*.key
+/storage/app/pdfs/*.pdf

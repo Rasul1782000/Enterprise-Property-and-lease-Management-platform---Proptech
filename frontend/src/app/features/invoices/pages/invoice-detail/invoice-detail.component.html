@@ -1,0 +1,68 @@
+  @if (loading()) { <div class="flex justify-center py-12"><mat-spinner diameter="40"></mat-spinner></div> }
+  @else if (invoice()) {
+    <div class="space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-3 mb-2">
+            <h1 class="page-title">{{ invoice()!.code }}</h1>
+            <span class="text-xs px-2 py-1 rounded" [ngClass]="getStatusClass(invoice()!.status)">{{ invoice()!.status }}</span>
+          </div>
+          <p class="text-slate-500">{{ invoice()!.tenant?.first_name }} {{ invoice()!.tenant?.last_name }} · {{ invoice()!.lease?.code }}</p>
+        </div>
+        <div class="flex gap-2">
+          <button mat-stroked-button (click)="editInvoice()"><mat-icon>edit</mat-icon> Edit</button>
+          <button mat-stroked-button (click)="downloadPdf()"><mat-icon>picture_as_pdf</mat-icon> PDF</button>
+          <button mat-flat-button color="primary" (click)="sendInvoice()" *ngIf="invoice()!.status==='draft'"><mat-icon>send</mat-icon> Send</button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+<mat-card class="stat-card"><mat-card-content><div class="flex items-center justify-between"><div><p class="text-sm text-slate-500">Total</p><p class="text-2xl font-bold">${{invoice()!.amount}}</p></div><mat-icon class="text-emerald-500 text-3xl">attach_money</mat-icon></div></mat-card-content></mat-card>
+<mat-card class="stat-card"><mat-card-content><div class="flex items-center justify-between"><div><p class="text-sm text-slate-500">Paid</p><p class="text-2xl font-bold">${{invoice()!.paid_amount}}</p></div><mat-icon class="text-blue-500 text-3xl">paid</mat-icon></div></mat-card-content></mat-card>
+<mat-card class="stat-card"><mat-card-content><div class="flex items-center justify-between"><div><p class="text-sm text-slate-500">Balance</p><p class="text-2xl font-bold" [class.text-red-600]="invoice()!.balance > 0">${{invoice()!.balance}}</p></div><mat-icon class="text-amber-500 text-3xl">balance</mat-icon></div></mat-card-content></mat-card>
+        <mat-card class="stat-card"><mat-card-content><div class="flex items-center justify-between"><div><p class="text-sm text-slate-500">Type</p><p class="text-2xl font-bold capitalize">{{invoice()!.type}}</p></div><mat-icon class="text-purple-500 text-3xl">category</mat-icon></div></mat-card-content></mat-card>
+      </div>
+
+      <mat-tab-group dynamicHeight>
+        <mat-tab label="Line Items">
+          <div class="p-4">
+            <table mat-table [dataSource]="invoice()!.line_items" class="w-full">
+              <ng-container matColumnDef="description"><th mat-header-cell *matHeaderCellDef>Description</th><td mat-cell *matCellDef="let item">{{item.description}}</td></ng-container>
+              <ng-container matColumnDef="quantity"><th mat-header-cell *matHeaderCellDef>Qty</th><td mat-cell *matCellDef="let item">{{item.quantity}}</td></ng-container>
+<ng-container matColumnDef="unit_price"><th mat-header-cell *matHeaderCellDef>Unit Price</th><td mat-cell *matCellDef="let item">${{item.unit_price}}</td></ng-container>
+<ng-container matColumnDef="amount"><th mat-header-cell *matHeaderCellDef>Amount</th><td mat-cell *matCellDef="let item">${{item.amount}}</td></ng-container>
+<ng-container matColumnDef="tax_rate"><th mat-header-cell *matHeaderCellDef>Tax %</th><td mat-cell *matCellDef="let item">{{item.tax_rate}}%</td></ng-container>
+<ng-container matColumnDef="tax_amount"><th mat-header-cell *matHeaderCellDef>Tax Amt</th><td mat-cell *matCellDef="let item">${{item.tax_amount}}</td></ng-container>
+              <tr mat-header-row *matHeaderRowDef="lineItemCols"></tr>
+              <tr mat-row *matRowDef="let row; columns: lineItemCols;"></tr>
+            </table>
+            <div class="mt-4 text-right text-lg font-semibold">Total: ${{ invoice()!.amount }}</div>
+          </div>
+        </mat-tab>
+        <mat-tab label="Payments">
+          <div class="p-4">
+            @if (paymentsLoading()) { <div class="flex justify-center py-8"><mat-spinner></mat-spinner></div> }
+            @else {
+              <div class="flex justify-between items-center mb-4"><h3>Payments ({{ payments().length }})</h3><button mat-flat-button color="primary" (click)="recordPayment()"><mat-icon>add</mat-icon> Record Payment</button></div>
+              <table mat-table [dataSource]="payments()" class="w-full">
+                <ng-container matColumnDef="payment_date"><th mat-header-cell *matHeaderCellDef>Date</th><td mat-cell *matCellDef="let p">{{p.payment_date | date:'shortDate'}}</td></ng-container>
+                <ng-container matColumnDef="amount"><th mat-header-cell *matHeaderCellDef>Amount</th><td mat-cell *matCellDef="let p">${{p.amount}}</td></ng-container>
+                <ng-container matColumnDef="payment_method"><th mat-header-cell *matHeaderCellDef>Method</th><td mat-cell *matCellDef="let p"><span class="text-xs px-2 py-1 rounded bg-slate-100 capitalize">{{p.payment_method}}</span></td></ng-container>
+                <ng-container matColumnDef="reference"><th mat-header-cell *matHeaderCellDef>Reference</th><td mat-cell *matCellDef="let p">{{p.reference || '—'}}</td></ng-container>
+                <tr mat-header-row *matHeaderRowDef="paymentCols"></tr>
+                <tr mat-row *matRowDef="let row; columns: paymentCols;" class="hover:bg-slate-50"></tr>
+              </table>
+            }
+          </div>
+        </mat-tab>
+        <mat-tab label="Details">
+          <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div><h4 class="font-medium mb-2">Invoice Info</h4><dl class="space-y-2"><div class="grid grid-cols-2 gap-2"><dt class="text-slate-500">Code</dt><dd class="font-medium">{{ invoice()!.code }}</dd><dt class="text-slate-500">Type</dt><dd class="font-medium">{{ invoice()!.type }}</dd><dt class="text-slate-500">Status</dt><dd class="font-medium">{{ invoice()!.status }}</dd><dt class="text-slate-500">Currency</dt><dd class="font-medium">{{ invoice()!.currency }}</dd></div></dl></div>
+            <div><h4 class="font-medium mb-2">Dates</h4><dl class="space-y-2"><div class="grid grid-cols-2 gap-2"><dt class="text-slate-500">Issue Date</dt><dd class="font-medium">{{ invoice()!.issue_date | date:'mediumDate' }}</dd><dt class="text-slate-500">Due Date</dt><dd class="font-medium">{{ invoice()!.due_date | date:'mediumDate' }}</dd><dt class="text-slate-500">Paid Date</dt><dd class="font-medium">{{ invoice()!.paid_date ? (invoice()!.paid_date | date:'mediumDate') : 'Not paid' }}</dd></div></dl></div>
+            <div class="md:col-span-2"><h4 class="font-medium mb-2">Description</h4><p class="text-slate-600 whitespace-pre-wrap">{{ invoice()!.description || 'No description' }}</p></div>
+            <div class="md:col-span-2"><h4 class="font-medium mb-2">Lease & Tenant</h4><dl class="grid grid-cols-2 gap-2"><dt class="text-slate-500">Lease</dt><dd class="font-medium">{{ invoice()!.lease?.code }}</dd><dt class="text-slate-500">Tenant</dt><dd class="font-medium">{{ invoice()!.tenant?.first_name }} {{ invoice()!.tenant?.last_name }}</dd><dt class="text-slate-500">Property</dt><dd class="font-medium">{{ invoice()!.property?.name }}</dd></dl></div>
+          </div>
+        </mat-tab>
+      </mat-tab-group>
+    </div>
+  }

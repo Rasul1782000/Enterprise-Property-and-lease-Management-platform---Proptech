@@ -1,0 +1,76 @@
+  <div class="max-w-3xl mx-auto space-y-6">
+    <div class="text-center">
+      <h1 class="page-title">New Lease Wizard</h1>
+      <p class="text-slate-500">Create a new lease in 4 steps</p>
+    </div>
+
+    <mat-horizontal-stepper [linear]="true" #stepper>
+      <!-- Step 1: Property & Unit -->
+      <mat-step [stepControl]="step1Form" label="Property & Unit">
+        <form [formGroup]="step1Form" class="space-y-4 p-4">
+          <h3 class="font-medium text-slate-900 mb-4">Select Property & Unit</h3>
+          <mat-form-field appearance="outline" class="w-full"><mat-label>Property *</mat-label><mat-select formControlName="property_id" required (selectionChange)="onPropertyChange($event.value)"><mat-option *ngFor="let p of properties()" [value]="p.id">{{p.name}} ({{p.code}})</mat-option></mat-select></mat-form-field>
+          <mat-form-field appearance="outline" class="w-full"><mat-label>Building *</mat-label><mat-select formControlName="building_id" required><mat-option *ngFor="let b of buildings()" [value]="b.id">{{b.name}} ({{b.code}})</mat-option></mat-select></mat-form-field>
+          <mat-form-field appearance="outline" class="w-full"><mat-label>Unit *</mat-label><mat-select formControlName="unit_id" required><mat-option *ngFor="let u of units()" [value]="u.id">{{u.name}} ({{u.code}}) - ${{u.base_rent}}/mo</mat-option></mat-select></mat-form-field>
+        </form>
+      </mat-step>
+
+      <!-- Step 2: Tenant -->
+      <mat-step [stepControl]="step2Form" label="Tenant">
+        <form [formGroup]="step2Form" class="space-y-4 p-4">
+          <h3 class="font-medium text-slate-900 mb-4">Select Tenant</h3>
+          <mat-form-field appearance="outline" class="w-full"><mat-label>Tenant *</mat-label><mat-select formControlName="tenant_id" required><mat-option *ngFor="let t of tenants()" [value]="t.id">{{t.first_name}} {{t.last_name}} ({{t.email}})</mat-option></mat-select></mat-form-field>
+        </form>
+      </mat-step>
+
+      <!-- Step 3: Lease Terms -->
+      <mat-step [stepControl]="step3Form" label="Lease Terms">
+        <form [formGroup]="step3Form" class="space-y-4 p-4">
+          <h3 class="font-medium text-slate-900 mb-4">Lease Terms</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <mat-form-field appearance="outline" class="w-full"><mat-label>Lease Code *</mat-label><input matInput formControlName="code" required maxlength="50"></mat-form-field>
+            <mat-form-field appearance="outline" class="w-full"><mat-label>Lease Type *</mat-label><mat-select formControlName="type" required><mat-option value="fixed">Fixed Term</mat-option><mat-option value="periodic">Periodic</mat-option><mat-option value="commercial">Commercial</mat-option><mat-option value="residential">Residential</mat-option></mat-select></mat-form-field>
+            <mat-form-field appearance="outline" class="w-full"><mat-label>Start Date *</mat-label><input matInput [matDatepicker]="startPicker" formControlName="start_date" required><mat-datepicker-toggle matSuffix [for]="startPicker"></mat-datepicker-toggle><mat-datepicker #startPicker></mat-datepicker></mat-form-field>
+            <mat-form-field appearance="outline" class="w-full"><mat-label>End Date *</mat-label><input matInput [matDatepicker]="endPicker" formControlName="end_date" required><mat-datepicker-toggle matSuffix [for]="endPicker"></mat-datepicker-toggle><mat-datepicker #endPicker></mat-datepicker></mat-form-field>
+            <mat-form-field appearance="outline" class="w-full"><mat-label>Rent Amount *</mat-label><input matInput type="number" formControlName="rent_amount" required min="0" step="0.01"></mat-form-field>
+            <mat-form-field appearance="outline" class="w-full"><mat-label>Deposit Amount *</mat-label><input matInput type="number" formControlName="deposit_amount" required min="0" step="0.01"></mat-form-field>
+            <mat-form-field appearance="outline" class="w-full"><mat-label>Payment Frequency *</mat-label><mat-select formControlName="payment_frequency" required><mat-option value="monthly">Monthly</mat-option><mat-option value="quarterly">Quarterly</mat-option><mat-option value="annually">Annually</mat-option></mat-select></mat-form-field>
+            <mat-form-field appearance="outline" class="w-full"><mat-label>Escalation Clause</mat-label><input matInput formControlName="escalation_clause" placeholder="e.g., 3% annual increase"></mat-form-field>
+            <mat-form-field appearance="outline" class="w-full"><mat-label>Renewal Options (months)</mat-label><input matInput type="number" formControlName="renewal_options" min="0" max="60"></mat-form-field>
+          </div>
+          <mat-form-field appearance="outline" class="w-full"><mat-label>Terms & Conditions</mat-label><textarea matInput formControlName="terms" rows="4"></textarea></mat-form-field>
+        </form>
+      </mat-step>
+
+      <!-- Step 4: Review -->
+      <mat-step label="Review & Create">
+        <div class="p-4 space-y-4">
+          <h3 class="font-medium text-slate-900">Review Lease Details</h3>
+          <mat-card class="bg-slate-50">
+            <mat-card-content>
+              <dl class="grid grid-cols-2 gap-4 text-sm">
+                <dt class="text-slate-500">Property</dt><dd class="font-medium">{{ getPropertyName() }}</dd>
+                <dt class="text-slate-500">Building</dt><dd class="font-medium">{{ getBuildingName() }}</dd>
+                <dt class="text-slate-500">Unit</dt><dd class="font-medium">{{ getUnitName() }}</dd>
+                <dt class="text-slate-500">Tenant</dt><dd class="font-medium">{{ getTenantName() }}</dd>
+                <dt class="text-slate-500">Lease Code</dt><dd class="font-medium">{{ step3Form.value.code }}</dd>
+                <dt class="text-slate-500">Type</dt><dd class="font-medium">{{ step3Form.value.type }}</dd>
+                <dt class="text-slate-500">Term</dt><dd class="font-medium">{{ step3Form.value.start_date | date:'shortDate' }} – {{ step3Form.value.end_date | date:'shortDate' }}</dd>
+<dt class="text-slate-500">Rent</dt><dd class="font-medium">${{ step3Form.value.rent_amount }}</dd>
+<dt class="text-slate-500">Deposit</dt><dd class="font-medium">${{ step3Form.value.deposit_amount }}</dd>
+                <dt class="text-slate-500">Frequency</dt><dd class="font-medium">{{ step3Form.value.payment_frequency }}</dd>
+              </dl>
+            </mat-card-content>
+          </mat-card>
+        </div>
+      </mat-step>
+    </mat-horizontal-stepper>
+
+    <div class="flex justify-end gap-2">
+      <button mat-button (click)="stepper.previous()" *ngIf="stepper.selectedIndex > 0">Back</button>
+      <button mat-flat-button color="primary" (click)="onSubmit()" *ngIf="stepper.selectedIndex === 3" [disabled]="submitting()">
+        @if (submitting()) { <mat-spinner diameter="20"></mat-spinner> } @else { Create Lease }
+      </button>
+      <button mat-flat-button color="primary" matStepperNext *ngIf="stepper.selectedIndex < 3">Next</button>
+    </div>
+  </div>

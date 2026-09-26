@@ -1,0 +1,51 @@
+  @if (loading()) { <div class="flex justify-center py-12"><mat-spinner diameter="40"></mat-spinner></div> }
+  @else if (unit()) {
+    <div class="space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-3 mb-2">
+            <h1 class="page-title">{{ unit()!.name }}</h1>
+            <span class="text-xs px-2 py-1 rounded" [ngClass]="getStatusClass(unit()!.status)">{{ unit()!.status }}</span>
+          </div>
+          <p class="text-slate-500">{{ unit()!.building?.name }} · Floor {{ unit()!.floor }} · {{ unit()!.type }}</p>
+        </div>
+        <div class="flex gap-2"><button mat-stroked-button (click)="editUnit()"><mat-icon>edit</mat-icon> Edit</button></div>
+      </div>
+
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+<mat-card class="stat-card"><mat-card-content><div class="flex items-center justify-between"><div><p class="text-sm text-slate-500">Base Rent</p><p class="text-2xl font-bold">${{unit()!.base_rent}}</p></div><mat-icon class="text-emerald-500 text-3xl">attach_money</mat-icon></div></mat-card-content></mat-card>
+<mat-card class="stat-card"><mat-card-content><div class="flex items-center justify-between"><div><p class="text-sm text-slate-500">Area</p><p class="text-2xl font-bold">{{unit()!.area_sqft}} sqft</p></div><mat-icon class="text-blue-500 text-3xl">square_foot</mat-icon></div></mat-card-content></mat-card>
+<mat-card class="stat-card"><mat-card-content><div class="flex items-center justify-between"><div><p class="text-sm text-slate-500">Bed/Bath</p><p class="text-2xl font-bold">{{unit()!.bedrooms}} / {{unit()!.bathrooms}}</p></div><mat-icon class="text-purple-500 text-3xl">bed</mat-icon></div></mat-card-content></mat-card>
+<mat-card class="stat-card"><mat-card-content><div class="flex items-center justify-between"><div><p class="text-sm text-slate-500">Current Lease</p><p class="text-2xl font-bold">{{ unit()!.current_lease_id ? 'Active' : 'None' }}</p></div><mat-icon class="text-amber-500 text-3xl">description</mat-icon></div></mat-card-content></mat-card>
+</div>
+
+      <mat-tab-group dynamicHeight>
+        <mat-tab label="Leases">
+          <div class="p-4">
+            @if (leasesLoading()) { <div class="flex justify-center py-8"><mat-spinner></mat-spinner></div> }
+            @else {
+              <h3 class="mb-4">Lease History ({{ leases().length }})</h3>
+              <table mat-table [dataSource]="leases()" class="w-full">
+                <ng-container matColumnDef="code"><th mat-header-cell *matHeaderCellDef>Code</th><td mat-cell *matCellDef="let l"><span class="font-mono text-xs">{{l.code}}</span></td></ng-container>
+                <ng-container matColumnDef="tenant"><th mat-header-cell *matHeaderCellDef>Tenant</th><td mat-cell *matCellDef="let l">{{l.tenant?.first_name}} {{l.tenant?.last_name}}</td></ng-container>
+                <ng-container matColumnDef="type"><th mat-header-cell *matHeaderCellDef>Type</th><td mat-cell *matCellDef="let l">{{l.type}}</td></ng-container>
+                <ng-container matColumnDef="start_date"><th mat-header-cell *matHeaderCellDef>Start</th><td mat-cell *matCellDef="let l">{{l.start_date | date:'shortDate'}}</td></ng-container>
+                <ng-container matColumnDef="end_date"><th mat-header-cell *matHeaderCellDef>End</th><td mat-cell *matCellDef="let l">{{l.end_date | date:'shortDate'}}</td></ng-container>
+                <ng-container matColumnDef="status"><th mat-header-cell *matHeaderCellDef>Status</th><td mat-cell *matCellDef="let l"><span class="text-xs px-2 py-1 rounded" [ngClass]="getLeaseStatusClass(l.status)">{{l.status}}</span></td></ng-container>
+                <ng-container matColumnDef="rent_amount"><th mat-header-cell *matHeaderCellDef>Rent</th><td mat-cell *matCellDef="let l">${{l.rent_amount}}</td></ng-container>
+                <ng-container matColumnDef="actions"><th mat-header-cell *matHeaderCellDef></th><td mat-cell *matCellDef="let l"><button mat-icon-button [routerLink]="['/leases', l.id]"><mat-icon>visibility</mat-icon></button></td></ng-container>
+                <tr mat-header-row *matHeaderRowDef="leaseCols"></tr>
+                <tr mat-row *matRowDef="let row; columns: leaseCols;" class="hover:bg-slate-50"></tr>
+              </table>
+            }
+          </div>
+        </mat-tab>
+        <mat-tab label="Details">
+          <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div><h4 class="font-medium mb-2">Unit Details</h4><dl class="space-y-2"><div class="grid grid-cols-2 gap-2"><dt class="text-slate-500">Code</dt><dd class="font-medium">{{ unit()!.code }}</dd><dt class="text-slate-500">Type</dt><dd class="font-medium">{{ unit()!.type }}</dd><dt class="text-slate-500">Floor</dt><dd class="font-medium">{{ unit()!.floor }}</dd><dt class="text-slate-500">Area</dt><dd class="font-medium">{{ unit()!.area_sqft }} sqft</dd><dt class="text-slate-500">Bedrooms</dt><dd class="font-medium">{{ unit()!.bedrooms }}</dd><dt class="text-slate-500">Bathrooms</dt><dd class="font-medium">{{ unit()!.bathrooms }}</dd><dt class="text-slate-500">Base Rent</dt><dd class="font-medium">${{ unit()!.base_rent }}</dd><dt class="text-slate-500">Status</dt><dd class="font-medium">{{ unit()!.status }}</dd></div></dl></div>
+            <div><h4 class="font-medium mb-2">Building & Property</h4><dl class="space-y-2"><div class="grid grid-cols-2 gap-2"><dt class="text-slate-500">Building</dt><dd class="font-medium">{{ unit()!.building?.name }}</dd><dt class="text-slate-500">Property</dt><dd class="font-medium">{{ unit()!.property?.name }}</dd></div></dl></div>
+          </div>
+        </mat-tab>
+      </mat-tab-group>
+    </div>
+  }

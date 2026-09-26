@@ -1,0 +1,66 @@
+  <h2 mat-dialog-title>{{ data.mode === 'create' ? 'Add Building' : 'Edit Building' }}</h2>
+  <mat-dialog-content class="min-w-[500px]">
+    <form [formGroup]="form" class="space-y-4">
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label>Property *</mat-label>
+        <mat-select formControlName="property_id" required>
+          @for (p of properties(); track p.id) {
+            <mat-option [value]="p.id">{{p.name}} ({{p.code}})</mat-option>
+          }
+        </mat-select>
+        <mat-error *ngIf="form.get('property_id')?.hasError('required')">Property is required</mat-error>
+      </mat-form-field>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <mat-form-field appearance="outline" class="w-full">
+          <mat-label>Code *</mat-label>
+          <input matInput formControlName="code" required maxlength="20">
+          <mat-error *ngIf="form.get('code')?.hasError('required')">Code is required</mat-error>
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="w-full">
+          <mat-label>Name *</mat-label>
+          <input matInput formControlName="name" required maxlength="100">
+          <mat-error *ngIf="form.get('name')?.hasError('required')">Name is required</mat-error>
+        </mat-form-field>
+      </div>
+
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label>Address *</mat-label>
+        <input matInput formControlName="address" required maxlength="255">
+      </mat-form-field>
+
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <mat-form-field appearance="outline" class="w-full">
+          <mat-label>City *</mat-label>
+          <input matInput formControlName="city" required maxlength="100">
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="w-full">
+          <mat-label>State *</mat-label>
+          <input matInput formControlName="state" required maxlength="50">
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="w-full">
+          <mat-label>ZIP *</mat-label>
+          <input matInput formControlName="zip" required maxlength="20">
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="w-full">
+          <mat-label>Floors *</mat-label>
+          <input matInput type="number" formControlName="floors" required min="1" max="100">
+        </mat-form-field>
+      </div>
+
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label>Status</mat-label>
+        <mat-select formControlName="status">
+          <mat-option value="active">Active</mat-option>
+          <mat-option value="inactive">Inactive</mat-option>
+          <mat-option value="under_maintenance">Under Maintenance</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </form>
+  </mat-dialog-content>
+  <mat-dialog-actions align="end" class="gap-2">
+    <button mat-button (click)="onCancel()">Cancel</button>
+    <button mat-flat-button color="primary" (click)="onSubmit()" [disabled]="form.invalid || loading()">
+      @if (loading()) { <mat-spinner diameter="20"></mat-spinner> } @else { {{ data.mode === 'create' ? 'Create' : 'Update' }} }
+    </button>
+  </mat-dialog-actions>

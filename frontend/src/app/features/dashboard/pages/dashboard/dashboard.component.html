@@ -1,0 +1,131 @@
+  <div class="space-y-6">
+    <div class="flex items-center justify-between">
+      <h1 class="page-title">Dashboard</h1>
+    </div>
+
+    @if (loading()) {
+      <div class="flex justify-center py-12">
+        <mat-spinner diameter="40"></mat-spinner>
+      </div>
+    } @else {
+      <!-- Stats Grid -->
+      <mat-grid-list cols="4" rowHeight="140px" gutterSize="16px" class="w-full">
+        <mat-grid-tile>
+          <mat-card class="h-full stat-card">
+            <mat-card-content>
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm text-slate-500">Total Properties</p>
+                  <p class="text-3xl font-bold text-slate-900">{{ stats().properties.total }}</p>
+                </div>
+                <div class="bg-blue-100 p-3 rounded-xl">
+                  <mat-icon class="text-blue-600 text-3xl">apartment</mat-icon>
+                </div>
+              </div>
+              <div class="mt-2 flex gap-4 text-xs text-slate-500">
+<span class="text-emerald-600">{{ stats().properties.active }} Active</span>
+                <span class="text-slate-400">{{ stats().properties.inactive }} Inactive</span>
+              </div>
+            </mat-card-content>
+          </mat-card>
+        </mat-grid-tile>
+
+        <mat-grid-tile>
+          <mat-card class="h-full stat-card">
+            <mat-card-content>
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm text-slate-500">Units</p>
+                  <p class="text-3xl font-bold text-slate-900">{{ stats().units.total }}</p>
+                </div>
+                <div class="bg-emerald-100 p-3 rounded-xl">
+                  <mat-icon class="text-emerald-600 text-3xl">home</mat-icon>
+                </div>
+              </div>
+              <div class="mt-2 flex gap-4 text-xs">
+<span class="text-emerald-600">{{ stats().units.occupied }} Occupied</span>
+                <span class="text-amber-600">{{ stats().units.vacant }} Vacant</span>
+              </div>
+            </mat-card-content>
+          </mat-card>
+        </mat-grid-tile>
+
+        <mat-grid-tile>
+          <mat-card class="h-full stat-card">
+            <mat-card-content>
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm text-slate-500">Active Leases</p>
+                  <p class="text-3xl font-bold text-slate-900">{{ stats().leases.active }}</p>
+                </div>
+                <div class="bg-purple-100 p-3 rounded-xl">
+                  <mat-icon class="text-purple-600 text-3xl">description</mat-icon>
+                </div>
+              </div>
+              <div class="mt-2 flex gap-4 text-xs">
+<span class="text-red-600">{{ stats().leases.expiring_30 }} Expiring 30d</span>
+                <span class="text-amber-600">{{ stats().leases.expiring_90 }} Expiring 90d</span>
+              </div>
+            </mat-card-content>
+          </mat-card>
+        </mat-grid-tile>
+
+        <mat-grid-tile>
+          <mat-card class="h-full stat-card">
+            <mat-card-content>
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm text-slate-500">Outstanding</p>
+                  <p class="text-3xl font-bold text-slate-900">${{ stats().invoices.total_outstanding.toLocaleString() }}</p>
+                </div>
+                <div class="bg-amber-100 p-3 rounded-xl">
+                  <mat-icon class="text-amber-600 text-3xl">attach_money</mat-icon>
+                </div>
+              </div>
+              <div class="mt-2 flex gap-4 text-xs">
+<span class="text-red-600">{{ stats().invoices.overdue }} Overdue</span>
+                <span class="text-blue-600">{{ stats().invoices.pending }} Pending</span>
+              </div>
+            </mat-card-content>
+          </mat-card>
+        </mat-grid-tile>
+      </mat-grid-list>
+
+      <!-- Recent Activity -->
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title class="flex items-center gap-2">
+            <mat-icon>history</mat-icon>
+            Recent Activity
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <table mat-table [dataSource]="recentActivity()" class="w-full" matSort>
+            <ng-container matColumnDef="timestamp">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>Time</th>
+              <td mat-cell *matCellDef="let a">{{ formatTime(a.timestamp) }}</td>
+            </ng-container>
+            <ng-container matColumnDef="type">
+              <th mat-header-cell *matHeaderCellDef>Type</th>
+              <td mat-cell *matCellDef="let a">
+                <mat-chip-set>
+                  <mat-chip [class]="getActivityChipClass(a.type)">{{ formatActivityType(a.type) }}</mat-chip>
+                </mat-chip-set>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="title">
+              <th mat-header-cell *matHeaderCellDef>Title</th>
+              <td mat-cell *matCellDef="let a" class="font-medium">{{ a.title }}</td>
+            </ng-container>
+            <ng-container matColumnDef="description">
+              <th mat-header-cell *matHeaderCellDef>Details</th>
+              <td mat-cell *matCellDef="let a" class="text-slate-500">{{ a.description }}</td>
+            </ng-container>
+            <tr mat-header-row *matHeaderRowDef="activityCols"></tr>
+            <tr mat-row *matRowDef="let row; columns: activityCols;" class="hover:bg-slate-50"></tr>
+          </table>
+          <mat-paginator [length]="recentActivity().length" [pageSize]="5" [pageSizeOptions]="[5, 10, 20]" showFirstLastButtons></mat-paginator>
+        </mat-card-content>
+      </mat-card>
+    }
+  </div>

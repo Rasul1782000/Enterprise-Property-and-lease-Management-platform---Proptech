@@ -1,0 +1,19 @@
+  <mat-sidenav-container class="portal-shell">
+    <mat-sidenav [mode]="'side'" opened class="portal-sidenav">
+      <div class="brand-lockup"><span class="brand-mark"><mat-icon>domain</mat-icon></span><span>Lottly</span></div>
+      <nav class="primary-nav" aria-label="Primary navigation">
+        <a routerLink="/dashboard" routerLinkActive="is-active" [routerLinkActiveOptions]="{exact: true}"><mat-icon>home</mat-icon><span>Home</span></a>
+        <a routerLink="/leases" routerLinkActive="is-active"><mat-icon>description</mat-icon><span>Rental Application</span></a>
+        <a routerLink="/properties" routerLinkActive="is-active"><mat-icon>business</mat-icon><span>Listing</span><span class="nav-badge">3</span></a>
+        <a routerLink="/tenants" routerLinkActive="is-active"><mat-icon>person</mat-icon><span>Contact</span></a>
+        <a routerLink="/buildings" routerLinkActive="is-active"><mat-icon>build</mat-icon><span>Maintenance</span></a>
+        <a routerLink="/invoices" routerLinkActive="is-active"><mat-icon>payments</mat-icon><span>Protection Plan</span><span class="nav-new">New</span></a>
+      </nav>
+      <div class="protection-card"><div class="protection-icon"><mat-icon>verified_user</mat-icon></div><strong>PROTECTION PLAN</strong><small>Your rent safeguard</small><button routerLink="/invoices">Learn More</button></div>
+      <button class="logout-link" (click)="logout()"><mat-icon>logout</mat-icon> Logout</button>
+    </mat-sidenav>
+    <mat-sidenav-content class="portal-content">
+      <header class="portal-header"><span class="mobile-brand">Lottly</span><span class="header-spacer"></span><button class="profile-button" [matMenuTriggerFor]="menu"><span class="avatar">{{ (auth.user()?.name || 'J').charAt(0) }}</span><span>{{ auth.user()?.name || 'John Smith' }}</span><mat-icon>expand_more</mat-icon></button><mat-menu #menu="matMenu"><button mat-menu-item (click)="logout()">Logout</button></mat-menu></header>
+      <main class="portal-main"><router-outlet /></main>
+    </mat-sidenav-content>
+  </mat-sidenav-container>

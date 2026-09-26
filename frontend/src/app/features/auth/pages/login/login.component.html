@@ -1,0 +1,65 @@
+  <div class="min-h-screen flex items-center justify-center bg-slate-50 px-4">
+    <mat-card class="w-full max-w-md shadow-xl">
+      <mat-card-header class="text-center pb-4">
+        <mat-card-title class="text-2xl font-bold text-slate-900">PropertyLease Portal</mat-card-title>
+        <mat-card-subtitle class="text-slate-500">Sign in to your account</mat-card-subtitle>
+      </mat-card-header>
+
+      <mat-card-content>
+        <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="space-y-4">
+          <mat-form-field appearance="outline" class="w-full">
+            <mat-label>Email</mat-label>
+            <input matInput type="email" formControlName="email" autocomplete="email" required>
+            <mat-icon matPrefix>email</mat-icon>
+            @if (loginForm.get('email')?.hasError('required') && loginForm.get('email')?.touched) {
+              <mat-error>Email is required</mat-error>
+            }
+            @if (loginForm.get('email')?.hasError('email') && loginForm.get('email')?.touched) {
+              <mat-error>Enter a valid email</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="w-full">
+            <mat-label>Password</mat-label>
+            <input matInput [type]="hidePassword() ? 'password' : 'text'" formControlName="password" autocomplete="current-password" required>
+            <mat-icon matPrefix>lock</mat-icon>
+            <button mat-icon-button matSuffix type="button" (click)="hidePassword.set(!hidePassword())" [attr.aria-label]="'Toggle password visibility'">
+              <mat-icon>{{ hidePassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+            </button>
+            @if (loginForm.get('password')?.hasError('required') && loginForm.get('password')?.touched) {
+              <mat-error>Password is required</mat-error>
+            }
+            @if (loginForm.get('password')?.hasError('minlength') && loginForm.get('password')?.touched) {
+              <mat-error>Password must be at least 6 characters</mat-error>
+            }
+          </mat-form-field>
+
+          <div class="flex items-center justify-between">
+            <label class="flex items-center gap-2 text-sm text-slate-600">
+              <input type="checkbox" formControlName="remember" class="w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500">
+              Remember me
+            </label>
+            <a routerLink="/forgot-password" class="text-sm text-primary-600 hover:underline">Forgot password?</a>
+          </div>
+
+          <button mat-flat-button color="primary" type="submit" class="w-full py-2.5" [disabled]="loginForm.invalid || loading()">
+            @if (loading()) {
+              <mat-spinner diameter="20" class="mx-auto"></mat-spinner>
+            } @else {
+              <span class="flex items-center justify-center gap-2">
+                <mat-icon>login</mat-icon>
+                Sign In
+              </span>
+            }
+          </button>
+        </form>
+      </mat-card-content>
+
+      <mat-card-footer class="pt-4 text-center">
+        <p class="text-sm text-slate-500">
+          Don't have an account?
+          <a routerLink="/register" class="text-primary-600 hover:underline font-medium ml-1">Sign up</a>
+        </p>
+      </mat-card-footer>
+    </mat-card>
+  </div>

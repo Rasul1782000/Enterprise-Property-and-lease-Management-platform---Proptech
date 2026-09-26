@@ -1,0 +1,61 @@
+  <h2 mat-dialog-title>{{ data.mode === 'create' ? 'Add Unit' : 'Edit Unit' }}</h2>
+  <mat-dialog-content class="min-w-[500px]">
+    <form [formGroup]="form" class="space-y-4">
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label>Property *</mat-label>
+        <mat-select formControlName="property_id" required (selectionChange)="onPropertyChange($event.value)">
+          @for (p of properties(); track p.id) { <mat-option [value]="p.id">{{p.name}} ({{p.code}})</mat-option> }
+        </mat-select>
+        <mat-error *ngIf="form.get('property_id')?.hasError('required')">Property is required</mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label>Building *</mat-label>
+        <mat-select formControlName="building_id" required>
+          @for (b of buildings(); track b.id) { <mat-option [value]="b.id">{{b.name}} ({{b.code}})</mat-option> }
+        </mat-select>
+        <mat-error *ngIf="form.get('building_id')?.hasError('required')">Building is required</mat-error>
+      </mat-form-field>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <mat-form-field appearance="outline" class="w-full"><mat-label>Code *</mat-label><input matInput formControlName="code" required maxlength="20"><mat-error *ngIf="form.get('code')?.hasError('required')">Code is required</mat-error></mat-form-field>
+        <mat-form-field appearance="outline" class="w-full"><mat-label>Name *</mat-label><input matInput formControlName="name" required maxlength="100"><mat-error *ngIf="form.get('name')?.hasError('required')">Name is required</mat-error></mat-form-field>
+      </div>
+
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label>Type *</mat-label>
+        <mat-select formControlName="type" required>
+          <mat-option value="residential">Residential</mat-option>
+          <mat-option value="commercial">Commercial</mat-option>
+          <mat-option value="office">Office</mat-option>
+          <mat-option value="retail">Retail</mat-option>
+          <mat-option value="warehouse">Warehouse</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+<mat-form-field appearance="outline" class="w-full"><mat-label>Floor *</mat-label><input matInput type="number" formControlName="floor" required min="0" max="100"></mat-form-field>
+<mat-form-field appearance="outline" class="w-full"><mat-label>Area (sqft) *</mat-label><input matInput type="number" formControlName="area_sqft" required min="0"></mat-form-field>
+<mat-form-field appearance="outline" class="w-full"><mat-label>Bedrooms *</mat-label><input matInput type="number" formControlName="bedrooms" required min="0" max="10"></mat-form-field>
+<mat-form-field appearance="outline" class="w-full"><mat-label>Bathrooms *</mat-label><input matInput type="number" formControlName="bathrooms" required min="0" max="10"></mat-form-field>
+      </div>
+
+      <mat-form-field appearance="outline" class="w-full"><mat-label>Base Rent *</mat-label><input matInput type="number" formControlName="base_rent" required min="0" step="0.01"></mat-form-field>
+
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label>Status</mat-label>
+        <mat-select formControlName="status">
+          <mat-option value="vacant">Vacant</mat-option>
+          <mat-option value="occupied">Occupied</mat-option>
+          <mat-option value="reserved">Reserved</mat-option>
+          <mat-option value="under_maintenance">Under Maintenance</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </form>
+  </mat-dialog-content>
+  <mat-dialog-actions align="end" class="gap-2">
+    <button mat-button (click)="onCancel()">Cancel</button>
+    <button mat-flat-button color="primary" (click)="onSubmit()" [disabled]="form.invalid || loading()">
+      @if (loading()) { <mat-spinner diameter="20"></mat-spinner> } @else { {{ data.mode === 'create' ? 'Create' : 'Update' }} }
+    </button>
+  </mat-dialog-actions>
