@@ -256,30 +256,30 @@ summary:focus-visible,
  * second accent; warn shares the brand ramp; danger is the deepest orange.
  */
 :root {
-  --p-success-50: #fafafa;   --p-success-100: #f4f4f5;  --p-success-200: #e4e4e7;
-  --p-success-300: #d4d4d8;  --p-success-400: #a1a1aa;  --p-success-500: #71717a;
-  --p-success-600: #52525b;  --p-success-700: #3f3f46;  --p-success-800: #27272a;
-  --p-success-900: #18181b;  --p-success-950: #09090b;
+  --p-success-50: #fafafa !important;   --p-success-100: #f4f4f5 !important;  --p-success-200: #e4e4e7 !important;
+  --p-success-300: #d4d4d8 !important;  --p-success-400: #a1a1aa !important;  --p-success-500: #71717a !important;
+  --p-success-600: #52525b !important;  --p-success-700: #3f3f46 !important;  --p-success-800: #27272a !important;
+  --p-success-900: #18181b !important;  --p-success-950: #09090b !important;
 
-  --p-info-50: #fafafa;      --p-info-100: #f4f4f5;     --p-info-200: #e4e4e7;
-  --p-info-300: #d4d4d8;     --p-info-400: #a1a1aa;     --p-info-500: #71717a;
-  --p-info-600: #52525b;     --p-info-700: #3f3f46;     --p-info-800: #27272a;
-  --p-info-900: #18181b;     --p-info-950: #09090b;
+  --p-info-50: #fafafa !important;      --p-info-100: #f4f4f5 !important;     --p-info-200: #e4e4e7 !important;
+  --p-info-300: #d4d4d8 !important;     --p-info-400: #a1a1aa !important;     --p-info-500: #71717a !important;
+  --p-info-600: #52525b !important;     --p-info-700: #3f3f46 !important;     --p-info-800: #27272a !important;
+  --p-info-900: #18181b !important;     --p-info-950: #09090b !important;
 
-  --p-secondary-50: #fafafa;   --p-secondary-100: #f4f4f5;  --p-secondary-200: #e4e4e7;
-  --p-secondary-300: #d4d4d8;  --p-secondary-400: #a1a1aa;  --p-secondary-500: #71717a;
-  --p-secondary-600: #52525b;  --p-secondary-700: #3f3f46;  --p-secondary-800: #27272a;
-  --p-secondary-900: #18181b;  --p-secondary-950: #09090b;
+  --p-secondary-50: #fafafa !important;   --p-secondary-100: #f4f4f5 !important;  --p-secondary-200: #e4e4e7 !important;
+  --p-secondary-300: #d4d4d8 !important;  --p-secondary-400: #a1a1aa !important;  --p-secondary-500: #71717a !important;
+  --p-secondary-600: #52525b !important;  --p-secondary-700: #3f3f46 !important;  --p-secondary-800: #27272a !important;
+  --p-secondary-900: #18181b !important;  --p-secondary-950: #09090b !important;
 
-  --p-warn-50: #fff8ed;   --p-warn-100: #ffefd4;  --p-warn-200: #fedcab;
-  --p-warn-300: #fdc179;  --p-warn-400: #fba338;  --p-warn-500: #f88b0c;
-  --p-warn-600: #ea8a0c;  --p-warn-700: #c26a06;  --p-warn-800: #9a510d;
-  --p-warn-900: #7c410f;  --p-warn-950: #431f05;
+  --p-warn-50: #fff8ed !important;   --p-warn-100: #ffefd4 !important;  --p-warn-200: #fedcab !important;
+  --p-warn-300: #fdc179 !important;  --p-warn-400: #fba338 !important;  --p-warn-500: #f88b0c !important;
+  --p-warn-600: #ea8a0c !important;  --p-warn-700: #c26a06 !important;  --p-warn-800: #9a510d !important;
+  --p-warn-900: #7c410f !important;  --p-warn-950: #431f05 !important;
 
-  --p-danger-50: #fff4ed;   --p-danger-100: #ffe6d5;  --p-danger-200: #fec9aa;
-  --p-danger-300: #fda474;  --p-danger-400: #fb7038;  --p-danger-500: #f4510f;
-  --p-danger-600: #ea3c0c;  --p-danger-700: #c22a0c;  --p-danger-800: #9a2312;
-  --p-danger-900: #7c2013;  --p-danger-950: #430c06;
+  --p-danger-50: #fff4ed !important;   --p-danger-100: #ffe6d5 !important;  --p-danger-200: #fec9aa !important;
+  --p-danger-300: #fda474 !important;  --p-danger-400: #fb7038 !important;  --p-danger-500: #f4510f !important;
+  --p-danger-600: #ea3c0c !important;  --p-danger-700: #c22a0c !important;  --p-danger-800: #9a2312 !important;
+  --p-danger-900: #7c2013 !important;  --p-danger-950: #430c06 !important;
 
   --p-content-border-radius: var(--radius-md);
   --p-focus-ring-color: var(--brand-500);
@@ -364,16 +364,14 @@ summary:focus-visible,
 /* Labels & help text */
 .p-float-label label,
 label { @apply text-xs font-medium text-zinc-600; }
-.p-form-field-error { @apply text-xs text-primary-800; }
 
-/* Inline messages (login error, form banners) */
+/* Messages (login error, form banners) */
 .p-message {
   border-radius: var(--radius-md);
   font-size: 0.8125rem;
   border-width: 0 0 0 3px;
   padding: 0.625rem 0.75rem;
 }
-.p-inline-message { border-radius: var(--radius-md); font-size: 0.8125rem; }
 .p-message-icon { font-size: 0.875rem; }
 
 /* Buttons */
@@ -384,17 +382,30 @@ label { @apply text-xs font-medium text-zinc-600; }
 .p-button.p-button-text { color: var(--ink-500); }
 .p-button.p-button-text:hover { background: var(--ink-100); color: var(--brand-700); }
 
-/* Tabs / accordion / stepper */
-.p-tabview .p-tabview-nav { border-color: var(--border-subtle); }
-.p-tabview .p-tabview-nav li .p-tabview-nav-link {
-  font-size: 0.8125rem;
+/* Tabs */
+.p-tablist { background: transparent; border-bottom: 1px solid var(--border-subtle); }
+.p-tablist .p-tablist-tab-list { gap: 0.25rem; }
+.p-tablist .p-tab {
+  @apply px-3 py-2 text-sm;
   color: var(--ink-500);
-  border-bottom-width: 2px;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color .12s ease, background-color .12s ease;
 }
-.p-tabview .p-tabview-nav li.p-highlight .p-tabview-nav-link {
+.p-tablist .p-tab:hover { color: var(--ink-900); background: var(--ink-100); }
+.p-tablist .p-tab:focus-visible { box-shadow: var(--focus-ring); }
+.p-tablist .p-tab.p-tab-active {
   color: var(--brand-700);
-  border-color: var(--brand-600);
+  font-weight: 600;
+  border-bottom-color: var(--brand-600);
 }
+.p-tablist .p-tab.p-disabled { color: var(--ink-300); cursor: not-allowed; }
+.p-tablist .p-tablist-active-bar { background: transparent; }
+.p-tabpanels { padding: 1.25rem 0 0; background: transparent; }
+.p-tablist-nav-button { color: var(--ink-500); }
 
 /* Dialog / drawer / overlay */
 .p-dialog,
@@ -452,7 +463,7 @@ label { @apply text-xs font-medium text-zinc-600; }
   padding: 0.25rem;
   font-size: 0.8125rem;
 }
-.p-menu .p-menu-list-container { padding: 0; }
+.p-menu .p-menu-list { padding: 0; }
 .p-menu .p-menu-item-link {
   border-radius: var(--radius-sm);
   padding: 0.5rem 0.625rem;
@@ -470,10 +481,10 @@ label { @apply text-xs font-medium text-zinc-600; }
 .p-progressbar .p-progressbar-value { background: var(--brand-600); }
 .p-chip { border-radius: 999px; font-size: 0.75rem; }
 .p-badge { background: var(--brand-600); }
-.p-divider.p-divider-horizontal::before { border-color: var(--border-subtle); }
+.p-divider::before { border-color: var(--border-subtle); }
 .p-checkbox .p-checkbox-box.p-highlight,
 .p-radiobutton .p-radiobutton-box.p-highlight { background: var(--brand-600); border-color: var(--brand-600); }
-.p-toggle-switch.p-toggle-switch-checked .p-toggle-switch-slider { background: var(--brand-600); }
+.p-toggleswitch.p-toggleswitch-checked .p-toggleswitch-slider { background: var(--brand-600); }
 
 /* Tags: one size, one radius, readable at 12px in dense tables. */
 .p-tag {
