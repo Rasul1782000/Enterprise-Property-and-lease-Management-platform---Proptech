@@ -22,7 +22,7 @@
               <p class="stat-label">Rent</p>
               <p class="stat-value">{{ money(l.rent_amount) }}</p>
             </div>
-            <i class="pi pi-dollar stat-icon stat-icon-success"></i>
+            <i class="pi pi-dollar stat-icon"></i>
           </div>
         </ng-template>
       </p-card>
@@ -34,7 +34,7 @@
               <p class="stat-label">Deposit</p>
               <p class="stat-value">{{ money(l.deposit_amount) }}</p>
             </div>
-            <i class="pi pi-wallet stat-icon stat-icon-info"></i>
+            <i class="pi pi-wallet stat-icon"></i>
           </div>
         </ng-template>
       </p-card>
@@ -46,7 +46,7 @@
               <p class="stat-label">Frequency</p>
               <p class="stat-value stat-value-text">{{ l.payment_frequency }}</p>
             </div>
-            <i class="pi pi-calendar stat-icon stat-icon-purple"></i>
+            <i class="pi pi-calendar stat-icon"></i>
           </div>
         </ng-template>
       </p-card>
@@ -58,7 +58,7 @@
               <p class="stat-label">Type</p>
               <p class="stat-value stat-value-text">{{ l.type }}</p>
             </div>
-            <i class="pi pi-building stat-icon stat-icon-warning"></i>
+            <i class="pi pi-building stat-icon"></i>
           </div>
         </ng-template>
       </p-card>
@@ -70,7 +70,7 @@
               <p class="stat-label">Days Left</p>
               <p class="stat-value">{{ daysUntil(l.end_date) }}</p>
             </div>
-            <i class="pi pi-clock stat-icon stat-icon-indigo"></i>
+            <i class="pi pi-clock stat-icon"></i>
           </div>
         </ng-template>
       </p-card>
@@ -105,7 +105,7 @@
                     <th pSortableColumn="due_date">Due Date <p-sortIcon field="due_date" /></th>
                     <th pSortableColumn="amount">Amount <p-sortIcon field="amount" /></th>
                     <th>Status</th>
-                    <th></th>
+                    <th class="col-actions"></th>
                   </tr>
                 </ng-template>
 

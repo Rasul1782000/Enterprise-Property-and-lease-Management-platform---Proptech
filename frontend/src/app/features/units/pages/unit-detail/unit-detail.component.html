@@ -20,25 +20,25 @@
         <div class="stat-card">
           <div class="flex items-center justify-between">
             <div><p class="text-sm text-zinc-500">Base Rent</p><p class="text-2xl font-bold">{{ money(unit()!.base_rent) }}</p></div>
-            <i class="pi pi-dollar stat-icon text-primary-600"></i>
+            <i class="pi pi-dollar stat-icon"></i>
           </div>
         </div>
         <div class="stat-card">
           <div class="flex items-center justify-between">
             <div><p class="text-sm text-zinc-500">Area</p><p class="text-2xl font-bold">{{ unit()!.area_sqft }} sqft</p></div>
-            <i class="pi pi-th-large stat-icon text-primary-600"></i>
+            <i class="pi pi-th-large stat-icon"></i>
           </div>
         </div>
         <div class="stat-card">
           <div class="flex items-center justify-between">
             <div><p class="text-sm text-zinc-500">Bed/Bath</p><p class="text-2xl font-bold">{{ unit()!.bedrooms }} / {{ unit()!.bathrooms }}</p></div>
-            <i class="pi pi-home stat-icon text-primary-600"></i>
+            <i class="pi pi-home stat-icon"></i>
           </div>
         </div>
         <div class="stat-card">
           <div class="flex items-center justify-between">
             <div><p class="text-sm text-zinc-500">Current Lease</p><p class="text-2xl font-bold">{{ unit()!.current_lease_id ? 'Active' : 'None' }}</p></div>
-            <i class="pi pi-file stat-icon text-primary-500"></i>
+            <i class="pi pi-file stat-icon"></i>
           </div>
         </div>
       </div>
@@ -66,7 +66,7 @@
                       <th>End</th>
                       <th>Status</th>
                       <th>Rent</th>
-                      <th></th>
+                      <th class="col-actions"></th>
                     </tr>
                   </ng-template>
                   <ng-template #body let-row>

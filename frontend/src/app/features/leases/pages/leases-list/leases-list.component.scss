@@ -2,29 +2,7 @@
   display: block;
 }
 
-.code-chip {
-  @apply font-mono text-xs bg-zinc-100 text-zinc-700 px-2 py-1 rounded;
-}
-
+/* Days-to-expiry marker rendered next to the lease code. */
 .expiry-chip {
   @apply ml-2 text-xs px-2 py-0.5 rounded;
-}
-
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 2.5rem 1rem;
-  color: #a1a1aa;
-
-  i {
-    font-size: 2rem;
-  }
-
-  p {
-    margin: 0;
-    @apply text-sm text-zinc-500;
-  }
 }

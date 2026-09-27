@@ -27,15 +27,15 @@
             <th>Area (sqft)</th>
             <th pSortableColumn="base_rent">Base Rent <p-sort-icon field="base_rent" /></th>
             <th>Status</th>
-            <th></th>
+            <th class="col-actions"></th>
           </tr>
         </ng-template>
         <ng-template #body let-row>
           <tr>
-            <td><span class="font-mono text-xs bg-zinc-100 px-2 py-1 rounded">{{ row.code }}</span></td>
+            <td><span class="code-chip">{{ row.code }}</span></td>
             <td>
-              <a class="text-primary font-medium hover:underline" [routerLink]="['/units', row.id]">{{ row.name }}</a>
-              <div class="text-xs text-zinc-500">{{ row.building?.name || 'N/A' }}</div>
+              <a class="row-link" [routerLink]="['/units', row.id]">{{ row.name }}</a>
+              <div class="row-sub">{{ row.building?.name || 'N/A' }}</div>
             </td>
             <td><span class="text-xs border px-2 py-1 rounded uppercase">{{ row.type }}</span></td>
             <td>{{ row.floor }}</td>

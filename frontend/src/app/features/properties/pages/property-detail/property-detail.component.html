@@ -26,7 +26,7 @@
                 <p class="stat-label">Buildings</p>
                 <p class="stat-value">{{ buildings().length }}</p>
               </div>
-              <i class="pi pi-building stat-icon text-primary-600"></i>
+              <i class="pi pi-building stat-icon"></i>
             </div>
           </ng-template>
         </p-card>
@@ -37,7 +37,7 @@
                 <p class="stat-label">Total Units</p>
                 <p class="stat-value">{{ p.units_count }}</p>
               </div>
-              <i class="pi pi-home stat-icon text-primary-600"></i>
+              <i class="pi pi-home stat-icon"></i>
             </div>
           </ng-template>
         </p-card>
@@ -48,7 +48,7 @@
                 <p class="stat-label">Occupancy</p>
                 <p class="stat-value">{{ pct(p.occupancy_rate) }}</p>
               </div>
-              <i class="pi pi-chart-line stat-icon text-primary-600"></i>
+              <i class="pi pi-chart-line stat-icon"></i>
             </div>
           </ng-template>
         </p-card>
@@ -59,7 +59,7 @@
                 <p class="stat-label">Type</p>
                 <p class="stat-value capitalize">{{ p.type }}</p>
               </div>
-              <i class="pi pi-building stat-icon text-primary-500"></i>
+              <i class="pi pi-building stat-icon"></i>
             </div>
           </ng-template>
         </p-card>
@@ -90,7 +90,7 @@
                     <th class="text-right">Floors</th>
                     <th class="text-right">Units</th>
                     <th>Status</th>
-                    <th></th>
+                    <th class="col-actions"></th>
                   </tr>
                 </ng-template>
                 <ng-template #body let-row>
@@ -141,7 +141,7 @@
                     <th class="text-right">Base Rent</th>
                     <th>Status</th>
                     <th>Tenant</th>
-                    <th></th>
+                    <th class="col-actions"></th>
                   </tr>
                 </ng-template>
                 <ng-template #body let-row>

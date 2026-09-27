@@ -39,7 +39,7 @@
 
       <ng-template #body let-row>
         <tr>
-          <td><span class="chip-muted font-mono text-xs px-2 py-1 rounded">{{ row.code }}</span></td>
+          <td><span class="code-chip">{{ row.code }}</span></td>
           <td>{{ row.lease?.code }}</td>
           <td>{{ row.tenant?.first_name }} {{ row.tenant?.last_name }}</td>
           <td class="capitalize">{{ row.type }}</td>

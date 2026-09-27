@@ -26,15 +26,15 @@
             <th>Phone</th>
             <th>Status</th>
             <th>Leases</th>
-            <th></th>
+            <th class="col-actions"></th>
           </tr>
         </ng-template>
         <ng-template #body let-row>
           <tr>
-            <td><span class="font-mono text-xs bg-zinc-100 px-2 py-1 rounded">{{ row.code }}</span></td>
+            <td><span class="code-chip">{{ row.code }}</span></td>
             <td>
-              <a class="text-primary font-medium hover:underline" [routerLink]="['/tenants', row.id]">{{ row.first_name }} {{ row.last_name }}</a>
-              <div class="text-xs text-zinc-500">{{ row.email }}</div>
+              <a class="row-link" [routerLink]="['/tenants', row.id]">{{ row.first_name }} {{ row.last_name }}</a>
+              <div class="row-sub">{{ row.email }}</div>
             </td>
             <td>{{ row.company || '—' }}</td>
             <td>{{ row.phone }}</td>

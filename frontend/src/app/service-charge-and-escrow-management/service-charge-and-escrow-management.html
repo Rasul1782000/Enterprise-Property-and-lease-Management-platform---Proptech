@@ -19,7 +19,7 @@
         <div class="pt-4">
           <p-card class="table-card">
             <ng-template #content>
-              <div class="flex flex-wrap items-center gap-3 mb-4">
+              <div class="filter-row">
                 <p-iconfield>
                   <p-inputicon styleClass="pi pi-search" />
                   <input pInputText type="text" placeholder="Search code, property, category…" [ngModel]="searchTerm" (ngModelChange)="onSearch($event)" />
@@ -36,7 +36,7 @@
                   styleClass="w-52" />
 
                 <p-button label="Reset" icon="pi pi-filter-slash" severity="secondary" [text]="true" (onClick)="resetFilters()" />
-                <span class="ml-auto text-sm text-zinc-500">{{ rows().length }} of {{ total() }}</span>
+                <span class="result-count">{{ rows().length }} of {{ total() }}</span>
               </div>
 
               <p-table
@@ -71,7 +71,7 @@
                 <ng-template #body let-row>
                   <tr>
                     <td>
-                      <div class="font-mono text-xs px-2 py-1 rounded bg-zinc-100">{{ row.code }}</div>
+                      <div class="code-chip">{{ row.code }}</div>
                       <div class="text-xs text-zinc-400 mt-1">{{ row.period_year }}</div>
                     </td>
                     <td class="font-medium">{{ row.property_name }}</td>

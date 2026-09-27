@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, DestroyRef, ElementRef, inject, viewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { AuthService } from '@core/services/auth.service';
@@ -86,12 +86,32 @@ export class MainLayoutComponent {
   /** Rail visibility on narrow screens only; the desktop rail is always pinned. */
   navOpen = false;
 
-  toggleNav(): void {
-    this.navOpen = !this.navOpen;
+  private readonly navToggleRef = viewChild<ElementRef<HTMLButtonElement>>('navToggle');
+  private readonly destroyRef = inject(DestroyRef);
+
+  constructor() {
+    document.addEventListener('keydown', this.onKeydown);
+    this.destroyRef.onDestroy(() => {
+      document.removeEventListener('keydown', this.onKeydown);
+      document.body.style.overflow = '';
+    });
   }
 
-  closeNav(): void {
+  private readonly onKeydown = (event: KeyboardEvent): void => {
+    if (event.key === 'Escape' && this.navOpen) this.closeNav(true);
+  };
+
+  toggleNav(): void {
+    this.navOpen = !this.navOpen;
+    document.body.style.overflow = this.navOpen ? 'hidden' : '';
+  }
+
+  /** `restoreFocus` is only for dismissals — following a link must keep focus put. */
+  closeNav(restoreFocus = false): void {
+    if (!this.navOpen) return;
     this.navOpen = false;
+    document.body.style.overflow = '';
+    if (restoreFocus) this.navToggleRef()?.nativeElement.focus();
   }
 
   logout(): void {

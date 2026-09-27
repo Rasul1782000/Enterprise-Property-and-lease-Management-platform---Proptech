@@ -29,7 +29,7 @@
             <p class="text-sm text-zinc-500">Total</p>
             <p class="text-2xl font-bold">{{ money(invoice()!.amount) }}</p>
           </div>
-          <i class="pi pi-dollar stat-icon text-primary-600"></i>
+          <i class="pi pi-dollar stat-icon"></i>
         </div>
       </div>
       <div class="stat-card">
@@ -38,7 +38,7 @@
             <p class="text-sm text-zinc-500">Paid</p>
             <p class="text-2xl font-bold">{{ money(invoice()!.paid_amount) }}</p>
           </div>
-          <i class="pi pi-check-circle stat-icon text-primary-600"></i>
+          <i class="pi pi-check-circle stat-icon"></i>
         </div>
       </div>
       <div class="stat-card">
@@ -47,7 +47,7 @@
             <p class="text-sm text-zinc-500">Balance</p>
             <p class="text-2xl font-bold" [class.text-primary-900]="invoice()!.balance > 0">{{ money(invoice()!.balance) }}</p>
           </div>
-          <i class="pi pi-credit-card stat-icon text-primary-500"></i>
+          <i class="pi pi-credit-card stat-icon"></i>
         </div>
       </div>
       <div class="stat-card">
@@ -56,7 +56,7 @@
             <p class="text-sm text-zinc-500">Type</p>
             <p class="text-2xl font-bold capitalize">{{ invoice()!.type }}</p>
           </div>
-          <i class="pi pi-tags stat-icon text-primary-600"></i>
+          <i class="pi pi-tags stat-icon"></i>
         </div>
       </div>
     </div>

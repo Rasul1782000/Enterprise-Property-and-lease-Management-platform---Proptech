@@ -17,25 +17,25 @@
         <div class="stat-card">
           <div class="flex items-center justify-between">
             <div><p class="text-sm text-zinc-500">Status</p><p class="text-2xl font-bold capitalize">{{ tenant()!.status }}</p></div>
-            <i class="pi pi-check-circle stat-icon text-primary-600"></i>
+            <i class="pi pi-check-circle stat-icon"></i>
           </div>
         </div>
         <div class="stat-card">
           <div class="flex items-center justify-between">
             <div><p class="text-sm text-zinc-500">Leases</p><p class="text-2xl font-bold">{{ tenant()!.leases_count }}</p></div>
-            <i class="pi pi-file stat-icon text-primary-600"></i>
+            <i class="pi pi-file stat-icon"></i>
           </div>
         </div>
         <div class="stat-card">
           <div class="flex items-center justify-between">
             <div><p class="text-2xl font-bold">{{ tenant()!.company || '—' }}</p><p class="text-sm text-zinc-500">Company</p></div>
-            <i class="pi pi-building stat-icon text-primary-600"></i>
+            <i class="pi pi-building stat-icon"></i>
           </div>
         </div>
         <div class="stat-card">
           <div class="flex items-center justify-between">
             <div><p class="text-sm text-zinc-500">Code</p><p class="text-2xl font-bold">{{ tenant()!.code }}</p></div>
-            <i class="pi pi-key stat-icon text-primary-500"></i>
+            <i class="pi pi-key stat-icon"></i>
           </div>
         </div>
       </div>
@@ -64,7 +64,7 @@
                       <th>End</th>
                       <th>Status</th>
                       <th>Rent</th>
-                      <th></th>
+                      <th class="col-actions"></th>
                     </tr>
                   </ng-template>
                   <ng-template #body let-row>

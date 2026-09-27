@@ -61,32 +61,6 @@
   }
 }
 
-.detail-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-
-  li {
-    display: grid;
-    grid-template-columns: 9rem minmax(0, 1fr);
-    gap: 0.5rem;
-    align-items: baseline;
-    @apply text-sm;
-  }
-
-  span {
-    @apply text-zinc-500;
-  }
-
-  strong {
-    @apply font-medium text-zinc-800;
-    word-break: break-word;
-  }
-}
-
 .wizard-nav {
   display: flex;
   justify-content: flex-end;

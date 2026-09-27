@@ -22,7 +22,7 @@
                 <p class="stat-label">Floors</p>
                 <p class="stat-value">{{ b.floors }}</p>
               </div>
-              <i class="pi pi-th-large stat-icon text-primary-600"></i>
+              <i class="pi pi-th-large stat-icon"></i>
             </div>
           </ng-template>
         </p-card>
@@ -33,7 +33,7 @@
                 <p class="stat-label">Units</p>
                 <p class="stat-value">{{ b.units_count }}</p>
               </div>
-              <i class="pi pi-home stat-icon text-primary-600"></i>
+              <i class="pi pi-home stat-icon"></i>
             </div>
           </ng-template>
         </p-card>
@@ -44,7 +44,7 @@
                 <p class="stat-label">Status</p>
                 <p class="stat-value capitalize">{{ b.status }}</p>
               </div>
-              <i class="pi pi-info-circle stat-icon text-primary-600"></i>
+              <i class="pi pi-info-circle stat-icon"></i>
             </div>
           </ng-template>
         </p-card>
@@ -55,7 +55,7 @@
                 <p class="stat-label">Property</p>
                 <p class="stat-value">{{ b.property?.name || 'N/A' }}</p>
               </div>
-              <i class="pi pi-building stat-icon text-primary-500"></i>
+              <i class="pi pi-building stat-icon"></i>
             </div>
           </ng-template>
         </p-card>
@@ -86,7 +86,7 @@
                     <th class="text-right">Floor</th>
                     <th class="text-right">Base Rent</th>
                     <th>Status</th>
-                    <th></th>
+                    <th class="col-actions"></th>
                   </tr>
                 </ng-template>
                 <ng-template #body let-row>

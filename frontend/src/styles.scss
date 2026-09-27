@@ -15,6 +15,7 @@
   --brand-600: #ea8a0c;
   --brand-700: #c26a06;
   --brand-800: #9a510d;
+  --brand-900: #7c410f;
 
   --ink-900: #18181b;
   --ink-700: #3f3f46;
@@ -58,11 +59,31 @@ h1, h2, h3, h4 { letter-spacing: -0.015em; color: var(--ink-900); }
 
 ::selection { background: var(--brand-200); color: var(--brand-900); }
 
-/* Keyboard focus is always visible, in the brand colour. */
-:focus-visible {
+/* Focus is always visible, in the brand colour — but only on things you can drive. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible,
+[tabindex]:focus-visible,
+[role="button"]:focus-visible,
+[role="tab"]:focus-visible,
+[role="menuitem"]:focus-visible {
   outline: none;
   box-shadow: var(--focus-ring);
   border-radius: var(--radius-sm);
+}
+
+/* Anything that opts out of the default ring must still show one. */
+:focus:not(:focus-visible) { outline: none; }
+
+/* Numbers line up in columns wherever they are compared. */
+.metric-value,
+.stat-value,
+.p-datatable td,
+.p-progressbar-label {
+  font-variant-numeric: tabular-nums;
 }
 
 /* ==========================================================================
@@ -113,14 +134,17 @@ h1, h2, h3, h4 { letter-spacing: -0.015em; color: var(--ink-900); }
   @apply bg-white rounded-xl border border-zinc-200 p-4 flex items-start gap-3;
   box-shadow: var(--shadow-card);
 }
-.metric-icon {
+/* `stat-icon` is the same tile for the older detail pages that pass the modifier directly. */
+.metric-icon,
+.stat-icon {
   @apply shrink-0 grid place-items-center rounded-lg;
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 2.25rem;
+  height: 2.25rem;
   background: var(--brand-50);
   color: var(--brand-700);
+  font-size: 1rem;
 }
-.metric-icon i { font-size: 1.05rem; }
+.metric-icon { width: 2.5rem; height: 2.5rem; }
 .metric-label { @apply text-xs font-medium uppercase text-zinc-500; letter-spacing: 0.05em; }
 .metric-value { @apply text-xl font-semibold text-zinc-900 mt-0.5; }
 
@@ -189,6 +213,37 @@ h1, h2, h3, h4 { letter-spacing: -0.015em; color: var(--ink-900); }
 .accent-rail-critical { @apply border-l-4 border-l-primary-600; }
 .accent-rail-warning  { @apply border-l-4 border-l-primary-300; }
 .accent-rail-neutral  { @apply border-l-4 border-l-zinc-200; }
+
+/* ==========================================================================
+   Table row primitives — identical on every list page
+   ========================================================================== */
+.code-chip {
+  @apply inline-block font-mono text-xs;
+  background: var(--ink-100);
+  color: var(--ink-700);
+  padding: 0.125rem 0.4375rem;
+  border-radius: 0.25rem;
+}
+.type-chip {
+  @apply inline-block text-xs capitalize;
+  border: 1px solid var(--border-strong);
+  color: var(--ink-600);
+  padding: 0.125rem 0.4375rem;
+  border-radius: 0.25rem;
+}
+/* Primary/secondary line pair inside one table cell. */
+.row-link { @apply block; color: var(--brand-700); font-weight: 500; }
+.row-link:hover { color: var(--brand-800); text-decoration: underline; }
+.row-sub { @apply block text-xs text-zinc-500; }
+
+/* Toolbar above a table: search + filters + result count, one aligned line. */
+.filter-row {
+  @apply flex flex-wrap items-center gap-2 mb-4;
+}
+.filter-row .result-count { @apply ml-auto text-xs text-zinc-500; white-space: nowrap; }
+
+/* Trailing action column: buttons never wrap or stretch the row. */
+.col-actions { width: 1%; white-space: nowrap; text-align: right; }
 
 /* ==========================================================================
    PrimeNG tuning
@@ -311,6 +366,16 @@ h1, h2, h3, h4 { letter-spacing: -0.015em; color: var(--ink-900); }
 label { @apply text-xs font-medium text-zinc-600; }
 .p-form-field-error { @apply text-xs text-primary-800; }
 
+/* Inline messages (login error, form banners) */
+.p-message {
+  border-radius: var(--radius-md);
+  font-size: 0.8125rem;
+  border-width: 0 0 0 3px;
+  padding: 0.625rem 0.75rem;
+}
+.p-inline-message { border-radius: var(--radius-md); font-size: 0.8125rem; }
+.p-message-icon { font-size: 0.875rem; }
+
 /* Buttons */
 .p-button { font-size: 0.8125rem; border-radius: var(--radius-sm); }
 .p-button:not(.p-button-text):not(.p-button-outlined):not(.p-button-secondary):not(.p-button-danger) {
@@ -341,17 +406,63 @@ label { @apply text-xs font-medium text-zinc-600; }
 .p-drawer .p-drawer-content { background: var(--surface-card); }
 .p-dialog .p-dialog-header { padding: 1.125rem 1.25rem; }
 .p-dialog .p-dialog-title { font-size: 1rem; font-weight: 600; }
+.p-dialog .p-dialog-content { padding: 1.125rem 1.25rem; }
+.p-dialog .p-dialog-footer {
+  padding: 0.875rem 1.25rem;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
 .p-drawer .p-drawer-header { padding: 1rem 1.25rem; border-bottom: 1px solid var(--border-subtle); }
 .p-drawer .p-drawer-title { font-size: 0.9375rem; font-weight: 600; }
 .p-dialog-mask,
 .p-drawer-mask { background: rgba(24, 24, 27, 0.4); }
 
+/*
+ * Templates set fixed pixel widths (26rem / 40rem / 32rem). Clamp instead of
+ * rewriting every template, so a dialog or drawer can never exceed the viewport.
+ */
+.p-dialog { max-width: calc(100vw - 2rem); max-height: calc(100dvh - 2rem); }
+.p-drawer { max-width: 100vw; }
+.p-drawer.p-drawer-bottom { max-height: 90dvh; }
+
+@media (max-width: 640px) {
+  .p-dialog { max-width: calc(100vw - 1rem); max-height: calc(100dvh - 1rem); }
+  .p-dialog .p-dialog-footer { flex-direction: column-reverse; }
+  .p-dialog .p-dialog-footer .p-button { width: 100%; justify-content: center; }
+}
+
 /* Toasts */
+.p-toast { width: 22rem; max-width: calc(100vw - 1.5rem); }
 .p-toast .p-toast-message {
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-raised);
   border-width: 0 0 0 3px;
+  font-size: 0.8125rem;
 }
+.p-toast .p-toast-message-content { padding: 0.75rem 0.875rem; gap: 0.625rem; }
+.p-toast .p-toast-summary { font-weight: 600; }
+
+/* Menus (profile menu, row action menus) */
+.p-menu {
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-raised);
+  border: 1px solid var(--border-subtle);
+  padding: 0.25rem;
+  font-size: 0.8125rem;
+}
+.p-menu .p-menu-list-container { padding: 0; }
+.p-menu .p-menu-item-link {
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.625rem;
+  gap: 0.5rem;
+}
+.p-menu .p-menu-item-link .p-menu-item-icon { color: var(--ink-400); }
+.p-menu .p-menu-item-link:hover { background: var(--brand-50); }
+.p-menu .p-menu-item-link:hover .p-menu-item-icon { color: var(--brand-700); }
+.p-menu .p-menu-item-link:focus-visible { box-shadow: var(--focus-ring); }
+.p-menu .p-menu-separator { border-color: var(--border-subtle); margin: 0.25rem 0; }
 
 /* Misc */
 .p-tooltip .p-tooltip-text { font-size: 0.75rem; border-radius: var(--radius-sm); }
@@ -363,6 +474,23 @@ label { @apply text-xs font-medium text-zinc-600; }
 .p-checkbox .p-checkbox-box.p-highlight,
 .p-radiobutton .p-radiobutton-box.p-highlight { background: var(--brand-600); border-color: var(--brand-600); }
 .p-toggle-switch.p-toggle-switch-checked .p-toggle-switch-slider { background: var(--brand-600); }
+
+/* Tags: one size, one radius, readable at 12px in dense tables. */
+.p-tag {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  padding: 0.125rem 0.4375rem;
+  border-radius: var(--radius-sm);
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+/* Icon fields keep the input flush with its adornment. */
+.p-iconfield .p-inputtext { padding-left: 2rem; }
+.p-iconfield .p-inputicon { color: var(--ink-400); }
+
+/* Sticky page header: anchored headings must not slide under it. */
+[id] { scroll-margin-top: 4.5rem; }
 
 /* Horizontal scroll containers for dense tables on small screens */
 .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
@@ -392,4 +520,39 @@ label { @apply text-xs font-medium text-zinc-600; }
 }
 .auth-panel h1 { margin: 0 0 0.25rem; font-size: 1.125rem; font-weight: 600; }
 .auth-panel p { margin: 0; font-size: 0.8125rem; color: var(--ink-500); }
+/* ==========================================================================
+   Motion & print
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .skeleton-block { animation: none; }
+}
 
+@media print {
+  .portal-sidenav,
+  .portal-header,
+  .scrim,
+  .p-toast,
+  .p-dialog,
+  .p-drawer,
+  .page-actions,
+  .col-actions,
+  .p-paginator { display: none !important; }
+
+  body { background: #fff; }
+  .portal-main { max-width: none; padding: 0; }
+  .p-card,
+  .stat-card,
+  .metric-tile,
+  .section-card { box-shadow: none; border-color: #d4d4d8; break-inside: avoid; }
+  .p-datatable .p-datatable-table-container { overflow: visible; }
+  .p-datatable .p-datatable-thead { display: table-header-group; }
+  a[href]::after { content: ""; }
+}
