@@ -1,0 +1,209 @@
+<div class="space-y-5">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Service Charge &amp; Escrow</h1>
+      <p class="page-subtitle">Owner budgets, recovery performance and the escrow accounts funding them.</p>
+    </div>
+    <p-button label="Refresh" icon="pi pi-refresh" severity="secondary" [outlined]="true" (onClick)="reload(); loadEscrow()" />
+  </div>
+
+  <app-stat-cards [cards]="cards()" />
+
+  <p-tabs [(value)]="activeTab">
+    <p-tablist>
+      <p-tab value="charges"><i class="pi pi-receipt mr-2"></i>Service charges</p-tab>
+      <p-tab value="escrow"><i class="pi pi-building-columns mr-2"></i>Escrow accounts ({{ escrow().length }})</p-tab>
+    </p-tablist>
+    <p-tabpanels>
+      <p-tabpanel value="charges">
+        <div class="pt-4">
+          <p-card class="table-card">
+            <ng-template #content>
+              <div class="flex flex-wrap items-center gap-3 mb-4">
+                <p-iconfield>
+                  <p-inputicon styleClass="pi pi-search" />
+                  <input pInputText type="text" placeholder="Search code, property, category…" [ngModel]="searchTerm" (ngModelChange)="onSearch($event)" />
+                </p-iconfield>
+
+                <p-select
+                  [options]="statuses"
+                  optionLabel="label"
+                  optionValue="value"
+                  [ngModel]="statusFilter"
+                  (ngModelChange)="onStatusFilter($event)"
+                  placeholder="All statuses"
+                  [showClear]="true"
+                  styleClass="w-52" />
+
+                <p-button label="Reset" icon="pi pi-filter-slash" severity="secondary" [text]="true" (onClick)="resetFilters()" />
+                <span class="ml-auto text-sm text-zinc-500">{{ rows().length }} of {{ total() }}</span>
+              </div>
+
+              <p-table
+                [value]="rows()"
+                [lazy]="true"
+                [lazyLoadOnInit]="false"
+                [paginator]="true"
+                [rows]="perPage"
+                [rowsPerPageOptions]="[10, 15, 25, 50]"
+                [totalRecords]="total()"
+                [loading]="loading()"
+                [rowHover]="true"
+                [tableStyle]="{ 'min-width': '84rem' }"
+                (onLazyLoad)="onLazyLoad($event)">
+
+                <ng-template #header>
+                  <tr>
+                    <th pSortableColumn="code">Code <p-sorticon field="code" /></th>
+                    <th pSortableColumn="property_name">Property <p-sorticon field="property_name" /></th>
+                    <th>Category</th>
+                    <th pSortableColumn="rate_per_sqft">Rate / sqft <p-sorticon field="rate_per_sqft" /></th>
+                    <th pSortableColumn="budgeted_amount">Budget <p-sorticon field="budgeted_amount" /></th>
+                    <th pSortableColumn="actual_amount">Actual <p-sorticon field="actual_amount" /></th>
+                    <th>Variance</th>
+                    <th pSortableColumn="outstanding">Outstanding <p-sorticon field="outstanding" /></th>
+                    <th pSortableColumn="due_date">Due <p-sorticon field="due_date" /></th>
+                    <th>Status</th>
+                    <th style="width: 12rem"></th>
+                  </tr>
+                </ng-template>
+
+                <ng-template #body let-row>
+                  <tr>
+                    <td>
+                      <div class="font-mono text-xs px-2 py-1 rounded bg-zinc-100">{{ row.code }}</div>
+                      <div class="text-xs text-zinc-400 mt-1">{{ row.period_year }}</div>
+                    </td>
+                    <td class="font-medium">{{ row.property_name }}</td>
+                    <td>
+                      <div>{{ row.category }}</div>
+                      <div class="text-xs text-zinc-400">{{ row.units_charged }} units · approved by {{ row.approved_by }}</div>
+                    </td>
+                    <td>
+                      <div class="font-semibold">{{ money(row.rate_per_sqft) }}</div>
+                      <div class="text-xs text-zinc-400">{{ number(row.total_area_sqft) }} sqft</div>
+                    </td>
+                    <td>{{ money(row.budgeted_amount) }}</td>
+                    <td>{{ money(row.actual_amount) }}</td>
+                    <td>
+                      <span
+                        class="text-xs font-semibold px-2 py-1 rounded"
+                        [class.bg-primary-600]="row.variance > 0"
+                        [class.text-white]="row.variance > 0"
+                        [class.bg-primary-100]="row.variance <= 0"
+                        [class.text-primary-800]="row.variance <= 0">
+                        {{ row.variance > 0 ? '+' : '' }}{{ money(row.variance) }}
+                      </span>
+                    </td>
+                    <td [class.text-primary-900]="row.outstanding > 0" [class.font-semibold]="row.outstanding > 0">
+                      {{ money(row.outstanding) }}
+                    </td>
+                    <td [class.text-primary-900]="isOverdue(row.due_date) && row.outstanding > 0">{{ dateOnly(row.due_date) }}</td>
+                    <td><p-tag [value]="titleCase(row.status)" [severity]="severity(row.status)" /></td>
+                    <td>
+                      <div class="flex items-center gap-1">
+                        @if (row.status === 'draft') {
+                          <p-button icon="pi pi-send" [text]="true" [rounded]="true" severity="info" pTooltip="Issue" (onClick)="issue(row)" />
+                        }
+                        @if (row.outstanding > 0) {
+                          <p-button icon="pi pi-dollar" [text]="true" [rounded]="true" severity="success" pTooltip="Post collection" (onClick)="collect(row)" />
+                        }
+                        @if (row.status === 'paid') {
+                          <p-button icon="pi pi-flag" [text]="true" [rounded]="true" severity="secondary" pTooltip="Close" (onClick)="closeCharge(row)" />
+                        }
+                        <p-button icon="pi pi-trash" [text]="true" [rounded]="true" severity="danger" pTooltip="Delete" (onClick)="remove(row, row.code)" />
+                      </div>
+                    </td>
+                  </tr>
+                </ng-template>
+
+                <ng-template #emptymessage>
+                  <div class="empty-state">
+                    <i class="pi pi-receipt"></i>
+                    <p>No service charges match these filters</p>
+                  </div>
+                </ng-template>
+              </p-table>
+            </ng-template>
+          </p-card>
+        </div>
+      </p-tabpanel>
+
+      <p-tabpanel value="escrow">
+        <div class="pt-4 space-y-4">
+          <div class="stat-card flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p class="text-sm text-zinc-500">Total escrow balance across {{ escrow().length }} accounts</p>
+              <p class="text-2xl font-bold text-zinc-900 mt-1">{{ money(escrowTotal()) }}</p>
+            </div>
+            <p-button label="Reload accounts" icon="pi pi-refresh" severity="secondary" [outlined]="true" (onClick)="loadEscrow()" />
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            @if (escrowLoading()) {
+              @for (i of [1, 2, 3]; track i) {
+                <p-skeleton height="13rem" styleClass="rounded-xl" />
+              }
+            } @else {
+              @for (a of escrow(); track a.id) {
+                <div class="section-card p-4 space-y-3">
+                  <div class="flex items-start justify-between gap-2">
+                    <div class="min-w-0">
+                      <p class="font-mono text-xs text-zinc-400">{{ a.code }}</p>
+                      <p class="font-semibold text-zinc-800 truncate">{{ a.property_name }}</p>
+                    </div>
+                    <p-tag [value]="titleCase(a.status)" [severity]="severity(a.status)" />
+                  </div>
+
+                  <div>
+                    <p class="text-xs text-zinc-400">Closing balance</p>
+                    <p class="text-xl font-bold text-zinc-900">{{ money(a.closing_balance, a.currency) }}</p>
+                  </div>
+
+                  <div class="grid grid-cols-3 gap-2 text-xs text-zinc-600">
+                    <div>
+                      <p class="text-zinc-400">Opening</p>
+                      <p class="font-semibold">{{ money(a.opening_balance, a.currency) }}</p>
+                    </div>
+                    <div>
+                      <p class="text-zinc-400">In</p>
+                      <p class="font-semibold text-primary-700">+{{ money(a.deposits, a.currency) }}</p>
+                    </div>
+                    <div>
+                      <p class="text-zinc-400">Out</p>
+                      <p class="font-semibold text-primary-900">-{{ money(a.withdrawals, a.currency) }}</p>
+                    </div>
+                  </div>
+
+                  <div class="text-xs text-zinc-500 space-y-0.5 border-t border-zinc-100 pt-2">
+                    <p>{{ a.bank }} · <span class="font-mono">{{ a.iban }}</span></p>
+                    <p>Manager: {{ a.manager_name }} · limit {{ money(a.authority_limit, a.currency) }}</p>
+                    <p>Reconciled {{ dateOnly(a.last_reconciled_on) }}</p>
+                  </div>
+
+                  @if (a.notes) {
+                    <p class="text-xs text-primary-800 bg-primary-50 border border-primary-100 rounded p-2">{{ a.notes }}</p>
+                  }
+
+                  <div class="flex gap-1">
+                    @if (a.status === 'frozen') {
+                      <p-button label="Unfreeze" icon="pi pi-unlock" size="small" severity="success" [outlined]="true" (onClick)="unfreeze(a)" />
+                    } @else {
+                      <p-button label="Freeze" icon="pi pi-lock" size="small" severity="danger" [outlined]="true" (onClick)="freeze(a)" />
+                    }
+                    <p-button label="Reconcile" icon="pi pi-sync" size="small" severity="secondary" [outlined]="true" (onClick)="reconcile(a)" />
+                  </div>
+                </div>
+              } @empty {
+                <div class="empty-state col-span-full">
+                  <i class="pi pi-building-columns"></i>
+                  <p>No escrow accounts are configured</p>
+                </div>
+              }
+            }
+          </div>
+        </div>
+      </p-tabpanel>
+    </p-tabpanels>
+  </p-tabs>
+</div>

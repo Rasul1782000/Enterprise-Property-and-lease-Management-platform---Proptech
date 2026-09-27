@@ -1,6 +1,6 @@
 import { AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
 
-export function dateRangeValidator(minDays: number = 1): ValidatorFn {
+export function dateRangeValidator(minDays = 1): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
     const value = control.parent?.value;
     if (!value || !value.start_date || !value.end_date) {

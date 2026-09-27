@@ -49,7 +49,7 @@ export interface CreateInvoiceDto {
   line_items?: Omit<InvoiceLineItem, 'id'>[];
 }
 
-export interface UpdateInvoiceDto extends Partial<CreateInvoiceDto> {}
+export type UpdateInvoiceDto = Partial<CreateInvoiceDto>;
 
 export interface Payment {
   id: number;

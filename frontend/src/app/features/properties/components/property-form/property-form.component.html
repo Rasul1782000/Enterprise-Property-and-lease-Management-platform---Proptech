@@ -1,69 +1,81 @@
-  <h2 mat-dialog-title>{{ data.mode === 'create' ? 'Add Property' : 'Edit Property' }}</h2>
-  <mat-dialog-content class="min-w-[500px]">
-    <form [formGroup]="form" class="space-y-4">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <mat-form-field appearance="outline" class="w-full">
-          <mat-label>Code *</mat-label>
-          <input matInput formControlName="code" required maxlength="20">
-          <mat-error *ngIf="form.get('code')?.hasError('required')">Code is required</mat-error>
-        </mat-form-field>
-
-        <mat-form-field appearance="outline" class="w-full">
-          <mat-label>Name *</mat-label>
-          <input matInput formControlName="name" required maxlength="100">
-          <mat-error *ngIf="form.get('name')?.hasError('required')">Name is required</mat-error>
-        </mat-form-field>
-      </div>
-
-      <mat-form-field appearance="outline" class="w-full">
-        <mat-label>Type *</mat-label>
-        <mat-select formControlName="type" required>
-          <mat-option value="commercial">Commercial</mat-option>
-          <mat-option value="residential">Residential</mat-option>
-          <mat-option value="mixed">Mixed Use</mat-option>
-          <mat-option value="industrial">Industrial</mat-option>
-          <mat-option value="retail">Retail</mat-option>
-          <mat-option value="office">Office</mat-option>
-        </mat-select>
-        <mat-error *ngIf="form.get('type')?.hasError('required')">Type is required</mat-error>
-      </mat-form-field>
-
-      <mat-form-field appearance="outline" class="w-full">
-        <mat-label>Address *</mat-label>
-        <input matInput formControlName="address" required maxlength="255">
-        <mat-error *ngIf="form.get('address')?.hasError('required')">Address is required</mat-error>
-      </mat-form-field>
-
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <mat-form-field appearance="outline" class="w-full">
-          <mat-label>City *</mat-label>
-          <input matInput formControlName="city" required maxlength="100">
-        </mat-form-field>
-
-        <mat-form-field appearance="outline" class="w-full">
-          <mat-label>State *</mat-label>
-          <input matInput formControlName="state" required maxlength="50">
-        </mat-form-field>
-
-        <mat-form-field appearance="outline" class="w-full">
-          <mat-label>ZIP *</mat-label>
-          <input matInput formControlName="zip" required maxlength="20">
-        </mat-form-field>
-      </div>
-
-      <mat-form-field appearance="outline" class="w-full">
-        <mat-label>Country</mat-label>
-        <input matInput formControlName="country" value="USA">
-      </mat-form-field>
-    </form>
-  </mat-dialog-content>
-  <mat-dialog-actions align="end" class="gap-2">
-    <button mat-button (click)="onCancel()">Cancel</button>
-    <button mat-flat-button color="primary" (click)="onSubmit()" [disabled]="form.invalid || loading()">
-      @if (loading()) {
-        <mat-spinner diameter="20"></mat-spinner>
-      } @else {
-        {{ data.mode === 'create' ? 'Create' : 'Update' }}
+<p-dialog
+  [header]="title"
+  [modal]="true"
+  [visible]="visible"
+  [draggable]="false"
+  [style]="{ width: '40rem' }"
+  (visibleChange)="visibleChange.emit($event)"
+>
+  <form [formGroup]="form" class="form-grid">
+    <div class="field">
+      <label class="field-label" for="pf-code">Code *</label>
+      <input pInputText id="pf-code" formControlName="code" maxlength="20" />
+      @if (form.get('code')?.hasError('required')) {
+        <small class="field-error">Code is required</small>
       }
-    </button>
-  </mat-dialog-actions>
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="pf-name">Name *</label>
+      <input pInputText id="pf-name" formControlName="name" maxlength="100" />
+      @if (form.get('name')?.hasError('required')) {
+        <small class="field-error">Name is required</small>
+      }
+    </div>
+
+    <div class="field field-full">
+      <label class="field-label" for="pf-type">Type *</label>
+      <p-select
+        formControlName="type"
+        inputId="pf-type"
+        [options]="typeOptions"
+        optionLabel="label"
+        optionValue="value"
+        placeholder="Select type"
+        appendTo="body"
+      />
+      @if (form.get('type')?.hasError('required')) {
+        <small class="field-error">Type is required</small>
+      }
+    </div>
+
+    <div class="field field-full">
+      <label class="field-label" for="pf-address">Address *</label>
+      <input pInputText id="pf-address" formControlName="address" maxlength="255" />
+      @if (form.get('address')?.hasError('required')) {
+        <small class="field-error">Address is required</small>
+      }
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="pf-city">City *</label>
+      <input pInputText id="pf-city" formControlName="city" maxlength="100" />
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="pf-state">State *</label>
+      <input pInputText id="pf-state" formControlName="state" maxlength="50" />
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="pf-zip">ZIP *</label>
+      <input pInputText id="pf-zip" formControlName="zip" maxlength="20" />
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="pf-country">Country</label>
+      <input pInputText id="pf-country" formControlName="country" />
+    </div>
+  </form>
+
+  <ng-template #footer>
+    <p-button label="Cancel" [text]="true" (onClick)="onCancel()" />
+    <p-button
+      [label]="submitLabel"
+      icon="pi pi-check"
+      [loading]="loading()"
+      [disabled]="form.invalid || loading()"
+      (onClick)="onSubmit()"
+    />
+  </ng-template>
+</p-dialog>

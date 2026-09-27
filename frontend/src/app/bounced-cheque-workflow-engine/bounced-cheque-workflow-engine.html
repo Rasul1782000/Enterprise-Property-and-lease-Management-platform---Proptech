@@ -1,0 +1,288 @@
+<div class="space-y-5">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Bounced Cheque Workflow</h1>
+      <p class="page-subtitle">Recovery cases from first bounce through promise to pay, escalation and legal action.</p>
+    </div>
+    <p-button label="Refresh" icon="pi pi-refresh" severity="secondary" [outlined]="true" (onClick)="reload()" />
+  </div>
+
+  <app-stat-cards [cards]="cards()" />
+
+  <p-card>
+    <ng-template #header>
+      <ng-template #title><span class="inline-flex items-center gap-2"><i class="pi pi-sitemap"></i> Recovery pipeline</span></ng-template>
+    </ng-template>
+    <ng-template #content>
+      <div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-2">
+        @for (stage of pipeline; track stage) {
+          <button
+            type="button"
+            class="text-left p-3 rounded-lg border transition hover:border-orange-300"
+            [class.bg-orange-50]="statusFilter === stage"
+            [class.border-orange-300]="statusFilter === stage"
+            [class.bg-white]="statusFilter !== stage"
+            [class.border-zinc-200]="statusFilter !== stage"
+            (click)="onStatusFilter(statusFilter === stage ? null : stage)">
+            <p class="text-lg font-bold text-zinc-800">{{ stageCount(stage) }}</p>
+            <p class="text-xs text-zinc-500 leading-tight">{{ titleCase(stage) }}</p>
+          </button>
+        }
+      </div>
+    </ng-template>
+  </p-card>
+
+  @if (urgent().length) {
+    <p-card>
+      <ng-template #header>
+        <ng-template #title>
+          <span class="inline-flex items-center gap-2"><i class="pi pi-bolt"></i> Oldest open cases</span>
+        </ng-template>
+      </ng-template>
+      <ng-template #content>
+        <ul class="space-y-2">
+          @for (c of urgent(); track c.id) {
+            <li class="section-card p-3 flex flex-wrap items-center gap-3" [class.border-l-4]="true"
+                [class.border-l-primary-600]="c.priority === 'critical'"
+                [class.border-l-primary-300]="c.priority === 'high'"
+                [class.border-l-zinc-200]="c.priority !== 'critical' && c.priority !== 'high'">
+              <div class="min-w-0 flex-1">
+                <p class="font-medium text-zinc-800">{{ c.tenant_name }} <span class="text-zinc-400 font-normal">· {{ c.tenant_company }}</span></p>
+                <p class="text-xs text-zinc-500 font-mono">{{ c.code }} · {{ c.cheque_no }} · {{ c.bank }}</p>
+              </div>
+              <div class="text-right text-xs">
+                <p class="font-semibold text-zinc-700">{{ money(c.amount, c.currency) }}</p>
+                <p class="text-zinc-400">{{ titleCase(c.bounce_reason) }}</p>
+              </div>
+              <div class="text-right text-xs">
+                <p class="font-semibold" [class.text-primary-900]="c.aging_days > 90">{{ c.aging_days }} days old</p>
+                <p class="text-zinc-400">due {{ dateOnly(c.next_action_due) }}</p>
+              </div>
+              <p-tag [value]="titleCase(c.stage)" [severity]="severity(c.stage)" />
+              <div class="flex gap-1">
+                @if (c.stage === 'new') {
+                  <p-button icon="pi pi-envelope" [text]="true" [rounded]="true" severity="info" pTooltip="Notify" (onClick)="notify(c)" />
+                }
+                @if (c.stage === 'notified') {
+                  <p-button icon="pi pi-calendar-check" [text]="true" [rounded]="true" severity="warn" pTooltip="Promise to pay" (onClick)="promise(c)" />
+                }
+                <p-button icon="pi pi-eye" [text]="true" [rounded]="true" severity="secondary" pTooltip="Open case" (onClick)="open(c)" />
+              </div>
+            </li>
+          }
+        </ul>
+      </ng-template>
+    </p-card>
+  }
+
+  <p-card class="table-card">
+    <ng-template #content>
+      <div class="flex flex-wrap items-center gap-3 mb-4">
+        <p-iconfield>
+          <p-inputicon styleClass="pi pi-search" />
+          <input pInputText type="text" placeholder="Search case, cheque, tenant…" [ngModel]="searchTerm" (ngModelChange)="onSearch($event)" />
+        </p-iconfield>
+
+        <p-select
+          [options]="stages"
+          optionLabel="label"
+          optionValue="value"
+          [ngModel]="statusFilter"
+          (ngModelChange)="onStatusFilter($event)"
+          placeholder="All stages"
+          [showClear]="true"
+          styleClass="w-56" />
+
+        <p-select
+          [options]="reasons"
+          optionLabel="label"
+          optionValue="value"
+          [ngModel]="reasonFilter"
+          (ngModelChange)="onReasonFilter($event)"
+          placeholder="All bounce reasons"
+          [showClear]="true"
+          styleClass="w-52" />
+
+        <p-button label="Reset" icon="pi pi-filter-slash" severity="secondary" [text]="true" (onClick)="resetFilters(); reasonFilter = null" />
+        <span class="ml-auto text-sm text-zinc-500">{{ rows().length }} of {{ total() }}</span>
+      </div>
+
+      <p-table
+        [value]="rows()"
+        [lazy]="true"
+        [lazyLoadOnInit]="false"
+        [paginator]="true"
+        [rows]="perPage"
+        [rowsPerPageOptions]="[10, 15, 25, 50]"
+        [totalRecords]="total()"
+        [loading]="loading()"
+        [rowHover]="true"
+        [tableStyle]="{ 'min-width': '88rem' }"
+        (onLazyLoad)="onLazyLoad($event)">
+
+        <ng-template #header>
+          <tr>
+            <th pSortableColumn="code">Case <p-sorticon field="code" /></th>
+            <th>Cheque</th>
+            <th>Payer / Lease</th>
+            <th pSortableColumn="amount">Amount <p-sorticon field="amount" /></th>
+            <th>Reason</th>
+            <th>Recovery</th>
+            <th pSortableColumn="bounced_on">Bounced <p-sorticon field="bounced_on" /></th>
+            <th>Age</th>
+            <th>Next action</th>
+            <th>Stage</th>
+            <th style="width: 14rem"></th>
+          </tr>
+        </ng-template>
+
+        <ng-template #body let-row>
+          <tr>
+            <td>
+              <div class="font-mono text-xs px-2 py-1 rounded bg-zinc-100">{{ row.code }}</div>
+              <p-tag [value]="titleCase(row.priority)" [severity]="prioritySeverity(row.priority)" styleClass="mt-1" />
+            </td>
+            <td>
+              <div class="font-mono text-xs">{{ row.cheque_no }}</div>
+              <div class="text-xs text-zinc-400">{{ row.bank }}</div>
+            </td>
+            <td>
+              <div class="font-medium">{{ row.tenant_name }}</div>
+              <div class="text-xs text-zinc-400">{{ row.tenant_company }}</div>
+              <div class="text-xs text-zinc-400 font-mono mt-0.5">{{ row.lease_code }} · {{ row.unit_code }}</div>
+            </td>
+            <td class="font-semibold">{{ money(row.amount, row.currency) }}</td>
+            <td>
+              <span class="text-sm">{{ titleCase(row.bounce_reason) }}</span>
+              @if (row.legal_notice_sent) {
+                <div class="text-xs text-primary-900 mt-1">Legal notice sent</div>
+              }
+            </td>
+            <td style="min-width: 9rem">
+              <p-progressbar [value]="row.recovery_percent" [showValue]="false" styleClass="h-1.5" />
+              <div class="text-xs text-zinc-400 mt-1">
+                {{ money(row.recovered_amount, row.currency) }} of {{ money(row.amount, row.currency) }}
+                @if (row.outstanding > 0) {
+                  <span class="text-primary-800">· {{ money(row.outstanding, row.currency) }} left</span>
+                }
+              </div>
+            </td>
+            <td>{{ dateOnly(row.bounced_on) }}</td>
+            <td [class.text-primary-900]="row.aging_days > 90" [class.font-semibold]="row.aging_days > 90">{{ row.aging_days }}d</td>
+            <td class="text-xs">
+              <div [class.text-primary-900]="isOverdue(row.next_action_due)">{{ dateOnly(row.next_action_due) }}</div>
+              <div class="text-zinc-400">{{ row.actions_taken }} action(s)</div>
+            </td>
+            <td><p-tag [value]="titleCase(row.stage)" [severity]="severity(row.stage)" /></td>
+            <td>
+              <div class="flex items-center gap-1">
+                @if (row.stage === 'new') {
+                  <p-button icon="pi pi-envelope" [text]="true" [rounded]="true" severity="info" pTooltip="Issue notice" (onClick)="notify(row)" />
+                }
+                @if (row.stage === 'notified') {
+                  <p-button icon="pi pi-calendar-check" [text]="true" [rounded]="true" severity="warn" pTooltip="Promise to pay" (onClick)="promise(row)" />
+                }
+                @if (row.stage !== 'recovered' && row.stage !== 'written_off') {
+                  <p-button icon="pi pi-dollar" [text]="true" [rounded]="true" severity="success" pTooltip="Post recovery" (onClick)="recover(row)" />
+                }
+                @if (row.stage === 'promise_to_pay' || row.stage === 'partially_recovered') {
+                  <p-button icon="pi pi-check-circle" [text]="true" [rounded]="true" severity="success" pTooltip="Close as recovered" (onClick)="closeCase(row)" />
+                }
+                @if (row.stage === 'notified' || row.stage === 'promise_to_pay' || row.stage === 'escalated') {
+                  <p-button icon="pi pi-arrow-up-right" [text]="true" [rounded]="true" severity="warn" pTooltip="Escalate" (onClick)="escalate(row)" />
+                }
+                @if (row.stage === 'escalated') {
+                  <p-button icon="pi pi-gavel" [text]="true" [rounded]="true" severity="danger" pTooltip="Refer to legal" (onClick)="legal(row)" />
+                }
+                <p-button icon="pi pi-eye" [text]="true" [rounded]="true" severity="secondary" pTooltip="Open case" (onClick)="open(row)" />
+                <p-button icon="pi pi-trash" [text]="true" [rounded]="true" severity="danger" pTooltip="Delete" (onClick)="remove(row, row.code)" />
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+
+        <ng-template #emptymessage>
+          <div class="empty-state">
+            <i class="pi pi-check-circle"></i>
+            <p>No bounce cases match these filters</p>
+          </div>
+        </ng-template>
+      </p-table>
+    </ng-template>
+  </p-card>
+</div>
+
+<p-drawer
+  position="right"
+  [visible]="!!selected()"
+  (visibleChange)="$event ? null : close()"
+  [style]="{ width: '34rem' }"
+  header="Recovery case">
+  @if (selected(); as c) {
+    <div class="space-y-4">
+      <div>
+        <p class="text-xs uppercase tracking-wide text-zinc-400">{{ c.code }} · {{ titleCase(c.priority) }} priority</p>
+        <h2 class="text-lg font-semibold text-zinc-800">{{ c.tenant_name }}</h2>
+        <p class="text-sm text-zinc-500">{{ c.tenant_company }} · {{ c.lease_code }}, {{ c.unit_code }}</p>
+        <div class="flex gap-2 mt-2">
+          <p-tag [value]="titleCase(c.stage)" [severity]="severity(c.stage)" />
+          <p-tag [value]="titleCase(c.bounce_reason)" severity="secondary" />
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3 text-sm">
+        <div><p class="text-zinc-400 text-xs">Cheque</p><p class="font-mono text-xs">{{ c.cheque_no }} · {{ c.bank }}</p></div>
+        <div><p class="text-zinc-400 text-xs">Property</p><p>{{ c.property_name }}</p></div>
+        <div><p class="text-zinc-400 text-xs">Bounced on</p><p>{{ dateOnly(c.bounced_on) }}</p></div>
+        <div><p class="text-zinc-400 text-xs">Age</p><p [class.text-primary-900]="c.aging_days > 90">{{ c.aging_days }} days</p></div>
+        <div><p class="text-zinc-400 text-xs">Bounced amount</p><p class="font-semibold">{{ money(c.amount, c.currency) }}</p></div>
+        <div><p class="text-zinc-400 text-xs">Outstanding</p><p class="font-semibold text-primary-900">{{ money(c.outstanding, c.currency) }}</p></div>
+        <div><p class="text-zinc-400 text-xs">Case manager</p><p>{{ c.case_manager }}</p></div>
+        <div><p class="text-zinc-400 text-xs">Next action due</p><p [class.text-primary-900]="isOverdue(c.next_action_due)">{{ dateOnly(c.next_action_due) }}</p></div>
+      </div>
+
+      <div>
+        <div class="flex items-center justify-between text-xs text-zinc-500 mb-1">
+          <span>Recovery progress</span>
+          <span class="font-semibold">{{ c.recovery_percent }}%</span>
+        </div>
+        <p-progressbar [value]="c.recovery_percent" styleClass="h-2" />
+        <p class="text-xs text-zinc-400 mt-1">
+          {{ money(c.recovered_amount, c.currency) }} recovered of {{ money(c.amount, c.currency) }} ·
+          {{ c.actions_taken }} action(s) logged
+        </p>
+      </div>
+
+      @if (c.notes) {
+        <div class="p-3 rounded-lg bg-zinc-50 text-sm text-zinc-600 border border-zinc-100">
+          <i class="pi pi-comment mr-1"></i>{{ c.notes }}
+        </div>
+      }
+
+      <div class="flex flex-wrap gap-2">
+        @if (c.stage === 'new') {
+          <p-button label="Issue notice" icon="pi pi-envelope" severity="info" (onClick)="notify(c)" />
+        }
+        @if (c.stage === 'notified') {
+          <p-button label="Record promise to pay" icon="pi pi-calendar-check" severity="warn" (onClick)="promise(c)" />
+        }
+        @if (c.stage !== 'recovered' && c.stage !== 'written_off') {
+          <p-button label="Post full recovery" icon="pi pi-dollar" severity="success" (onClick)="recover(c)" />
+        }
+        @if (c.stage === 'promise_to_pay' || c.stage === 'partially_recovered') {
+          <p-button label="Close as recovered" icon="pi pi-check-circle" severity="success" [outlined]="true" (onClick)="closeCase(c)" />
+        }
+        @if (c.stage === 'notified' || c.stage === 'promise_to_pay' || c.stage === 'escalated') {
+          <p-button label="Escalate" icon="pi pi-arrow-up-right" severity="warn" [outlined]="true" (onClick)="escalate(c)" />
+        }
+        @if (c.stage === 'escalated') {
+          <p-button label="Refer to legal" icon="pi pi-gavel" severity="danger" (onClick)="legal(c)" />
+        }
+        @if (c.stage !== 'written_off' && c.stage !== 'recovered') {
+          <p-button label="Write off" icon="pi pi-ban" severity="danger" [outlined]="true" (onClick)="writeOff(c)" />
+        }
+        <p-button label="Close" severity="secondary" [outlined]="true" (onClick)="close()" />
+      </div>
+    </div>
+  }
+</p-drawer>

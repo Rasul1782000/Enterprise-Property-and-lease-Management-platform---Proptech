@@ -1,131 +1,120 @@
-  <div class="space-y-6">
-    <div class="flex items-center justify-between">
+<div class="space-y-5">
+  <div class="page-header">
+    <div>
       <h1 class="page-title">Dashboard</h1>
+      <p class="page-subtitle">Portfolio, occupancy, lease and receivables position at a glance.</p>
+    </div>
+    <div class="page-actions">
+      <p-button label="Refresh" icon="pi pi-refresh" severity="secondary" [outlined]="true" (onClick)="loadData()" />
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      @for (i of [0, 1, 2, 3]; track i) {
+        <div class="stat-card">
+          <div class="skeleton-block h-3 w-24 mb-3"></div>
+          <div class="skeleton-block h-7 w-16"></div>
+        </div>
+      }
+    </div>
+    <div class="section-card p-5">
+      <div class="skeleton-block h-4 w-40 mb-4"></div>
+      <div class="skeleton-block h-10 w-full"></div>
+    </div>
+  } @else {
+    <!-- Summary metrics -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div class="metric-tile">
+        <span class="metric-icon"><i class="pi pi-building"></i></span>
+        <div class="min-w-0">
+          <p class="metric-label">Total Properties</p>
+          <p class="metric-value">{{ stats().properties.total }}</p>
+          <p class="mt-1 flex gap-3 text-xs">
+            <span class="text-primary-700 font-medium">{{ stats().properties.active }} Active</span>
+            <span class="text-zinc-400">{{ stats().properties.inactive }} Inactive</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="metric-tile">
+        <span class="metric-icon"><i class="pi pi-home"></i></span>
+        <div class="min-w-0">
+          <p class="metric-label">Units</p>
+          <p class="metric-value">{{ stats().units.total }}</p>
+          <p class="mt-1 flex gap-3 text-xs">
+            <span class="text-primary-700 font-medium">{{ stats().units.occupied }} Occupied</span>
+            <span class="text-zinc-500">{{ stats().units.vacant }} Vacant</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="metric-tile">
+        <span class="metric-icon"><i class="pi pi-file"></i></span>
+        <div class="min-w-0">
+          <p class="metric-label">Active Leases</p>
+          <p class="metric-value">{{ stats().leases.active }}</p>
+          <p class="mt-1 flex gap-3 text-xs">
+            <span class="text-primary-900 font-medium">{{ stats().leases.expiring_30 }} Expiring 30d</span>
+            <span class="text-zinc-500">{{ stats().leases.expiring_90 }} Expiring 90d</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="metric-tile">
+        <span class="metric-icon"><i class="pi pi-dollar"></i></span>
+        <div class="min-w-0">
+          <p class="metric-label">Outstanding</p>
+          <p class="metric-value">${{ stats().invoices.total_outstanding.toLocaleString() }}</p>
+          <p class="mt-1 flex gap-3 text-xs">
+            <span class="text-primary-900 font-medium">{{ stats().invoices.overdue }} Overdue</span>
+            <span class="text-zinc-500">{{ stats().invoices.pending }} Pending</span>
+          </p>
+        </div>
+      </div>
     </div>
 
-    @if (loading()) {
-      <div class="flex justify-center py-12">
-        <mat-spinner diameter="40"></mat-spinner>
-      </div>
-    } @else {
-      <!-- Stats Grid -->
-      <mat-grid-list cols="4" rowHeight="140px" gutterSize="16px" class="w-full">
-        <mat-grid-tile>
-          <mat-card class="h-full stat-card">
-            <mat-card-content>
-              <div class="flex items-center justify-between">
-                <div>
-                  <p class="text-sm text-slate-500">Total Properties</p>
-                  <p class="text-3xl font-bold text-slate-900">{{ stats().properties.total }}</p>
-                </div>
-                <div class="bg-blue-100 p-3 rounded-xl">
-                  <mat-icon class="text-blue-600 text-3xl">apartment</mat-icon>
-                </div>
+    <!-- Recent activity -->
+    <p-card>
+      <ng-template #header>
+        <ng-template #title>
+          <span class="inline-flex items-center gap-2"><i class="pi pi-history"></i> Recent Activity</span>
+        </ng-template>
+      </ng-template>
+      <ng-template #content>
+        <p-table
+            [value]="recentActivity()"
+            [paginator]="true"
+            [rows]="5"
+            [rowsPerPageOptions]="[5, 10, 20]"
+            [showCurrentPageReport]="true"
+            [tableStyle]="{ 'min-width': '50rem' }">
+            <ng-template pTemplate="header">
+              <tr>
+                <th>Time</th>
+                <th>Type</th>
+                <th>Title</th>
+                <th>Details</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-a>
+              <tr>
+                <td class="whitespace-nowrap text-zinc-500">{{ formatTime(a.timestamp) }}</td>
+                <td>
+                  <p-tag [value]="formatActivityType(a.type)" [styleClass]="'activity-tag ' + getActivityChipClass(a.type)" />
+                </td>
+                <td class="font-medium text-zinc-800">{{ a.title }}</td>
+                <td class="text-zinc-500">{{ a.description }}</td>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+              <div class="empty-state">
+                <i class="pi pi-inbox"></i>
+                <p>No activity recorded yet</p>
               </div>
-              <div class="mt-2 flex gap-4 text-xs text-slate-500">
-<span class="text-emerald-600">{{ stats().properties.active }} Active</span>
-                <span class="text-slate-400">{{ stats().properties.inactive }} Inactive</span>
-              </div>
-            </mat-card-content>
-          </mat-card>
-        </mat-grid-tile>
-
-        <mat-grid-tile>
-          <mat-card class="h-full stat-card">
-            <mat-card-content>
-              <div class="flex items-center justify-between">
-                <div>
-                  <p class="text-sm text-slate-500">Units</p>
-                  <p class="text-3xl font-bold text-slate-900">{{ stats().units.total }}</p>
-                </div>
-                <div class="bg-emerald-100 p-3 rounded-xl">
-                  <mat-icon class="text-emerald-600 text-3xl">home</mat-icon>
-                </div>
-              </div>
-              <div class="mt-2 flex gap-4 text-xs">
-<span class="text-emerald-600">{{ stats().units.occupied }} Occupied</span>
-                <span class="text-amber-600">{{ stats().units.vacant }} Vacant</span>
-              </div>
-            </mat-card-content>
-          </mat-card>
-        </mat-grid-tile>
-
-        <mat-grid-tile>
-          <mat-card class="h-full stat-card">
-            <mat-card-content>
-              <div class="flex items-center justify-between">
-                <div>
-                  <p class="text-sm text-slate-500">Active Leases</p>
-                  <p class="text-3xl font-bold text-slate-900">{{ stats().leases.active }}</p>
-                </div>
-                <div class="bg-purple-100 p-3 rounded-xl">
-                  <mat-icon class="text-purple-600 text-3xl">description</mat-icon>
-                </div>
-              </div>
-              <div class="mt-2 flex gap-4 text-xs">
-<span class="text-red-600">{{ stats().leases.expiring_30 }} Expiring 30d</span>
-                <span class="text-amber-600">{{ stats().leases.expiring_90 }} Expiring 90d</span>
-              </div>
-            </mat-card-content>
-          </mat-card>
-        </mat-grid-tile>
-
-        <mat-grid-tile>
-          <mat-card class="h-full stat-card">
-            <mat-card-content>
-              <div class="flex items-center justify-between">
-                <div>
-                  <p class="text-sm text-slate-500">Outstanding</p>
-                  <p class="text-3xl font-bold text-slate-900">${{ stats().invoices.total_outstanding.toLocaleString() }}</p>
-                </div>
-                <div class="bg-amber-100 p-3 rounded-xl">
-                  <mat-icon class="text-amber-600 text-3xl">attach_money</mat-icon>
-                </div>
-              </div>
-              <div class="mt-2 flex gap-4 text-xs">
-<span class="text-red-600">{{ stats().invoices.overdue }} Overdue</span>
-                <span class="text-blue-600">{{ stats().invoices.pending }} Pending</span>
-              </div>
-            </mat-card-content>
-          </mat-card>
-        </mat-grid-tile>
-      </mat-grid-list>
-
-      <!-- Recent Activity -->
-      <mat-card>
-        <mat-card-header>
-          <mat-card-title class="flex items-center gap-2">
-            <mat-icon>history</mat-icon>
-            Recent Activity
-          </mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-          <table mat-table [dataSource]="recentActivity()" class="w-full" matSort>
-            <ng-container matColumnDef="timestamp">
-              <th mat-header-cell *matHeaderCellDef mat-sort-header>Time</th>
-              <td mat-cell *matCellDef="let a">{{ formatTime(a.timestamp) }}</td>
-            </ng-container>
-            <ng-container matColumnDef="type">
-              <th mat-header-cell *matHeaderCellDef>Type</th>
-              <td mat-cell *matCellDef="let a">
-                <mat-chip-set>
-                  <mat-chip [class]="getActivityChipClass(a.type)">{{ formatActivityType(a.type) }}</mat-chip>
-                </mat-chip-set>
-              </td>
-            </ng-container>
-            <ng-container matColumnDef="title">
-              <th mat-header-cell *matHeaderCellDef>Title</th>
-              <td mat-cell *matCellDef="let a" class="font-medium">{{ a.title }}</td>
-            </ng-container>
-            <ng-container matColumnDef="description">
-              <th mat-header-cell *matHeaderCellDef>Details</th>
-              <td mat-cell *matCellDef="let a" class="text-slate-500">{{ a.description }}</td>
-            </ng-container>
-            <tr mat-header-row *matHeaderRowDef="activityCols"></tr>
-            <tr mat-row *matRowDef="let row; columns: activityCols;" class="hover:bg-slate-50"></tr>
-          </table>
-          <mat-paginator [length]="recentActivity().length" [pageSize]="5" [pageSizeOptions]="[5, 10, 20]" showFirstLastButtons></mat-paginator>
-        </mat-card-content>
-      </mat-card>
-    }
-  </div>
+            </ng-template>
+          </p-table>
+      </ng-template>
+    </p-card>
+  }
+</div>

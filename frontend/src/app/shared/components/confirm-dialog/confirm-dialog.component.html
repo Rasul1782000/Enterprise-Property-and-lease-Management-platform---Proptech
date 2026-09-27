@@ -1,6 +1,19 @@
-  <h2 mat-dialog-title>{{ data.title || 'Confirm' }}</h2>
-  <mat-dialog-content>{{ data.message }}</mat-dialog-content>
-  <mat-dialog-actions align="end">
-    <button mat-button mat-dialog-close>Cancel</button>
-    <button mat-flat-button color="warn" [mat-dialog-close]="true">Confirm</button>
-  </mat-dialog-actions>
+<p-dialog
+  [header]="title"
+  [modal]="true"
+  [visible]="true"
+  [closable]="true"
+  [draggable]="false"
+  [style]="{ width: '26rem' }"
+  (onHide)="onHide()"
+>
+  <div class="confirm-body">
+    <i class="pi pi-exclamation-triangle" [class]="'pi pi-exclamation-triangle confirm-icon-' + severity"></i>
+    <p>{{ message }}</p>
+  </div>
+
+  <ng-template #footer>
+    <p-button [label]="cancelLabel" severity="secondary" [text]="true" (onClick)="cancelled.emit()" />
+    <p-button [label]="confirmLabel" [severity]="severity" icon="pi pi-check" (onClick)="confirmed.emit()" />
+  </ng-template>
+</p-dialog>

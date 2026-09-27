@@ -31,7 +31,7 @@ export interface CreateBuildingDto {
   floors: number;
 }
 
-export interface UpdateBuildingDto extends Partial<CreateBuildingDto> {}
+export type UpdateBuildingDto = Partial<CreateBuildingDto>;
 
 @Injectable({ providedIn: 'root' })
 export class BuildingsApiService {

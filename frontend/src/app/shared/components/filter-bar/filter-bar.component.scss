@@ -1,0 +1,24 @@
+.filter-shell {
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 0.75rem 0.875rem;
+  margin-bottom: 1rem;
+}
+
+.filter-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.filter-search { flex: 1 1 240px; min-width: 200px; }
+.filter-status { flex: 0 0 190px; }
+
+:host ::ng-deep .filter-search .p-inputtext { width: 100%; }
+:host ::ng-deep .filter-status { width: 100%; }
+
+@media (max-width: 640px) {
+  .filter-search, .filter-status { flex: 1 1 100%; }
+}

@@ -32,7 +32,7 @@ export interface CreatePropertyDto {
   country: string;
 }
 
-export interface UpdatePropertyDto extends Partial<CreatePropertyDto> {}
+export type UpdatePropertyDto = Partial<CreatePropertyDto>;
 
 @Injectable({ providedIn: 'root' })
 export class PropertiesApiService {

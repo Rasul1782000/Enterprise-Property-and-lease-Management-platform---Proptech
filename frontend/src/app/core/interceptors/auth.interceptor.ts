@@ -4,8 +4,7 @@ import { AuthService } from '../services/auth.service';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const auth = inject(AuthService);
-  const token = auth.token();
-  // Attach Sanctum token + XSRF
+  const token = auth.token() || localStorage.getItem('access_token');
   if (token && !req.url.includes('/sanctum/csrf-cookie')) {
     req = req.clone({
       setHeaders: { Authorization: `Bearer ${token}`, Accept: 'application/json' },

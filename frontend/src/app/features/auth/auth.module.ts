@@ -1,10 +1,13 @@
 import { NgModule } from '@angular/core';
 import { SharedModule } from '@shared/shared.module';
 import { AuthRoutingModule } from './auth-routing.module';
-import { LoginComponent } from './pages/login/login.component';
+import { LoginPage } from './pages/login/login.component';
+import { ForgotPassword } from './pages/forgot-password/forgot-password';
+import { ResetPasswordPage } from './pages/reset-password/reset-password';
+import { Errorpage } from './pages/errorpage/errorpage';
 
 @NgModule({
-  declarations: [LoginComponent],
+  declarations: [LoginPage, ForgotPassword, ResetPasswordPage, Errorpage],
   imports: [
     SharedModule,
     AuthRoutingModule

@@ -1,20 +1,11 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { Router, RouterModule } from '@angular/router';
-import { MatTableModule } from '@angular/material/table';
-import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
-import { MatSortModule, Sort } from '@angular/material/sort';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatDialogModule, MatDialog } from '@angular/material/dialog';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatMenuModule } from '@angular/material/menu';
-import { MatCardModule } from '@angular/material/card';
+import { Router } from '@angular/router';
+import { ConfirmationService, MenuItem, MessageService } from 'primeng/api';
 import { LeasesApiService, Lease } from '../../services/leases-api.service';
 import { PaginatedResponse } from '../../../../core/types';
-import { LeaseFormComponent } from '../../components/lease-form/lease-form.component';
+import { LeaseFormDialogData } from '../../components/lease-form/lease-form.component';
+
+interface PopupMenu { toggle(event: Event): void; }
 
 @Component({
   selector: 'app-leases-list',
@@ -24,18 +15,24 @@ import { LeaseFormComponent } from '../../components/lease-form/lease-form.compo
 })
 export class LeasesListComponent implements OnInit {
   private api = inject(LeasesApiService);
-  private dialog = inject(MatDialog);
+  private messages = inject(MessageService);
+  private confirmation = inject(ConfirmationService);
   private router = inject(Router);
 
   cols = ['code', 'property', 'unit', 'tenant', 'type', 'start_date', 'end_date', 'rent_amount', 'status', 'actions'];
   leases = signal<Lease[]>([]);
   total = signal(0);
   loading = signal(false);
-  perPage = 15; page = 1; sort = 'created_at'; dir: 'asc' | 'desc' = 'desc';
+  perPage = 15; page = 1; first = 0; sort = 'created_at'; dir: 'asc' | 'desc' = 'desc';
+
+  menuItems: MenuItem[] = [];
+  formVisible = signal(false);
+  formData = signal<LeaseFormDialogData>({ mode: 'create' });
 
   ngOnInit() { this.load(); }
 
   load() {
+    this.first = (this.page - 1) * this.perPage;
     this.loading.set(true);
     this.api.list({ per_page: this.perPage, page: this.page, sort: this.sort, direction: this.dir }).subscribe({
       next: (res: PaginatedResponse<Lease>) => { this.leases.set(res.data); this.total.set(res.meta.total); this.loading.set(false); },
@@ -43,14 +40,85 @@ export class LeasesListComponent implements OnInit {
     });
   }
 
-  onSort(e: Sort) { this.sort = e.active; this.dir = e.direction || 'desc'; this.load(); }
-  onPage(e: PageEvent) { this.page = e.pageIndex + 1; this.perPage = e.pageSize; this.load(); }
+  onSort(e: { field?: string | null; order?: number | null }) {
+    this.sort = e.field || 'created_at';
+    this.dir = (e.order ?? -1) === 1 ? 'asc' : 'desc';
+    this.page = 1;
+    this.load();
+  }
 
-  getStatusClass(s: string) { const c: Record<string,string> = {'draft':'bg-slate-100','active':'bg-emerald-100 text-emerald-700','expired':'bg-red-100 text-red-700','terminated':'bg-slate-100','renewed':'bg-blue-100 text-blue-700'}; return c[s] || 'bg-slate-100'; }
+  onPage(e: { first: number; rows: number }) { this.page = Math.floor(e.first / e.rows) + 1; this.perPage = e.rows; this.load(); }
+
+  statusSeverity(status: string): 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast' {
+    const map: Record<string, 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast'> = {
+      active: 'success', signed: 'success', paid: 'success', renewed: 'success',
+      inactive: 'secondary', former: 'secondary', cancelled: 'secondary',
+      draft: 'warn', pending: 'warn', partial: 'warn', reserved: 'warn', prospect: 'warn',
+      overdue: 'danger', terminated: 'danger', vacant: 'danger', expired: 'danger'
+    };
+    return map[status] ?? 'info';
+  }
+
+  money(v: any): string { return '$' + Number(v || 0).toLocaleString(); }
+  dateOnly(v: any): string { return new Date(v).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); }
+  daysUntil(v: any): number { return Math.ceil((new Date(v).getTime() - Date.now()) / 86400000); }
+
+  getStatusClass(s: string) { const c: Record<string,string> = {'draft':'bg-zinc-100','active':'bg-primary-100 text-primary-800','expired':'bg-primary-600 text-white','terminated':'bg-zinc-100','renewed':'bg-zinc-200 text-zinc-800'}; return c[s] || 'bg-zinc-100'; }
+
+  openRowMenu(lease: Lease, menu: PopupMenu, ev: Event) {
+    const items: MenuItem[] = [
+      { label: 'View', icon: 'pi pi-eye', routerLink: ['/leases', lease.id] },
+      { label: 'Edit', icon: 'pi pi-pencil', command: () => this.editLease(lease) }
+    ];
+    if (lease.status === 'draft') items.push({ label: 'Sign', icon: 'pi pi-pencil', command: () => this.signLease(lease) });
+    if (lease.status === 'active') items.push({ label: 'Terminate', icon: 'pi pi-times', command: () => this.terminateLease(lease) });
+    this.menuItems = items;
+    menu.toggle(ev);
+  }
 
   editLease(l: Lease) { this.openEditDialog(l); }
-  signLease(l: Lease) { if (confirm('Sign this lease?')) this.api.sign(l.id).subscribe(() => this.load()); }
-  terminateLease(l: Lease) { const reason = prompt('Termination reason:'); if (reason) { const today = new Date().toISOString().split('T')[0]; this.api.terminate(l.id, today, reason).subscribe(() => this.load()); } }
 
-  openEditDialog(l: Lease) { const ref = this.dialog.open(LeaseFormComponent, { width: '700px', data: { mode: 'edit', lease: l } }); ref.afterClosed().subscribe(r => r && this.load()); }
+  signLease(l: Lease) {
+    this.confirmation.confirm({
+      header: 'Sign lease',
+      message: `Sign lease ${l.code}? This marks the lease as executed.`,
+      icon: 'pi pi-pencil',
+      acceptLabel: 'Sign',
+      rejectLabel: 'Cancel',
+      accept: () => this.api.sign(l.id).subscribe({
+        next: () => { this.messages.add({ severity: 'success', summary: 'Signed', detail: `Lease ${l.code} was signed.` }); this.load(); },
+        error: () => this.messages.add({ severity: 'error', summary: 'Error', detail: 'Could not sign the lease.' })
+      })
+    });
+  }
+
+  terminateLease(l: Lease) {
+    const reason = prompt('Termination reason:');
+    if (!reason) return;
+    this.confirmation.confirm({
+      header: 'Terminate lease',
+      message: `Terminate lease ${l.code}? This cannot be undone.`,
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Terminate',
+      rejectLabel: 'Cancel',
+      acceptButtonStyleClass: 'p-button-danger',
+      accept: () => {
+        const today = new Date().toISOString().split('T')[0];
+        this.api.terminate(l.id, today, reason).subscribe({
+          next: () => { this.messages.add({ severity: 'success', summary: 'Terminated', detail: `Lease ${l.code} was terminated.` }); this.load(); },
+          error: () => this.messages.add({ severity: 'error', summary: 'Error', detail: 'Could not terminate the lease.' })
+        });
+      }
+    });
+  }
+
+  openEditDialog(l: Lease) { this.formData.set({ mode: 'edit', lease: l }); this.formVisible.set(true); }
+
+  onFormClosed(saved: boolean) {
+    this.formVisible.set(false);
+    if (saved) {
+      this.messages.add({ severity: 'success', summary: 'Saved', detail: 'Lease was saved.' });
+      this.load();
+    }
+  }
 }

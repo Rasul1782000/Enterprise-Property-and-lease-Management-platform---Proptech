@@ -1,13 +1,6 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { Component, inject, signal, computed, OnInit, Input, Output, EventEmitter } from '@angular/core';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { MessageService } from 'primeng/api';
 import { BuildingsApiService, Building } from '../../../buildings/services/buildings-api.service';
 import { PropertiesApiService, Property } from '../../../properties/services/properties-api.service';
 import { UnitsApiService, Unit, CreateUnitDto, UpdateUnitDto } from '../../services/units-api.service';
@@ -25,12 +18,30 @@ export class UnitFormComponent implements OnInit {
   private propertiesApi = inject(PropertiesApiService);
   private buildingsApi = inject(BuildingsApiService);
   private api = inject(UnitsApiService);
-  private dialogRef = inject(MatDialogRef<UnitFormComponent>);
-  public data = inject(MAT_DIALOG_DATA) as UnitFormDialogData;
+  private messages = inject(MessageService);
+
+  @Input() data: UnitFormDialogData = { mode: 'create' };
+  @Output() closed = new EventEmitter<boolean>();
 
   properties = signal<Property[]>([]);
   buildings = signal<Building[]>([]);
   loading = signal(false);
+
+  propertyOptions = computed(() => this.properties().map(p => ({ label: `${p.name} (${p.code})`, value: p.id })));
+  buildingOptions = computed(() => this.buildings().map(b => ({ label: `${b.name} (${b.code})`, value: b.id })));
+  typeOptions = [
+    { label: 'Residential', value: 'residential' },
+    { label: 'Commercial', value: 'commercial' },
+    { label: 'Office', value: 'office' },
+    { label: 'Retail', value: 'retail' },
+    { label: 'Warehouse', value: 'warehouse' }
+  ];
+  statusOptions = [
+    { label: 'Vacant', value: 'vacant' },
+    { label: 'Occupied', value: 'occupied' },
+    { label: 'Reserved', value: 'reserved' },
+    { label: 'Under Maintenance', value: 'under_maintenance' }
+  ];
 
   form: FormGroup = this.fb.group({
     property_id: [null, Validators.required],
@@ -50,13 +61,17 @@ export class UnitFormComponent implements OnInit {
     this.propertiesApi.list({ per_page: 1000 }).subscribe(res => this.properties.set(res.data));
     if (this.data.mode === 'edit' && this.data.unit) {
       this.form.patchValue(this.data.unit);
-      this.onPropertyChange(this.data.unit.property_id);
+      this.loadBuildings(this.data.unit.property_id);
     }
   }
 
   onPropertyChange(propertyId: number) {
-    this.buildingsApi.getByProperty(propertyId, { per_page: 1000 }).subscribe(res => this.buildings.set(res.data));
+    this.loadBuildings(propertyId);
     this.form.get('building_id')?.setValue(null);
+  }
+
+  private loadBuildings(propertyId: number) {
+    this.buildingsApi.getByProperty(propertyId, { per_page: 1000 }).subscribe(res => this.buildings.set(res.data));
   }
 
   onSubmit() {
@@ -64,7 +79,14 @@ export class UnitFormComponent implements OnInit {
     this.loading.set(true);
     const dto = this.form.value;
     const req = this.data.mode === 'create' ? this.api.create(dto as CreateUnitDto) : this.api.update(this.data.unit!.id, dto as UpdateUnitDto);
-    req.subscribe({ next: () => this.dialogRef.close(true), error: () => this.loading.set(false) });
+    req.subscribe({
+      next: () => {
+        this.loading.set(false);
+        this.messages.add({ severity: 'success', summary: 'Saved', detail: this.data.mode === 'create' ? 'Unit created' : 'Unit updated' });
+        this.closed.emit(true);
+      },
+      error: () => this.loading.set(false)
+    });
   }
-  onCancel() { this.dialogRef.close(false); }
+  onCancel() { this.closed.emit(false); }
 }

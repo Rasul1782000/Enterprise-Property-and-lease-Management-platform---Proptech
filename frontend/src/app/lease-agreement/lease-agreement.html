@@ -1,0 +1,182 @@
+<div class="space-y-5">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Lease Agreements</h1>
+      <p class="page-subtitle">Generated agreements, signature tracking and executed counterparts.</p>
+    </div>
+    <p-button label="Refresh" icon="pi pi-refresh" severity="secondary" [outlined]="true" (onClick)="reload()" />
+  </div>
+
+  <app-stat-cards [cards]="cards()" />
+
+  <p-card class="table-card">
+    <ng-template #content>
+      <div class="flex flex-wrap items-center gap-3 mb-4">
+        <p-iconfield>
+          <p-inputicon styleClass="pi pi-search" />
+          <input pInputText type="text" placeholder="Search code, tenant, unit…" [ngModel]="searchTerm" (ngModelChange)="onSearch($event)" />
+        </p-iconfield>
+
+        <p-select
+          [options]="statuses"
+          optionLabel="label"
+          optionValue="value"
+          [ngModel]="statusFilter"
+          (ngModelChange)="onStatusFilter($event)"
+          placeholder="All statuses"
+          [showClear]="true"
+          styleClass="w-56" />
+
+        <p-button label="Reset" icon="pi pi-filter-slash" severity="secondary" [text]="true" (onClick)="resetFilters()" />
+        <span class="ml-auto text-sm text-zinc-500">{{ rows().length }} of {{ total() }}</span>
+      </div>
+
+      <p-table
+        [value]="rows()"
+        [lazy]="true"
+        [lazyLoadOnInit]="false"
+        [paginator]="true"
+        [rows]="perPage"
+        [rowsPerPageOptions]="[10, 15, 25, 50]"
+        [totalRecords]="total()"
+        [loading]="loading()"
+        [rowHover]="true"
+        [tableStyle]="{ 'min-width': '80rem' }"
+        (onLazyLoad)="onLazyLoad($event)">
+
+        <ng-template #header>
+          <tr>
+            <th pSortableColumn="code">Agreement <p-sorticon field="code" /></th>
+            <th>Tenant</th>
+            <th>Unit / Property</th>
+            <th>Term</th>
+            <th pSortableColumn="rent_amount">Rent <p-sorticon field="rent_amount" /></th>
+            <th>Signatures</th>
+            <th pSortableColumn="generated_on">Generated <p-sorticon field="generated_on" /></th>
+            <th>Status</th>
+            <th style="width: 13rem"></th>
+          </tr>
+        </ng-template>
+
+        <ng-template #body let-row>
+          <tr>
+            <td>
+              <div class="font-mono text-xs px-2 py-1 rounded bg-zinc-100">{{ row.code }}</div>
+              <div class="text-xs text-zinc-400 mt-1">{{ row.template }} · v{{ row.version }}</div>
+            </td>
+            <td>
+              <div class="font-medium">{{ row.tenant_name }}</div>
+              <div class="text-xs text-zinc-400">{{ row.tenant_company }}</div>
+            </td>
+            <td>
+              <div class="font-mono text-xs">{{ row.unit_code }}</div>
+              <div class="text-xs text-zinc-400">{{ row.property_name }}</div>
+            </td>
+            <td>
+              <div class="text-xs">{{ dateOnly(row.start_date) }}</div>
+              <div class="text-xs text-zinc-400">to {{ dateOnly(row.end_date) }}</div>
+            </td>
+            <td>
+              <div class="font-semibold">{{ money(row.rent_amount) }}</div>
+              <div class="text-xs text-zinc-400 capitalize">{{ row.payment_frequency }}</div>
+            </td>
+            <td style="min-width: 9rem">
+              <p-progressbar [value]="signatureProgress(row)" [showValue]="false" styleClass="h-1.5" />
+              <div class="text-xs text-zinc-400 mt-1">{{ signatureProgress(row) }}% complete</div>
+            </td>
+            <td>{{ dateOnly(row.generated_on) }}</td>
+            <td>
+              <p-tag [value]="titleCase(row.status)" [severity]="severity(row.status)" />
+              @if (row.ejari_number) {
+                <div class="text-xs text-zinc-400 mt-1">{{ row.ejari_number }}</div>
+              }
+            </td>
+            <td>
+              <div class="flex items-center gap-1">
+                <p-button icon="pi pi-eye" [text]="true" [rounded]="true" severity="secondary" pTooltip="Open" (onClick)="open(row)" />
+                @if (row.status === 'draft') {
+                  <p-button icon="pi pi-send" [text]="true" [rounded]="true" severity="info" pTooltip="Send" (onClick)="send(row)" />
+                }
+                @if (row.status === 'sent' || row.status === 'partially_signed') {
+                  <p-button icon="pi pi-pen-to-square" [text]="true" [rounded]="true" severity="success" pTooltip="Countersign" (onClick)="countersign(row)" />
+                }
+                <p-button icon="pi pi-file-pdf" [text]="true" [rounded]="true" severity="danger" pTooltip="Download" (onClick)="download(row)" />
+                <p-button icon="pi pi-trash" [text]="true" [rounded]="true" severity="danger" pTooltip="Delete" (onClick)="remove(row, row.code)" />
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+
+        <ng-template #emptymessage>
+          <div class="empty-state">
+            <i class="pi pi-file"></i>
+            <p>No agreements match these filters</p>
+          </div>
+        </ng-template>
+      </p-table>
+    </ng-template>
+  </p-card>
+</div>
+
+<p-drawer
+  position="right"
+  [visible]="!!selected()"
+  (visibleChange)="$event ? null : close()"
+  [style]="{ width: '34rem' }"
+  header="Agreement">
+  @if (selected(); as a) {
+    <div class="space-y-4">
+      <div>
+        <p class="text-xs uppercase tracking-wide text-zinc-400">{{ a.code }} · v{{ a.version }}</p>
+        <h2 class="text-lg font-semibold text-zinc-800">{{ a.tenant_name }}</h2>
+        <p class="text-sm text-zinc-500">{{ a.tenant_company }} · {{ a.unit_code }}, {{ a.property_name }}</p>
+        <p-tag [value]="titleCase(a.status)" [severity]="severity(a.status)" />
+      </div>
+
+      <div class="grid grid-cols-2 gap-3 text-sm">
+        <div><p class="text-zinc-400 text-xs">Template</p><p>{{ a.template }}</p></div>
+        <div><p class="text-zinc-400 text-xs">Lease type</p><p class="capitalize">{{ a.type }}</p></div>
+        <div><p class="text-zinc-400 text-xs">Start</p><p>{{ dateOnly(a.start_date) }}</p></div>
+        <div><p class="text-zinc-400 text-xs">End</p><p>{{ dateOnly(a.end_date) }}</p></div>
+        <div><p class="text-zinc-400 text-xs">Rent</p><p>{{ money(a.rent_amount) }} <span class="text-xs text-zinc-400">/ {{ a.payment_frequency }}</span></p></div>
+        <div><p class="text-zinc-400 text-xs">Security deposit</p><p>{{ money(a.security_deposit) }}</p></div>
+      </div>
+
+      <div class="section-card p-4 space-y-3">
+        <p class="text-sm font-semibold text-zinc-700">Signature register</p>
+        @for (slot of signatureSlots(a); track slot.role) {
+          <div class="flex items-center justify-between text-sm">
+            <span class="text-zinc-600">{{ slot.role }}</span>
+            @if (slot.signed) {
+              <span class="flex items-center gap-1 text-primary-800">
+                <i class="pi pi-check-circle"></i> {{ slot.detail }}
+              </span>
+            } @else {
+              <span class="text-zinc-400">Awaiting</span>
+            }
+          </div>
+        }
+      </div>
+
+      @if (a.notes) {
+        <div class="p-3 rounded-lg bg-primary-50 text-sm text-primary-900 border border-primary-100">
+          <i class="pi pi-comment mr-1"></i>{{ a.notes }}
+        </div>
+      }
+
+      <div class="flex flex-wrap gap-2">
+        @if (a.status === 'draft') {
+          <p-button label="Send to tenant" icon="pi pi-send" severity="info" (onClick)="send(a)" />
+        }
+        @if (a.status === 'sent' || a.status === 'partially_signed') {
+          <p-button label="Countersign" icon="pi pi-pen-to-square" severity="success" (onClick)="countersign(a)" />
+        }
+        @if (a.status === 'partially_signed') {
+          <p-button label="Mark fully executed" icon="pi pi-verified" severity="success" [outlined]="true" (onClick)="execute(a)" />
+        }
+        <p-button label="Download" icon="pi pi-file-pdf" severity="danger" [outlined]="true" (onClick)="download(a)" />
+        <p-button label="Close" severity="secondary" [outlined]="true" (onClick)="close()" />
+      </div>
+    </div>
+  }
+</p-drawer>

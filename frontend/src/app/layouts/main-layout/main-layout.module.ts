@@ -1,4 +1,4 @@
-import { NgModule } from '@angular/core';
+import { NgModule, NO_ERRORS_SCHEMA } from '@angular/core';
 import { SharedModule } from '@shared/shared.module';
 import { MainLayoutComponent } from './main-layout.component';
 import { MainLayoutRoutingModule } from './main-layout-routing.module';
@@ -9,6 +9,7 @@ import { MainLayoutRoutingModule } from './main-layout-routing.module';
     SharedModule,
     MainLayoutRoutingModule
   ],
-  exports: [MainLayoutComponent]
+  exports: [MainLayoutComponent],
+  schemas: [NO_ERRORS_SCHEMA]
 })
 export class MainLayoutModule {}

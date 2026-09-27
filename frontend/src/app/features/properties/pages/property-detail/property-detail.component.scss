@@ -1,2 +1,129 @@
-.stat-card { transition: transform 0.2s; }
-    .stat-card:hover { transform: translateY(-2px); }
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+
+  @media (min-width: 48rem) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.stat-card {
+  transition: transform 0.2s;
+
+  &:hover {
+    transform: translateY(-2px);
+  }
+}
+
+.stat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  color: #71717a;
+  margin: 0;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.stat-icon {
+  font-size: 1.875rem;
+}
+
+.tab-body {
+  padding: 1.25rem 0.25rem;
+}
+
+.details-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5rem;
+
+  @media (min-width: 48rem) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.details-full {
+  @media (min-width: 48rem) {
+    grid-column: 1 / -1;
+  }
+}
+
+.detail-heading {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #18181b;
+  margin: 0 0 0.75rem;
+}
+
+.detail-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #e4e4e7;
+    border-radius: 0.5rem;
+  }
+
+  span {
+    color: #71717a;
+    font-size: 0.875rem;
+  }
+
+  strong {
+    font-weight: 600;
+  }
+}
+
+.code-chip {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.75rem;
+  background: #f4f4f5;
+  color: #3f3f46;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.25rem;
+}
+
+.type-chip {
+  font-size: 0.75rem;
+  text-transform: capitalize;
+  border: 1px solid #d4d4d8;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.25rem;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 2.5rem 1rem;
+  color: #a1a1aa;
+
+  i {
+    font-size: 2rem;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.875rem;
+  }
+}

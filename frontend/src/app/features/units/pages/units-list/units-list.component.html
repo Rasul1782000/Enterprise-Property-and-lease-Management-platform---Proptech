@@ -1,27 +1,74 @@
   <div class="space-y-4">
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-      <div><h1 class="page-title">Units ({{total()}})</h1><p class="text-slate-500 text-sm">{{ units().length }} of {{ total() }} shown</p></div>
-      <button mat-flat-button color="primary" (click)="openCreateDialog()"><mat-icon>add</mat-icon> Add Unit</button>
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Units ({{ total() }})</h1>
+        <p class="page-subtitle">{{ units().length }} of {{ total() }} shown</p>
+      </div>
+      <p-button label="Add Unit" icon="pi pi-plus" (onClick)="openCreateDialog()" />
     </div>
 
-    <mat-card><mat-card-content class="p-0">
-      @if (loading()) { <div class="flex justify-center py-12"><mat-spinner diameter="40"></mat-spinner></div> }
-      @else {
-        <div class="overflow-x-auto">
-          <table mat-table [dataSource]="units()" matSort (matSortChange)="onSort($event)" class="w-full">
-            <ng-container matColumnDef="code"><th mat-header-cell *matHeaderCellDef mat-sort-header>Code</th><td mat-cell *matCellDef="let u"><span class="font-mono text-xs bg-slate-100 px-2 py-1 rounded">{{u.code}}</span></td></ng-container>
-            <ng-container matColumnDef="name"><th mat-header-cell *matHeaderCellDef mat-sort-header>Name</th><td mat-cell *matCellDef="let u"><a class="text-primary font-medium hover:underline" [routerLink]="['/units', u.id]">{{u.name}}</a><div class="text-xs text-slate-500">{{u.building?.name || 'N/A'}}</div></td></ng-container>
-            <ng-container matColumnDef="type"><th mat-header-cell *matHeaderCellDef>Type</th><td mat-cell *matCellDef="let u"><span class="text-xs border px-2 py-1 rounded">{{u.type}}</span></td></ng-container>
-            <ng-container matColumnDef="floor"><th mat-header-cell *matHeaderCellDef>Floor</th><td mat-cell *matCellDef="let u">{{u.floor}}</td></ng-container>
-            <ng-container matColumnDef="area_sqft"><th mat-header-cell *matHeaderCellDef>Area (sqft)</th><td mat-cell *matCellDef="let u">{{u.area_sqft}}</td></ng-container>
-            <ng-container matColumnDef="base_rent"><th mat-header-cell *matHeaderCellDef mat-sort-header>Base Rent</th><td mat-cell *matCellDef="let u">${{u.base_rent}}</td></ng-container>
-            <ng-container matColumnDef="status"><th mat-header-cell *matHeaderCellDef>Status</th><td mat-cell *matCellDef="let u"><span class="text-xs px-2 py-1 rounded" [ngClass]="getStatusClass(u.status)">{{u.status}}</span></td></ng-container>
-            <ng-container matColumnDef="actions"><th mat-header-cell *matHeaderCellDef></th><td mat-cell *matCellDef="let u"><button mat-icon-button [matMenuTriggerFor]="menu"><mat-icon>more_vert</mat-icon></button><mat-menu #menu="matMenu"><button mat-menu-item [routerLink]="['/units', u.id]"><mat-icon>visibility</mat-icon> View</button><button mat-menu-item (click)="editUnit(u)"><mat-icon>edit</mat-icon> Edit</button><button mat-menu-item (click)="updateStatus(u)"><mat-icon>swap_horiz</mat-icon> Change Status</button><hr class="my-1"><button mat-menu-item (click)="deleteUnit(u)" class="text-red-600"><mat-icon>delete</mat-icon> Delete</button></mat-menu></td></ng-container>
-            <tr mat-header-row *matHeaderRowDef="cols"></tr>
-            <tr mat-row *matRowDef="let row; columns: cols;" class="hover:bg-slate-50"></tr>
-          </table>
-        </div>
-        <mat-paginator [length]="total()" [pageSize]="perPage" [pageSizeOptions]="[10,15,25,50]" (page)="onPage($event)" showFirstLastButtons></mat-paginator>
-      }
-    </mat-card-content></mat-card>
+    <p-card>
+      <p-table
+        [value]="units()"
+        [paginator]="true"
+        [rows]="10"
+        [rowsPerPageOptions]="[5, 10, 20, 50]"
+        [loading]="loading()"
+        [rowHover]="true"
+        [tableStyle]="{ 'min-width': '64rem' }"
+        (onSort)="onSort($event)"
+        (onPage)="onPage($event)">
+        <ng-template #header>
+          <tr>
+            <th pSortableColumn="code">Code <p-sort-icon field="code" /></th>
+            <th pSortableColumn="name">Name <p-sort-icon field="name" /></th>
+            <th>Type</th>
+            <th pSortableColumn="floor">Floor <p-sort-icon field="floor" /></th>
+            <th>Area (sqft)</th>
+            <th pSortableColumn="base_rent">Base Rent <p-sort-icon field="base_rent" /></th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </ng-template>
+        <ng-template #body let-row>
+          <tr>
+            <td><span class="font-mono text-xs bg-zinc-100 px-2 py-1 rounded">{{ row.code }}</span></td>
+            <td>
+              <a class="text-primary font-medium hover:underline" [routerLink]="['/units', row.id]">{{ row.name }}</a>
+              <div class="text-xs text-zinc-500">{{ row.building?.name || 'N/A' }}</div>
+            </td>
+            <td><span class="text-xs border px-2 py-1 rounded uppercase">{{ row.type }}</span></td>
+            <td>{{ row.floor }}</td>
+            <td>{{ row.area_sqft }}</td>
+            <td>{{ money(row.base_rent) }}</td>
+            <td><p-tag [value]="row.status" [severity]="statusSeverity(row.status)" /></td>
+            <td>
+              <p-button icon="pi pi-ellipsis-v" [text]="true" [rounded]="true" (click)="ref.toggle($event)" />
+              <p-menu #ref [popup]="true" [model]="rowMenu(row)" appendTo="body" />
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template #emptymessage>
+          <div class="empty-state"><i class="pi pi-inbox"></i><p>No records found</p></div>
+        </ng-template>
+      </p-table>
+    </p-card>
+
+    <p-dialog
+      [header]="formData().mode === 'edit' ? 'Edit Unit' : 'Add Unit'"
+      [modal]="true"
+      [visible]="formVisible()"
+      (visibleChange)="formVisible.set($event)"
+      [style]="{ width: '40rem' }">
+      <app-unit-form #formRef [data]="formData()" (closed)="onFormClosed($event)" />
+      <ng-template #footer>
+        <p-button label="Cancel" [text]="true" (onClick)="formRef.onCancel()" />
+        <p-button
+          [label]="formData().mode === 'create' ? 'Create' : 'Update'"
+          icon="pi pi-check"
+          [loading]="formRef.loading()"
+          [disabled]="formRef.form.invalid"
+          (onClick)="formRef.onSubmit()" />
+      </ng-template>
+    </p-dialog>
   </div>

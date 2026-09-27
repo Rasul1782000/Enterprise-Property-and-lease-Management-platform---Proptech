@@ -1,50 +1,119 @@
-  @if (loading()) { <div class="flex justify-center py-12"><mat-spinner diameter="40"></mat-spinner></div> }
+  @if (loading()) {
+    <div class="flex justify-center py-12"><p-progress-spinner [style]="{ width: '40px', height: '40px' }" /></div>
+  }
   @else if (tenant()) {
     <div class="space-y-6">
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div class="page-header">
         <div>
           <h1 class="page-title">{{ tenant()!.first_name }} {{ tenant()!.last_name }}</h1>
-          <p class="text-slate-500">{{ tenant()!.email }} · {{ tenant()!.phone }}</p>
+          <p class="page-subtitle">{{ tenant()!.email }} · {{ tenant()!.phone }}</p>
         </div>
-        <div class="flex gap-2"><button mat-stroked-button (click)="editTenant()"><mat-icon>edit</mat-icon> Edit</button></div>
+        <div class="flex gap-2">
+          <p-button label="Edit" icon="pi pi-pencil" [outlined]="true" (onClick)="editTenant()" />
+        </div>
       </div>
 
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <mat-card class="stat-card"><mat-card-content><div class="flex items-center justify-between"><div><p class="text-sm text-slate-500">Status</p><p class="text-2xl font-bold capitalize">{{ tenant()!.status }}</p></div><mat-icon class="text-blue-500 text-3xl">badge</mat-icon></div></mat-card-content></mat-card>
-        <mat-card class="stat-card"><mat-card-content><div class="flex items-center justify-between"><div><p class="text-sm text-slate-500">Leases</p><p class="text-2xl font-bold">{{ tenant()!.leases_count }}</p></div><mat-icon class="text-emerald-500 text-3xl">description</mat-icon></div></mat-card-content></mat-card>
-        <mat-card class="stat-card"><mat-card-content><div class="flex items-center justify-between"><div><p class="text-sm text-slate-500">Company</p><p class="text-2xl font-bold">{{ tenant()!.company || '—' }}</p></div><mat-icon class="text-purple-500 text-3xl">business</mat-icon></div></mat-card-content></mat-card>
-        <mat-card class="stat-card"><mat-card-content><div class="flex items-center justify-between"><div><p class="text-sm text-slate-500">Code</p><p class="text-2xl font-bold">{{ tenant()!.code }}</p></div><mat-icon class="text-amber-500 text-3xl">qr_code</mat-icon></div></mat-card-content></mat-card>
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="flex items-center justify-between">
+            <div><p class="text-sm text-zinc-500">Status</p><p class="text-2xl font-bold capitalize">{{ tenant()!.status }}</p></div>
+            <i class="pi pi-check-circle stat-icon text-primary-600"></i>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="flex items-center justify-between">
+            <div><p class="text-sm text-zinc-500">Leases</p><p class="text-2xl font-bold">{{ tenant()!.leases_count }}</p></div>
+            <i class="pi pi-file stat-icon text-primary-600"></i>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="flex items-center justify-between">
+            <div><p class="text-2xl font-bold">{{ tenant()!.company || '—' }}</p><p class="text-sm text-zinc-500">Company</p></div>
+            <i class="pi pi-building stat-icon text-primary-600"></i>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="flex items-center justify-between">
+            <div><p class="text-sm text-zinc-500">Code</p><p class="text-2xl font-bold">{{ tenant()!.code }}</p></div>
+            <i class="pi pi-key stat-icon text-primary-500"></i>
+          </div>
+        </div>
       </div>
 
-      <mat-tab-group dynamicHeight>
-        <mat-tab label="Leases">
-          <div class="p-4">
-            @if (leasesLoading()) { <div class="flex justify-center py-8"><mat-spinner></mat-spinner></div> }
-            @else {
-              <h3 class="mb-4">Leases ({{ leases().length }})</h3>
-              <table mat-table [dataSource]="leases()" class="w-full">
-                <ng-container matColumnDef="code"><th mat-header-cell *matHeaderCellDef>Code</th><td mat-cell *matCellDef="let l"><span class="font-mono text-xs">{{l.code}}</span></td></ng-container>
-                <ng-container matColumnDef="property"><th mat-header-cell *matHeaderCellDef>Property</th><td mat-cell *matCellDef="let l">{{l.property?.name}}</td></ng-container>
-                <ng-container matColumnDef="unit"><th mat-header-cell *matHeaderCellDef>Unit</th><td mat-cell *matCellDef="let l">{{l.unit?.name}}</td></ng-container>
-                <ng-container matColumnDef="type"><th mat-header-cell *matHeaderCellDef>Type</th><td mat-cell *matCellDef="let l">{{l.type}}</td></ng-container>
-                <ng-container matColumnDef="start_date"><th mat-header-cell *matHeaderCellDef>Start</th><td mat-cell *matCellDef="let l">{{l.start_date | date:'shortDate'}}</td></ng-container>
-                <ng-container matColumnDef="end_date"><th mat-header-cell *matHeaderCellDef>End</th><td mat-cell *matCellDef="let l">{{l.end_date | date:'shortDate'}}</td></ng-container>
-                <ng-container matColumnDef="status"><th mat-header-cell *matHeaderCellDef>Status</th><td mat-cell *matCellDef="let l"><span class="text-xs px-2 py-1 rounded" [ngClass]="getLeaseStatusClass(l.status)">{{l.status}}</span></td></ng-container>
-                <ng-container matColumnDef="rent"><th mat-header-cell *matHeaderCellDef>Rent</th><td mat-cell *matCellDef="let l">${{l.rent_amount}}</td></ng-container>
-                <ng-container matColumnDef="actions"><th mat-header-cell *matHeaderCellDef></th><td mat-cell *matCellDef="let l"><button mat-icon-button [routerLink]="['/leases', l.id]"><mat-icon>visibility</mat-icon></button></td></ng-container>
-                <tr mat-header-row *matHeaderRowDef="leaseCols"></tr>
-                <tr mat-row *matRowDef="let row; columns: leaseCols;" class="hover:bg-slate-50"></tr>
-              </table>
-            }
-          </div>
-        </mat-tab>
-        <mat-tab label="Details">
-          <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div><h4 class="font-medium mb-2">Contact Info</h4><dl class="space-y-2"><div class="grid grid-cols-2 gap-2"><dt class="text-slate-500">Email</dt><dd class="font-medium">{{ tenant()!.email }}</dd><dt class="text-slate-500">Phone</dt><dd class="font-medium">{{ tenant()!.phone }}</dd><dt class="text-slate-500">Company</dt><dd class="font-medium">{{ tenant()!.company || '—' }}</dd><dt class="text-slate-500">Tax ID</dt><dd class="font-medium">{{ tenant()!.tax_id || '—' }}</dd></div></dl></div>
-            <div><h4 class="font-medium mb-2">Emergency Contact</h4><dl class="space-y-2"><div class="grid grid-cols-2 gap-2"><dt class="text-slate-500">Name</dt><dd class="font-medium">{{ tenant()!.emergency_contact_name || '—' }}</dd><dt class="text-slate-500">Phone</dt><dd class="font-medium">{{ tenant()!.emergency_contact_phone || '—' }}</dd></div></dl></div>
-            <div class="md:col-span-2"><h4 class="font-medium mb-2">Notes</h4><p class="text-slate-600 whitespace-pre-wrap">{{ tenant()!.notes || 'No notes' }}</p></div>
-          </div>
-        </mat-tab>
-      </mat-tab-group>
+      <p-tabs value="0">
+        <p-tablist>
+          <p-tab value="0">Leases</p-tab>
+          <p-tab value="1">Details</p-tab>
+        </p-tablist>
+        <p-tabpanels>
+          <p-tabpanel value="0">
+            <div class="pt-4">
+              @if (leasesLoading()) {
+                <div class="flex justify-center py-8"><p-progress-spinner [style]="{ width: '40px', height: '40px' }" /></div>
+              }
+              @else {
+                <h3 class="mb-4">Leases ({{ leases().length }})</h3>
+                <p-table [value]="leases()" [rowHover]="true" [tableStyle]="{ 'min-width': '60rem' }">
+                  <ng-template #header>
+                    <tr>
+                      <th>Code</th>
+                      <th>Property</th>
+                      <th>Unit</th>
+                      <th>Type</th>
+                      <th>Start</th>
+                      <th>End</th>
+                      <th>Status</th>
+                      <th>Rent</th>
+                      <th></th>
+                    </tr>
+                  </ng-template>
+                  <ng-template #body let-row>
+                    <tr>
+                      <td><span class="font-mono text-xs">{{ row.code }}</span></td>
+                      <td>{{ row.property?.name }}</td>
+                      <td>{{ row.unit?.name }}</td>
+                      <td class="uppercase">{{ row.type }}</td>
+                      <td>{{ dateOnly(row.start_date) }}</td>
+                      <td>{{ dateOnly(row.end_date) }}</td>
+                      <td><p-tag [value]="row.status" [severity]="statusSeverity(row.status)" /></td>
+                      <td>{{ money(row.rent_amount) }}</td>
+                      <td>
+                        <p-button icon="pi pi-eye" [text]="true" [rounded]="true" (onClick)="viewLease(row)" />
+                      </td>
+                    </tr>
+                  </ng-template>
+                  <ng-template #emptymessage>
+                    <div class="empty-state"><i class="pi pi-inbox"></i><p>No records found</p></div>
+                  </ng-template>
+                </p-table>
+              }
+            </div>
+          </p-tabpanel>
+          <p-tabpanel value="1">
+            <div class="pt-4 detail-grid">
+              <div>
+                <h4 class="font-medium mb-3">Contact Info</h4>
+                <ul class="detail-list">
+                  <li><span>Email</span><strong>{{ tenant()!.email }}</strong></li>
+                  <li><span>Phone</span><strong>{{ tenant()!.phone }}</strong></li>
+                  <li><span>Company</span><strong>{{ tenant()!.company || '—' }}</strong></li>
+                  <li><span>Tax ID</span><strong>{{ tenant()!.tax_id || '—' }}</strong></li>
+                </ul>
+              </div>
+              <div>
+                <h4 class="font-medium mb-3">Emergency Contact</h4>
+                <ul class="detail-list">
+                  <li><span>Name</span><strong>{{ tenant()!.emergency_contact_name || '—' }}</strong></li>
+                  <li><span>Phone</span><strong>{{ tenant()!.emergency_contact_phone || '—' }}</strong></li>
+                </ul>
+              </div>
+              <div class="span-2">
+                <h4 class="font-medium mb-3">Notes</h4>
+                <p class="text-zinc-600 whitespace-pre-wrap">{{ tenant()!.notes || 'No notes' }}</p>
+              </div>
+            </div>
+          </p-tabpanel>
+        </p-tabpanels>
+      </p-tabs>
     </div>
   }

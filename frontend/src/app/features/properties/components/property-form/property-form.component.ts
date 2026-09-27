@@ -1,13 +1,6 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges, inject, signal } from '@angular/core';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { MessageService } from 'primeng/api';
 import { PropertiesApiService, Property, CreatePropertyDto, UpdatePropertyDto } from '../../services/properties-api.service';
 
 export interface PropertyFormDialogData {
@@ -21,13 +14,26 @@ export interface PropertyFormDialogData {
   templateUrl: './property-form.component.html',
   styleUrls: ['./property-form.component.scss']
 })
-export class PropertyFormComponent implements OnInit {
+export class PropertyFormComponent implements OnInit, OnChanges {
   private fb = inject(FormBuilder);
   private api = inject(PropertiesApiService);
-  private dialogRef = inject(MatDialogRef<PropertyFormComponent>);
-  public data = inject(MAT_DIALOG_DATA) as PropertyFormDialogData;
+  private messages = inject(MessageService);
+
+  @Input() visible = false;
+  @Output() visibleChange = new EventEmitter<boolean>();
+  @Input() data: PropertyFormDialogData = { mode: 'create' };
+  @Output() closed = new EventEmitter<boolean>();
 
   loading = signal(false);
+
+  typeOptions = [
+    { label: 'Commercial', value: 'commercial' },
+    { label: 'Residential', value: 'residential' },
+    { label: 'Mixed Use', value: 'mixed' },
+    { label: 'Industrial', value: 'industrial' },
+    { label: 'Retail', value: 'retail' },
+    { label: 'Office', value: 'office' }
+  ];
 
   form: FormGroup = this.fb.group({
     code: ['', [Validators.required, Validators.maxLength(20)]],
@@ -40,7 +46,26 @@ export class PropertyFormComponent implements OnInit {
     country: ['USA']
   });
 
+  get title(): string {
+    return this.data.mode === 'create' ? 'Add Property' : 'Edit Property';
+  }
+
+  get submitLabel(): string {
+    return this.data.mode === 'create' ? 'Create' : 'Update';
+  }
+
   ngOnInit() {
+    this.patch();
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['data'] && !changes['data'].firstChange) {
+      this.form.reset({ type: 'commercial', country: 'USA' });
+      this.patch();
+    }
+  }
+
+  private patch() {
     if (this.data.mode === 'edit' && this.data.property) {
       this.form.patchValue(this.data.property);
     }
@@ -56,12 +81,25 @@ export class PropertyFormComponent implements OnInit {
       : this.api.update(this.data.property!.id, dto as UpdatePropertyDto);
 
     request.subscribe({
-      next: () => this.dialogRef.close(true),
+      next: (saved) => {
+        this.loading.set(false);
+        this.messages.add({
+          severity: 'success',
+          summary: 'Saved',
+          detail: `${saved.name} was ${this.data.mode === 'create' ? 'created' : 'updated'}.`
+        });
+        this.close(true);
+      },
       error: () => this.loading.set(false)
     });
   }
 
   onCancel() {
-    this.dialogRef.close(false);
+    this.close(false);
+  }
+
+  private close(result: boolean) {
+    this.closed.emit(result);
+    this.visibleChange.emit(false);
   }
 }

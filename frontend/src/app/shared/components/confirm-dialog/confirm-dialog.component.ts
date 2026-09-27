@@ -1,6 +1,4 @@
-import { Component, inject } from '@angular/core';
-import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
-import { MatButtonModule } from '@angular/material/button';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 
 @Component({
   selector: 'app-confirm-dialog',
@@ -9,5 +7,17 @@ import { MatButtonModule } from '@angular/material/button';
   styleUrls: ['./confirm-dialog.component.scss']
 })
 export class ConfirmDialogComponent {
-  data = inject(MAT_DIALOG_DATA) as {title?:string,message:string};
+  @Input() title = 'Confirm';
+  @Input() message = '';
+  @Input() confirmLabel = 'Confirm';
+  @Input() cancelLabel = 'Cancel';
+  @Input() severity: 'danger' | 'warn' | 'info' = 'danger';
+
+  @Output() confirmed = new EventEmitter<void>();
+  @Output() cancelled = new EventEmitter<void>();
+  @Output() closed = new EventEmitter<void>();
+
+  onHide(): void {
+    this.closed.emit();
+  }
 }

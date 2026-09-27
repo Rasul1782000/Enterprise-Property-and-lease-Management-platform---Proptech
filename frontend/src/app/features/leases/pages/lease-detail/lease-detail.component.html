@@ -1,55 +1,181 @@
-  @if (loading()) { <div class="flex justify-center py-12"><mat-spinner diameter="40"></mat-spinner></div> }
-  @else if (lease()) {
-    <div class="space-y-6">
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <div class="flex items-center gap-3 mb-2">
-            <h1 class="page-title">{{ lease()!.code }}</h1>
-            <span class="text-xs px-2 py-1 rounded" [ngClass]="getStatusClass(lease()!.status)">{{ lease()!.status }}</span>
-          </div>
-          <p class="text-slate-500">{{ lease()!.tenant?.first_name }} {{ lease()!.tenant?.last_name }} · {{ lease()!.unit?.name }} · {{ lease()!.property?.name }}</p>
-        </div>
-        <div class="flex gap-2">
-          <button mat-stroked-button (click)="editLease()"><mat-icon>edit</mat-icon> Edit</button>
-          <button mat-stroked-button (click)="generateDocument()"><mat-icon>picture_as_pdf</mat-icon> Generate PDF</button>
-        </div>
+@if (lease(); as l) {
+  <div class="lease-detail">
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">{{ l.code }}</h1>
+        <p class="page-subtitle">
+          {{ l.tenant?.first_name }} {{ l.tenant?.last_name }} &middot; {{ l.unit?.name }} &middot; {{ l.property?.name }}
+        </p>
       </div>
-
-<div class="grid grid-cols-2 md:grid-cols-5 gap-4">
-<mat-card class="stat-card"><mat-card-content><div class="flex items-center justify-between"><div><p class="text-sm text-slate-500">Rent</p><p class="text-2xl font-bold">${{lease()!.rent_amount}}</p></div><mat-icon class="text-emerald-500 text-3xl">attach_money</mat-icon></div></mat-card-content></mat-card>
-<mat-card class="stat-card"><mat-card-content><div class="flex items-center justify-between"><div><p class="text-sm text-slate-500">Deposit</p><p class="text-2xl font-bold">${{lease()!.deposit_amount}}</p></div><mat-icon class="text-blue-500 text-3xl">account_balance_wallet</mat-icon></div></mat-card-content></mat-card>
-<mat-card class="stat-card"><mat-card-content><div class="flex items-center justify-between"><div><p class="text-sm text-slate-500">Frequency</p><p class="text-2xl font-bold capitalize">{{lease()!.payment_frequency}}</p></div><mat-icon class="text-purple-500 text-3xl">schedule</mat-icon></div></mat-card-content></mat-card>
-<mat-card class="stat-card"><mat-card-content><div class="flex items-center justify-between"><div><p class="text-sm text-slate-500">Type</p><p class="text-2xl font-bold capitalize">{{lease()!.type}}</p></div><mat-icon class="text-amber-500 text-3xl">category</mat-icon></div></mat-card-content></mat-card>
-<mat-card class="stat-card"><mat-card-content><div class="flex items-center justify-between"><div><p class="text-sm text-slate-500">Term</p><p class="text-2xl font-bold">{{ lease()!.start_date | date:'shortDate' }} – {{ lease()!.end_date | date:'shortDate' }}</p></div><mat-icon class="text-indigo-500 text-3xl">date_range</mat-icon></div></mat-card-content></mat-card>
-</div>
-
-      <mat-tab-group dynamicHeight>
-        <mat-tab label="Invoices">
-          <div class="p-4">
-            @if (invoicesLoading()) { <div class="flex justify-center py-8"><mat-spinner></mat-spinner></div> }
-            @else {
-              <div class="flex justify-between items-center mb-4"><h3>Invoices ({{ invoices().length }})</h3><button mat-flat-button color="primary" routerLink="/invoices" [queryParams]="{lease_id: lease()!.id}"><mat-icon>add</mat-icon> Create Invoice</button></div>
-              <table mat-table [dataSource]="invoices()" class="w-full">
-                <ng-container matColumnDef="code"><th mat-header-cell *matHeaderCellDef>Code</th><td mat-cell *matCellDef="let i"><span class="font-mono text-xs">{{i.code}}</span></td></ng-container>
-                <ng-container matColumnDef="type"><th mat-header-cell *matHeaderCellDef>Type</th><td mat-cell *matCellDef="let i">{{i.type}}</td></ng-container>
-                <ng-container matColumnDef="issue_date"><th mat-header-cell *matHeaderCellDef>Issue Date</th><td mat-cell *matCellDef="let i">{{i.issue_date | date:'shortDate'}}</td></ng-container>
-                <ng-container matColumnDef="due_date"><th mat-header-cell *matHeaderCellDef>Due Date</th><td mat-cell *matCellDef="let i">{{i.due_date | date:'shortDate'}}</td></ng-container>
-                <ng-container matColumnDef="amount"><th mat-header-cell *matHeaderCellDef>Amount</th><td mat-cell *matCellDef="let i">${{i.amount}}</td></ng-container>
-                <ng-container matColumnDef="status"><th mat-header-cell *matHeaderCellDef>Status</th><td mat-cell *matCellDef="let i"><span class="text-xs px-2 py-1 rounded" [ngClass]="getInvoiceStatusClass(i.status)">{{i.status}}</span></td></ng-container>
-                <ng-container matColumnDef="actions"><th mat-header-cell *matHeaderCellDef></th><td mat-cell *matCellDef="let i"><button mat-icon-button [routerLink]="['/invoices', i.id]"><mat-icon>visibility</mat-icon></button></td></ng-container>
-                <tr mat-header-row *matHeaderRowDef="invoiceCols"></tr>
-                <tr mat-row *matRowDef="let row; columns: invoiceCols;" class="hover:bg-slate-50"></tr>
-              </table>
-            }
-          </div>
-        </mat-tab>
-        <mat-tab label="Details">
-          <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div><h4 class="font-medium mb-2">Lease Terms</h4><dl class="space-y-2"><div class="grid grid-cols-2 gap-2"><dt class="text-slate-500">Code</dt><dd class="font-medium">{{ lease()!.code }}</dd><dt class="text-slate-500">Type</dt><dd class="font-medium">{{ lease()!.type }}</dd><dt class="text-slate-500">Status</dt><dd class="font-medium">{{ lease()!.status }}</dd><dt class="text-slate-500">Escalation</dt><dd class="font-medium">{{ lease()!.escalation_clause || '—' }}</dd><dt class="text-slate-500">Renewal Options</dt><dd class="font-medium">{{ lease()!.renewal_options }}</dd><dt class="text-slate-500">Payment Freq.</dt><dd class="font-medium">{{ lease()!.payment_frequency }}</dd></div></dl></div>
-            <div><h4 class="font-medium mb-2">Dates</h4><dl class="space-y-2"><div class="grid grid-cols-2 gap-2"><dt class="text-slate-500">Start Date</dt><dd class="font-medium">{{ lease()!.start_date | date:'mediumDate' }}</dd><dt class="text-slate-500">End Date</dt><dd class="font-medium">{{ lease()!.end_date | date:'mediumDate' }}</dd><dt class="text-slate-500">Signed At</dt><dd class="font-medium">{{ lease()!.signed_at ? (lease()!.signed_at | date:'mediumDate') : 'Not signed' }}</dd><dt class="text-slate-500">Terminated At</dt><dd class="font-medium">{{ lease()!.terminated_at ? (lease()!.terminated_at | date:'mediumDate') : '—' }}</dd></div></dl></div>
-            <div class="md:col-span-2"><h4 class="font-medium mb-2">Terms</h4><p class="text-slate-600 whitespace-pre-wrap">{{ lease()!.terms || 'No terms specified' }}</p></div>
-          </div>
-        </mat-tab>
-      </mat-tab-group>
+      <div class="page-actions">
+        <p-tag [value]="l.status" [severity]="statusSeverity(l.status)" />
+        <p-button label="Edit" icon="pi pi-pencil" [outlined]="true" (onClick)="editLease()" />
+        <p-button label="Generate PDF" icon="pi pi-file-pdf" [outlined]="true" (onClick)="generateDocument()" />
+      </div>
     </div>
-  }
+
+    <div class="stat-grid">
+      <p-card class="stat-card">
+        <ng-template #content>
+          <div class="stat-row">
+            <div>
+              <p class="stat-label">Rent</p>
+              <p class="stat-value">{{ money(l.rent_amount) }}</p>
+            </div>
+            <i class="pi pi-dollar stat-icon stat-icon-success"></i>
+          </div>
+        </ng-template>
+      </p-card>
+
+      <p-card class="stat-card">
+        <ng-template #content>
+          <div class="stat-row">
+            <div>
+              <p class="stat-label">Deposit</p>
+              <p class="stat-value">{{ money(l.deposit_amount) }}</p>
+            </div>
+            <i class="pi pi-wallet stat-icon stat-icon-info"></i>
+          </div>
+        </ng-template>
+      </p-card>
+
+      <p-card class="stat-card">
+        <ng-template #content>
+          <div class="stat-row">
+            <div>
+              <p class="stat-label">Frequency</p>
+              <p class="stat-value stat-value-text">{{ l.payment_frequency }}</p>
+            </div>
+            <i class="pi pi-calendar stat-icon stat-icon-purple"></i>
+          </div>
+        </ng-template>
+      </p-card>
+
+      <p-card class="stat-card">
+        <ng-template #content>
+          <div class="stat-row">
+            <div>
+              <p class="stat-label">Type</p>
+              <p class="stat-value stat-value-text">{{ l.type }}</p>
+            </div>
+            <i class="pi pi-building stat-icon stat-icon-warning"></i>
+          </div>
+        </ng-template>
+      </p-card>
+
+      <p-card class="stat-card">
+        <ng-template #content>
+          <div class="stat-row">
+            <div>
+              <p class="stat-label">Days Left</p>
+              <p class="stat-value">{{ daysUntil(l.end_date) }}</p>
+            </div>
+            <i class="pi pi-clock stat-icon stat-icon-indigo"></i>
+          </div>
+        </ng-template>
+      </p-card>
+    </div>
+
+    <p-card>
+      <ng-template #content>
+        <p-tabs value="0">
+          <p-tablist>
+            <p-tab value="0">Invoices ({{ invoices().length }})</p-tab>
+            <p-tab value="1">Details</p-tab>
+          </p-tablist>
+          <p-tabpanels>
+            <p-tabpanel value="0">
+              <div class="tab-toolbar">
+                <h3 class="tab-heading">Invoices</h3>
+                <p-button label="Create Invoice" icon="pi pi-plus" routerLink="/invoices" [queryParams]="{ lease_id: l.id }" />
+              </div>
+
+              <p-table
+                [value]="invoices()"
+                [lazy]="true"
+                [loading]="invoicesLoading()"
+                [rowHover]="true"
+                [tableStyle]="{ 'min-width': '55rem' }"
+              >
+                <ng-template #header>
+                  <tr>
+                    <th pSortableColumn="code">Code <p-sortIcon field="code" /></th>
+                    <th>Type</th>
+                    <th pSortableColumn="issue_date">Issue Date <p-sortIcon field="issue_date" /></th>
+                    <th pSortableColumn="due_date">Due Date <p-sortIcon field="due_date" /></th>
+                    <th pSortableColumn="amount">Amount <p-sortIcon field="amount" /></th>
+                    <th>Status</th>
+                    <th></th>
+                  </tr>
+                </ng-template>
+
+                <ng-template #body let-row>
+                  <tr>
+                    <td><span class="code-chip">{{ row.code }}</span></td>
+                    <td class="capitalize">{{ row.type }}</td>
+                    <td>{{ dateOnly(row.issue_date) }}</td>
+                    <td>{{ dateOnly(row.due_date) }}</td>
+                    <td class="font-semibold">{{ money(row.amount) }}</td>
+                    <td><p-tag [value]="row.status" [severity]="statusSeverity(row.status)" /></td>
+                    <td>
+                      <p-button
+                        icon="pi pi-eye"
+                        [text]="true"
+                        [rounded]="true"
+                        ariaLabel="View invoice"
+                        [routerLink]="['/invoices', row.id]"
+                      />
+                    </td>
+                  </tr>
+                </ng-template>
+
+                <ng-template #emptymessage>
+                  <div class="empty-state">
+                    <i class="pi pi-inbox"></i>
+                    <p>No records found</p>
+                  </div>
+                </ng-template>
+              </p-table>
+            </p-tabpanel>
+
+            <p-tabpanel value="1">
+              <div class="details-grid">
+                <div>
+                  <h4 class="section-heading">Lease Terms</h4>
+                  <ul class="detail-list">
+                    <li><span>Code</span><strong>{{ l.code }}</strong></li>
+                    <li><span>Type</span><strong class="capitalize">{{ l.type }}</strong></li>
+                    <li><span>Status</span><strong class="capitalize">{{ l.status }}</strong></li>
+                    <li><span>Escalation</span><strong>{{ l.escalation_clause || '—' }}</strong></li>
+                    <li><span>Renewal Options</span><strong>{{ l.renewal_options }}</strong></li>
+                    <li><span>Payment Freq.</span><strong class="capitalize">{{ l.payment_frequency }}</strong></li>
+                  </ul>
+                </div>
+
+                <div>
+                  <h4 class="section-heading">Dates</h4>
+                  <ul class="detail-list">
+                    <li><span>Start Date</span><strong>{{ dateOnly(l.start_date) }}</strong></li>
+                    <li><span>End Date</span><strong>{{ dateOnly(l.end_date) }}</strong></li>
+                    <li><span>Signed At</span><strong>{{ l.signed_at ? dateOnly(l.signed_at) : 'Not signed' }}</strong></li>
+                    <li><span>Terminated At</span><strong>{{ l.terminated_at ? dateOnly(l.terminated_at) : '—' }}</strong></li>
+                    <li><span>Days Left</span><strong>{{ daysUntil(l.end_date) }}</strong></li>
+                  </ul>
+                </div>
+
+                <div class="details-full">
+                  <h4 class="section-heading">Terms</h4>
+                  <p class="terms-copy">{{ l.terms || 'No terms specified' }}</p>
+                </div>
+              </div>
+            </p-tabpanel>
+          </p-tabpanels>
+        </p-tabs>
+      </ng-template>
+    </p-card>
+  </div>
+} @else {
+  <div class="flex justify-center py-12">
+    <p-progressSpinner [style]="{ width: '40px', height: '40px' }" />
+  </div>
+}

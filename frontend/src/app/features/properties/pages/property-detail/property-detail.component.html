@@ -1,178 +1,225 @@
   @if (loading()) {
     <div class="flex justify-center py-12">
-      <mat-spinner diameter="40"></mat-spinner>
+      <p-progressSpinner [style]="{ width: '40px', height: '40px' }" />
     </div>
-  } @else if (property()) {
+  } @else if (property(); as p) {
     <div class="space-y-6">
-      <!-- Header -->
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div class="page-header">
         <div>
           <div class="flex items-center gap-3 mb-2">
-            <h1 class="page-title">{{ property()!.name }}</h1>
-            <span class="text-xs px-2 py-1 rounded"
-              [ngClass]="property()!.status==='active'?'bg-emerald-100 text-emerald-700':'bg-slate-100 text-slate-700'">
-              {{ property()!.status }}
-            </span>
+            <h1 class="page-title">{{ p.name }}</h1>
+            <p-tag [value]="p.status" [severity]="statusSeverity(p.status)" />
           </div>
-          <p class="text-slate-500">{{ property()!.address }}, {{ property()!.city }}, {{ property()!.state }} {{ property()!.zip }}</p>
+          <p class="page-subtitle">{{ p.address }}, {{ p.city }}, {{ p.state }} {{ p.zip }}</p>
         </div>
         <div class="flex gap-2">
-          <button mat-stroked-button (click)="editProperty()">
-            <mat-icon>edit</mat-icon> Edit
-          </button>
-          <button mat-flat-button color="primary" (click)="selectProperty()">
-            <mat-icon>check_circle</mat-icon> Select Property
-          </button>
+          <p-button label="Edit" icon="pi pi-pencil" [outlined]="true" (onClick)="editProperty()" />
+          <p-button label="Select Property" icon="pi pi-check-circle" (onClick)="selectProperty()" />
         </div>
       </div>
 
-      <!-- Stats Cards -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <mat-card class="stat-card">
-          <mat-card-content>
-            <div class="flex items-center justify-between">
+      <div class="stat-grid">
+        <p-card class="stat-card">
+          <ng-template #content>
+            <div class="stat-row">
               <div>
-                <p class="text-sm text-slate-500">Buildings</p>
-                <p class="text-2xl font-bold">{{ buildings().length }}</p>
+                <p class="stat-label">Buildings</p>
+                <p class="stat-value">{{ buildings().length }}</p>
               </div>
-              <mat-icon class="text-blue-500 text-3xl">business</mat-icon>
+              <i class="pi pi-building stat-icon text-primary-600"></i>
             </div>
-          </mat-card-content>
-        </mat-card>
-        <mat-card class="stat-card">
-          <mat-card-content>
-            <div class="flex items-center justify-between">
+          </ng-template>
+        </p-card>
+        <p-card class="stat-card">
+          <ng-template #content>
+            <div class="stat-row">
               <div>
-                <p class="text-sm text-slate-500">Total Units</p>
-                <p class="text-2xl font-bold">{{ property()!.units_count }}</p>
+                <p class="stat-label">Total Units</p>
+                <p class="stat-value">{{ p.units_count }}</p>
               </div>
-              <mat-icon class="text-emerald-500 text-3xl">home</mat-icon>
+              <i class="pi pi-home stat-icon text-primary-600"></i>
             </div>
-          </mat-card-content>
-        </mat-card>
-        <mat-card class="stat-card">
-          <mat-card-content>
-            <div class="flex items-center justify-between">
+          </ng-template>
+        </p-card>
+        <p-card class="stat-card">
+          <ng-template #content>
+            <div class="stat-row">
               <div>
-                <p class="text-sm text-slate-500">Occupancy</p>
-                <p class="text-2xl font-bold">{{ property()!.occupancy_rate }}%</p>
+                <p class="stat-label">Occupancy</p>
+                <p class="stat-value">{{ pct(p.occupancy_rate) }}</p>
               </div>
-              <mat-icon class="text-purple-500 text-3xl">analytics</mat-icon>
+              <i class="pi pi-chart-line stat-icon text-primary-600"></i>
             </div>
-          </mat-card-content>
-        </mat-card>
-        <mat-card class="stat-card">
-          <mat-card-content>
-            <div class="flex items-center justify-between">
+          </ng-template>
+        </p-card>
+        <p-card class="stat-card">
+          <ng-template #content>
+            <div class="stat-row">
               <div>
-                <p class="text-sm text-slate-500">Type</p>
-                <p class="text-2xl font-bold text-capitalize">{{ property()!.type }}</p>
+                <p class="stat-label">Type</p>
+                <p class="stat-value capitalize">{{ p.type }}</p>
               </div>
-              <mat-icon class="text-amber-500 text-3xl">category</mat-icon>
+              <i class="pi pi-building stat-icon text-primary-500"></i>
             </div>
-          </mat-card-content>
-        </mat-card>
+          </ng-template>
+        </p-card>
       </div>
 
-      <!-- Tabs -->
-      <mat-tab-group dynamicHeight>
-        <mat-tab label="Buildings">
-          <div class="p-4">
-            @if (buildingsLoading()) {
-              <div class="flex justify-center py-8"><mat-spinner></mat-spinner></div>
-            } @else {
+      <p-tabs value="0">
+        <p-tablist>
+          <p-tab value="0">Buildings</p-tab>
+          <p-tab value="1">Units</p-tab>
+          <p-tab value="2">Details</p-tab>
+        </p-tablist>
+        <p-tabpanels>
+          <p-tabpanel value="0">
+            <div class="tab-body">
               <div class="flex justify-between items-center mb-4">
                 <h3>Buildings ({{ buildings().length }})</h3>
-                <button mat-flat-button color="primary" routerLink="/buildings" [queryParams]="{property_id: property()!.id}">
-                  <mat-icon>add</mat-icon> Add Building
-                </button>
+                <p-button label="Add Building" icon="pi pi-plus" (onClick)="goToBuildings()" />
               </div>
-              <table mat-table [dataSource]="buildings()" class="w-full">
-                <ng-container matColumnDef="code"><th mat-header-cell *matHeaderCellDef>Code</th><td mat-cell *matCellDef="let b"><span class="font-mono text-xs">{{b.code}}</span></td></ng-container>
-                <ng-container matColumnDef="name"><th mat-header-cell *matHeaderCellDef>Name</th><td mat-cell *matCellDef="let b">{{b.name}}</td></ng-container>
-                <ng-container matColumnDef="floors"><th mat-header-cell *matHeaderCellDef>Floors</th><td mat-cell *matCellDef="let b">{{b.floors}}</td></ng-container>
-                <ng-container matColumnDef="units_count"><th mat-header-cell *matHeaderCellDef>Units</th><td mat-cell *matCellDef="let b">{{b.units_count}}</td></ng-container>
-                <ng-container matColumnDef="status"><th mat-header-cell *matHeaderCellDef>Status</th><td mat-cell *matCellDef="let b"><span class="text-xs px-2 py-1 rounded" [ngClass]="b.status==='active'?'bg-emerald-100 text-emerald-700':b.status==='under_maintenance'?'bg-amber-100 text-amber-700':'bg-slate-100'">{{b.status}}</span></td></ng-container>
-                <ng-container matColumnDef="actions"><th mat-header-cell *matHeaderCellDef></th><td mat-cell *matCellDef="let b"><button mat-icon-button [routerLink]="['/buildings', b.id]"><mat-icon>visibility</mat-icon></button></td></ng-container>
-                <tr mat-header-row *matHeaderRowDef="buildingCols"></tr>
-                <tr mat-row *matRowDef="let row; columns: buildingCols;" class="hover:bg-slate-50"></tr>
-              </table>
-            }
-          </div>
-        </mat-tab>
+              <p-table
+                [value]="buildings()"
+                [loading]="buildingsLoading()"
+                [rowHover]="true"
+                [tableStyle]="{ 'min-width': '50rem' }">
+                <ng-template #header>
+                  <tr>
+                    <th>Code</th>
+                    <th>Name</th>
+                    <th class="text-right">Floors</th>
+                    <th class="text-right">Units</th>
+                    <th>Status</th>
+                    <th></th>
+                  </tr>
+                </ng-template>
+                <ng-template #body let-row>
+                  <tr>
+                    <td><span class="code-chip">{{ row.code }}</span></td>
+                    <td>{{ row.name }}</td>
+                    <td class="text-right">{{ row.floors }}</td>
+                    <td class="text-right">{{ row.units_count }}</td>
+                    <td><p-tag [value]="row.status" [severity]="statusSeverity(row.status)" /></td>
+                    <td>
+                      <p-button
+                        icon="pi pi-eye"
+                        [text]="true"
+                        [rounded]="true"
+                        ariaLabel="View building"
+                        (onClick)="goToBuilding(row.id)"
+                      />
+                    </td>
+                  </tr>
+                </ng-template>
+                <ng-template #emptymessage>
+                  <div class="empty-state">
+                    <i class="pi pi-inbox"></i>
+                    <p>No records found</p>
+                  </div>
+                </ng-template>
+              </p-table>
+            </div>
+          </p-tabpanel>
 
-        <mat-tab label="Units">
-          <div class="p-4">
-            @if (unitsLoading()) {
-              <div class="flex justify-center py-8"><mat-spinner></mat-spinner></div>
-            } @else {
+          <p-tabpanel value="1">
+            <div class="tab-body">
               <div class="flex justify-between items-center mb-4">
                 <h3>Units ({{ units().length }})</h3>
-                <button mat-flat-button color="primary" routerLink="/units" [queryParams]="{property_id: property()!.id}">
-                  <mat-icon>add</mat-icon> Add Unit
-                </button>
+                <p-button label="Add Unit" icon="pi pi-plus" (onClick)="goToUnits()" />
               </div>
-              <table mat-table [dataSource]="units()" class="w-full">
-                <ng-container matColumnDef="code"><th mat-header-cell *matHeaderCellDef>Code</th><td mat-cell *matCellDef="let u"><span class="font-mono text-xs">{{u.code}}</span></td></ng-container>
-                <ng-container matColumnDef="name"><th mat-header-cell *matHeaderCellDef>Name</th><td mat-cell *matCellDef="let u">{{u.name}}</td></ng-container>
-                <ng-container matColumnDef="type"><th mat-header-cell *matHeaderCellDef>Type</th><td mat-cell *matCellDef="let u"><span class="text-xs border px-2 py-1 rounded">{{u.type}}</span></td></ng-container>
-                <ng-container matColumnDef="floor"><th mat-header-cell *matHeaderCellDef>Floor</th><td mat-cell *matCellDef="let u">{{u.floor}}</td></ng-container>
-                <ng-container matColumnDef="base_rent"><th mat-header-cell *matHeaderCellDef>Base Rent</th><td mat-cell *matCellDef="let u">${{u.base_rent}}</td></ng-container>
-                <ng-container matColumnDef="status"><th mat-header-cell *matHeaderCellDef>Status</th><td mat-cell *matCellDef="let u"><span class="text-xs px-2 py-1 rounded" [ngClass]="getUnitStatusClass(u.status)">{{u.status}}</span></td></ng-container>
-                <ng-container matColumnDef="current_tenant"><th mat-header-cell *matHeaderCellDef>Tenant</th><td mat-cell *matCellDef="let u">{{u.current_tenant_id ? 'Occupied' : 'Vacant'}}</td></ng-container>
-                <ng-container matColumnDef="actions"><th mat-header-cell *matHeaderCellDef></th><td mat-cell *matCellDef="let u"><button mat-icon-button [routerLink]="['/units', u.id]"><mat-icon>visibility</mat-icon></button></td></ng-container>
-                <tr mat-header-row *matHeaderRowDef="unitCols"></tr>
-                <tr mat-row *matRowDef="let row; columns: unitCols;" class="hover:bg-slate-50"></tr>
-              </table>
-            }
-          </div>
-        </mat-tab>
+              <p-table
+                [value]="units()"
+                [loading]="unitsLoading()"
+                [rowHover]="true"
+                [tableStyle]="{ 'min-width': '60rem' }">
+                <ng-template #header>
+                  <tr>
+                    <th>Code</th>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th class="text-right">Floor</th>
+                    <th class="text-right">Base Rent</th>
+                    <th>Status</th>
+                    <th>Tenant</th>
+                    <th></th>
+                  </tr>
+                </ng-template>
+                <ng-template #body let-row>
+                  <tr>
+                    <td><span class="code-chip">{{ row.code }}</span></td>
+                    <td>{{ row.name }}</td>
+                    <td><span class="type-chip">{{ row.type }}</span></td>
+                    <td class="text-right">{{ row.floor }}</td>
+                    <td class="text-right">{{ money(row.base_rent) }}</td>
+                    <td><p-tag [value]="row.status" [severity]="statusSeverity(row.status)" /></td>
+                    <td>
+                      <p-tag
+                        [value]="row.current_tenant_id ? 'Occupied' : 'Vacant'"
+                        [severity]="row.current_tenant_id ? 'info' : 'secondary'"
+                      />
+                    </td>
+                    <td>
+                      <p-button
+                        icon="pi pi-eye"
+                        [text]="true"
+                        [rounded]="true"
+                        ariaLabel="View unit"
+                        (onClick)="goToUnit(row.id)"
+                      />
+                    </td>
+                  </tr>
+                </ng-template>
+                <ng-template #emptymessage>
+                  <div class="empty-state">
+                    <i class="pi pi-inbox"></i>
+                    <p>No records found</p>
+                  </div>
+                </ng-template>
+              </p-table>
+            </div>
+          </p-tabpanel>
 
-        <mat-tab label="Details">
-          <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <h4 class="font-medium text-slate-900 mb-2">Property Information</h4>
-              <dl class="space-y-2">
-                <div class="grid grid-cols-2 gap-2">
-                  <dt class="text-slate-500">Code</dt>
-                  <dd class="font-medium">{{ property()!.code }}</dd>
-                  <dt class="text-slate-500">Type</dt>
-                  <dd class="font-medium">{{ property()!.type }}</dd>
-                  <dt class="text-slate-500">Status</dt>
-                  <dd class="font-medium">{{ property()!.status }}</dd>
-                  <dt class="text-slate-500">Occupancy Rate</dt>
-                  <dd class="font-medium">{{ property()!.occupancy_rate }}%</dd>
-                </div>
-              </dl>
+          <p-tabpanel value="2">
+            <div class="tab-body details-grid">
+              <div>
+                <h4 class="detail-heading">Property Information</h4>
+                <ul class="detail-list">
+                  <li><span>Code</span><strong>{{ p.code }}</strong></li>
+                  <li><span>Type</span><strong class="capitalize">{{ p.type }}</strong></li>
+                  <li>
+                    <span>Status</span>
+                    <p-tag [value]="p.status" [severity]="statusSeverity(p.status)" />
+                  </li>
+                  <li><span>Occupancy Rate</span><strong>{{ pct(p.occupancy_rate) }}</strong></li>
+                  <li><span>Buildings</span><strong>{{ p.buildings_count }}</strong></li>
+                  <li><span>Units</span><strong>{{ p.units_count }}</strong></li>
+                </ul>
+              </div>
+              <div>
+                <h4 class="detail-heading">Address</h4>
+                <ul class="detail-list">
+                  <li><span>Street</span><strong>{{ p.address }}</strong></li>
+                  <li><span>City</span><strong>{{ p.city }}</strong></li>
+                  <li><span>State</span><strong>{{ p.state }}</strong></li>
+                  <li><span>ZIP</span><strong>{{ p.zip }}</strong></li>
+                  <li><span>Country</span><strong>{{ p.country }}</strong></li>
+                </ul>
+              </div>
+              <div class="details-full">
+                <h4 class="detail-heading">Timestamps</h4>
+                <ul class="detail-list">
+                  <li><span>Created</span><strong>{{ dateOnly(p.created_at) }}</strong></li>
+                  <li><span>Updated</span><strong>{{ dateOnly(p.updated_at) }}</strong></li>
+                </ul>
+              </div>
             </div>
-            <div>
-              <h4 class="font-medium text-slate-900 mb-2">Address</h4>
-              <dl class="space-y-2">
-                <div class="grid grid-cols-2 gap-2">
-                  <dt class="text-slate-500">Street</dt>
-                  <dd class="font-medium">{{ property()!.address }}</dd>
-                  <dt class="text-slate-500">City</dt>
-                  <dd class="font-medium">{{ property()!.city }}</dd>
-                  <dt class="text-slate-500">State</dt>
-                  <dd class="font-medium">{{ property()!.state }}</dd>
-                  <dt class="text-slate-500">ZIP</dt>
-                  <dd class="font-medium">{{ property()!.zip }}</dd>
-                  <dt class="text-slate-500">Country</dt>
-                  <dd class="font-medium">{{ property()!.country }}</dd>
-                </div>
-              </dl>
-            </div>
-            <div class="md:col-span-2">
-              <h4 class="font-medium text-slate-900 mb-2">Timestamps</h4>
-              <dl class="grid grid-cols-2 gap-2">
-                <dt class="text-slate-500">Created</dt>
-                <dd class="font-medium">{{ property()!.created_at | date:'medium' }}</dd>
-                <dt class="text-slate-500">Updated</dt>
-                <dd class="font-medium">{{ property()!.updated_at | date:'medium' }}</dd>
-              </dl>
-            </div>
-          </div>
-        </mat-tab>
-      </mat-tab-group>
+          </p-tabpanel>
+        </p-tabpanels>
+      </p-tabs>
+    </div>
+  } @else {
+    <div class="empty-state">
+      <i class="pi pi-inbox"></i>
+      <p>Property not found</p>
     </div>
   }

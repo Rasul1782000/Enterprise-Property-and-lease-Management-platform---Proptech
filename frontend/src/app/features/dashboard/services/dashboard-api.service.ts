@@ -37,19 +37,19 @@ export class DashboardApiService {
     return this.api.get<DashboardStats>(`${this.endpoint}/stats`);
   }
 
-  getOccupancyChart(months: number = 12): Observable<ChartData> {
+  getOccupancyChart(months = 12): Observable<ChartData> {
     return this.api.get<ChartData>(`${this.endpoint}/occupancy-chart`, { months });
   }
 
-  getRevenueChart(months: number = 12): Observable<ChartData> {
+  getRevenueChart(months = 12): Observable<ChartData> {
     return this.api.get<ChartData>(`${this.endpoint}/revenue-chart`, { months });
   }
 
-  getExpiringLeasesChart(months: number = 6): Observable<ChartData> {
+  getExpiringLeasesChart(months = 6): Observable<ChartData> {
     return this.api.get<ChartData>(`${this.endpoint}/expiring-leases-chart`, { months });
   }
 
-  getRecentActivity(limit: number = 10): Observable<RecentActivity[]> {
+  getRecentActivity(limit = 10): Observable<RecentActivity[]> {
     return this.api.get<RecentActivity[]>(`${this.endpoint}/recent-activity`, { limit });
   }
 

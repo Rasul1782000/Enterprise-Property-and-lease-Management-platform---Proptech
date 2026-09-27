@@ -1,23 +1,27 @@
-  <div class="bg-slate-50 rounded-xl border p-4">
-    <form [formGroup]="form" class="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-      <mat-form-field appearance="outline" class="flex-1 min-w-[200px]">
-        <mat-label>Search</mat-label>
-        <input matInput formControlName="search" placeholder="Search by name, code, address...">
-        <mat-icon matPrefix>search</mat-icon>
-      </mat-form-field>
+<div class="filter-shell">
+  <form [formGroup]="form" class="filter-form">
+    <p-iconfield class="filter-search">
+      <p-inputicon styleClass="pi pi-search" />
+      <input pInputText formControlName="search" [placeholder]="searchPlaceholder" />
+    </p-iconfield>
 
-      <mat-form-field appearance="outline" class="w-full sm:w-48">
-        <mat-label>Status</mat-label>
-        <mat-select formControlName="status">
-          <mat-option value="">All Status</mat-option>
-          @for (opt of statusOptions; track opt.value) {
-            <mat-option [value]="opt.value">{{opt.label}}</mat-option>
-          }
-        </mat-select>
-      </mat-form-field>
+    <p-select
+      formControlName="status"
+      [options]="[{ label: 'All Status', value: '' }, ...statusOptions]"
+      optionLabel="label"
+      optionValue="value"
+      placeholder="All Status"
+      class="filter-status"
+    />
 
-      <button mat-stroked-button type="button" (click)="clearFilters()" [disabled]="!hasFilters()">
-        <mat-icon>clear</mat-icon> Clear
-      </button>
-    </form>
-  </div>
+    <p-button
+      type="button"
+      label="Clear"
+      icon="pi pi-filter-slash"
+      severity="secondary"
+      [outlined]="true"
+      [disabled]="!hasFilters()"
+      (onClick)="clearFilters()"
+    />
+  </form>
+</div>

@@ -1,0 +1,189 @@
+<div class="space-y-5">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Vault Management</h1>
+      <p class="page-subtitle">Title deeds, certificates, originals and deposit instruments held in the document vault.</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <p-button label="Refresh" icon="pi pi-refresh" severity="secondary" [outlined]="true" (onClick)="reload()" />
+    </div>
+  </div>
+
+  <app-stat-cards [cards]="cards()" />
+
+  <p-card class="table-card">
+    <ng-template #content>
+      <div class="flex flex-wrap items-center gap-3 mb-4">
+        <p-iconfield>
+          <p-inputicon styleClass="pi pi-search" />
+          <input pInputText type="text" placeholder="Search code, title, holder…" [ngModel]="searchTerm" (ngModelChange)="onSearch($event)" />
+        </p-iconfield>
+
+        <p-select
+          [options]="statuses"
+          optionLabel="label"
+          optionValue="value"
+          [ngModel]="statusFilter"
+          (ngModelChange)="onStatusFilter($event)"
+          placeholder="All statuses"
+          [showClear]="true"
+          styleClass="w-52" />
+
+        <p-button label="Reset" icon="pi pi-filter-slash" severity="secondary" [text]="true" (onClick)="resetFilters()" />
+        <span class="ml-auto text-sm text-zinc-500">{{ rows().length }} of {{ total() }}</span>
+      </div>
+
+      <p-table
+        [value]="rows()"
+        [lazy]="true"
+        [lazyLoadOnInit]="false"
+        [paginator]="true"
+        [rows]="perPage"
+        [rowsPerPageOptions]="[10, 15, 25, 50]"
+        [totalRecords]="total()"
+        [loading]="loading()"
+        [rowHover]="true"
+        [tableStyle]="{ 'min-width': '72rem' }"
+        (onLazyLoad)="onLazyLoad($event)">
+
+        <ng-template #header>
+          <tr>
+            <th pSortableColumn="code">Code <p-sorticon field="code" /></th>
+            <th pSortableColumn="title">Asset <p-sorticon field="title" /></th>
+            <th>Property / Unit</th>
+            <th>Holder</th>
+            <th>Safe</th>
+            <th pSortableColumn="deposited_on">Deposited <p-sorticon field="deposited_on" /></th>
+            <th pSortableColumn="expires_on">Expires <p-sorticon field="expires_on" /></th>
+            <th pSortableColumn="value">Value <p-sorticon field="value" /></th>
+            <th>Status</th>
+            <th style="width: 12rem"></th>
+          </tr>
+        </ng-template>
+
+        <ng-template #body let-row>
+          <tr>
+            <td><span class="chip-muted font-mono text-xs px-2 py-1 rounded">{{ row.code }}</span></td>
+            <td>
+              <div class="font-medium">{{ row.title }}</div>
+              <div class="text-xs text-zinc-400">{{ titleCase(row.asset_type) }}</div>
+            </td>
+            <td>
+              <div>{{ row.property_name }}</div>
+              @if (row.unit_code) { <div class="text-xs text-zinc-400">{{ row.unit_code }}</div> }
+            </td>
+            <td>{{ row.holder }}</td>
+            <td>
+              <div class="font-mono text-xs">{{ row.safe_id }}</div>
+              <div class="text-xs text-zinc-400">{{ row.safe_location }}</div>
+            </td>
+            <td>{{ dateOnly(row.deposited_on) }}</td>
+            <td [class.text-primary-900]="isOverdue(row.expires_on)">
+              {{ row.expires_on ? dateOnly(row.expires_on) : '—' }}
+            </td>
+            <td>{{ row.value ? money(row.value) : '—' }}</td>
+            <td><p-tag [value]="titleCase(row.status)" [severity]="severity(row.status)" /></td>
+            <td>
+              <div class="flex items-center gap-1">
+                <p-button icon="pi pi-eye" [text]="true" [rounded]="true" severity="secondary" pTooltip="Inspect" (onClick)="open(row)" />
+                @if (row.status === 'sealed' || row.status === 'active') {
+                  <p-button icon="pi pi-unlock" [text]="true" [rounded]="true" severity="warn" pTooltip="Release" (onClick)="release(row)" />
+                }
+                @if (row.status === 'released') {
+                  <p-button icon="pi pi-lock" [text]="true" [rounded]="true" severity="success" pTooltip="Re-seal" (onClick)="seal(row)" />
+                }
+                @if (row.status === 'released') {
+                  <p-button icon="pi pi-box" [text]="true" [rounded]="true" severity="info" pTooltip="Re-activate" (onClick)="activate(row)" />
+                }
+                <p-button icon="pi pi-trash" [text]="true" [rounded]="true" severity="danger" pTooltip="Delete" (onClick)="remove(row, row.code)" />
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+
+        <ng-template #emptymessage>
+          <div class="empty-state">
+            <i class="pi pi-box"></i>
+            <p>No vault assets match these filters</p>
+          </div>
+        </ng-template>
+      </p-table>
+    </ng-template>
+  </p-card>
+
+  <p-card>
+    <ng-template #header>
+      <ng-template #title><span class="inline-flex items-center gap-2"><i class="pi pi-lock"></i> Safe register</span></ng-template>
+    </ng-template>
+    <ng-template #content>
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        @for (safe of safes(); track safe.safe_id) {
+          <div class="section-card p-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="font-semibold text-zinc-800">Safe {{ safe.safe_id }}</p>
+                <p class="text-xs text-zinc-500">{{ safe.safe_location }}</p>
+              </div>
+              <p-tag [value]="safe.assets.length + ' items'" severity="secondary" />
+            </div>
+            <p class="mt-3 text-sm text-zinc-600">
+              Held value: <span class="font-semibold">{{ safe.value ? money(safe.value) : 'n/a (title deeds)' }}</span>
+            </p>
+            <ul class="mt-2 space-y-1 text-xs text-zinc-500">
+              @for (a of safe.assets.slice(0, 3); track a.id) {
+                <li class="truncate">• {{ a.code }} — {{ a.title }}</li>
+              }
+              @if (safe.assets.length > 3) { <li class="text-zinc-400">+{{ safe.assets.length - 3 }} more</li> }
+            </ul>
+          </div>
+        }
+      </div>
+    </ng-template>
+  </p-card>
+</div>
+
+<p-drawer
+  position="right"
+  [visible]="!!selected()"
+  (visibleChange)="$event ? null : close()"
+  [style]="{ width: '32rem' }"
+  header="Asset inspection">
+  @if (selected(); as a) {
+    <div class="space-y-4">
+      <div>
+        <p class="text-xs uppercase tracking-wide text-zinc-400">{{ a.code }}</p>
+        <h2 class="text-lg font-semibold text-zinc-800">{{ a.title }}</h2>
+        <p-tag [value]="titleCase(a.status)" [severity]="severity(a.status)" />
+      </div>
+
+      <div class="grid grid-cols-2 gap-3 text-sm">
+        <div><p class="text-zinc-400 text-xs">Asset type</p><p>{{ titleCase(a.asset_type) }}</p></div>
+        <div><p class="text-zinc-400 text-xs">Documents</p><p>{{ a.document_count }}</p></div>
+        <div><p class="text-zinc-400 text-xs">Property</p><p>{{ a.property_name }}</p></div>
+        <div><p class="text-zinc-400 text-xs">Unit</p><p>{{ a.unit_code || '—' }}</p></div>
+        <div><p class="text-zinc-400 text-xs">Holder</p><p>{{ a.holder }}</p></div>
+        <div><p class="text-zinc-400 text-xs">Safe</p><p>{{ a.safe_id }} — {{ a.safe_location }}</p></div>
+        <div><p class="text-zinc-400 text-xs">Deposited</p><p>{{ dateOnly(a.deposited_on) }}</p></div>
+        <div><p class="text-zinc-400 text-xs">Expires</p><p>{{ a.expires_on ? dateOnly(a.expires_on) : 'No expiry' }}</p></div>
+        <div><p class="text-zinc-400 text-xs">Declared value</p><p>{{ a.value ? money(a.value) : '—' }}</p></div>
+        <div><p class="text-zinc-400 text-xs">Last updated</p><p>{{ dateTime(a.updated_at) }}</p></div>
+      </div>
+
+      @if (a.notes) {
+        <div class="p-3 rounded-lg bg-primary-50 text-sm text-primary-900 border border-primary-100">
+          <i class="pi pi-comment mr-1"></i>{{ a.notes }}
+        </div>
+      }
+
+      <div class="flex gap-2">
+        @if (a.status === 'sealed' || a.status === 'active') {
+          <p-button label="Release to holder" icon="pi pi-unlock" severity="warn" (onClick)="release(a)" />
+        }
+        @if (a.status === 'released') {
+          <p-button label="Re-seal" icon="pi pi-lock" severity="success" (onClick)="seal(a)" />
+        }
+        <p-button label="Close" severity="secondary" [outlined]="true" (onClick)="close()" />
+      </div>
+    </div>
+  }
+</p-drawer>

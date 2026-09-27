@@ -1,13 +1,6 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { Component, inject, signal, OnInit, Input, Output, EventEmitter } from '@angular/core';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { MessageService } from 'primeng/api';
 import { TenantsApiService, Tenant, CreateTenantDto, UpdateTenantDto } from '../../services/tenants-api.service';
 
 export interface TenantFormDialogData { mode: 'create' | 'edit'; tenant?: Tenant; }
@@ -21,9 +14,19 @@ export interface TenantFormDialogData { mode: 'create' | 'edit'; tenant?: Tenant
 export class TenantFormComponent implements OnInit {
   private fb = inject(FormBuilder);
   private api = inject(TenantsApiService);
-  private dialogRef = inject(MatDialogRef<TenantFormComponent>);
-  public data = inject(MAT_DIALOG_DATA) as TenantFormDialogData;
+  private messages = inject(MessageService);
+
+  @Input() data: TenantFormDialogData = { mode: 'create' };
+  @Output() closed = new EventEmitter<boolean>();
+
   loading = signal(false);
+
+  statusOptions = [
+    { label: 'Active', value: 'active' },
+    { label: 'Inactive', value: 'inactive' },
+    { label: 'Prospect', value: 'prospect' },
+    { label: 'Former', value: 'former' }
+  ];
 
   form: FormGroup = this.fb.group({
     code: ['', [Validators.required, Validators.maxLength(20)]],
@@ -41,6 +44,19 @@ export class TenantFormComponent implements OnInit {
 
   ngOnInit() { if (this.data.mode === 'edit' && this.data.tenant) this.form.patchValue(this.data.tenant); }
 
-  onSubmit() { if (this.form.invalid) return; this.loading.set(true); const dto = this.form.value; const req = this.data.mode === 'create' ? this.api.create(dto as CreateTenantDto) : this.api.update(this.data.tenant!.id, dto as UpdateTenantDto); req.subscribe({ next: () => this.dialogRef.close(true), error: () => this.loading.set(false) }); }
-  onCancel() { this.dialogRef.close(false); }
+  onSubmit() {
+    if (this.form.invalid) return;
+    this.loading.set(true);
+    const dto = this.form.value;
+    const req = this.data.mode === 'create' ? this.api.create(dto as CreateTenantDto) : this.api.update(this.data.tenant!.id, dto as UpdateTenantDto);
+    req.subscribe({
+      next: () => {
+        this.loading.set(false);
+        this.messages.add({ severity: 'success', summary: 'Saved', detail: this.data.mode === 'create' ? 'Tenant created' : 'Tenant updated' });
+        this.closed.emit(true);
+      },
+      error: () => this.loading.set(false)
+    });
+  }
+  onCancel() { this.closed.emit(false); }
 }

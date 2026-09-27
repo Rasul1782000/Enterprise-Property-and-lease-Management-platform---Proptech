@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { DashboardApiService, DashboardStats, RecentActivity } from '../../services/dashboard-api.service';
 
 @Component({
@@ -60,14 +60,14 @@ export class DashboardComponent implements OnInit {
 
   getActivityChipClass(type: string): string {
     const classes: Record<string, string> = {
-      'lease_created': 'bg-purple-100 text-purple-700',
-      'lease_signed': 'bg-emerald-100 text-emerald-700',
-      'lease_expiring': 'bg-amber-100 text-amber-700',
-      'payment_received': 'bg-blue-100 text-blue-700',
-      'invoice_overdue': 'bg-red-100 text-red-700',
-      'tenant_added': 'bg-indigo-100 text-indigo-700',
-      'maintenance_request': 'bg-slate-100 text-slate-700'
+      'lease_created': 'bg-primary-50 text-primary-700',
+      'lease_signed': 'bg-primary-100 text-primary-800',
+      'lease_expiring': 'bg-primary-50 text-primary-700',
+      'payment_received': 'bg-primary-100 text-primary-800',
+      'invoice_overdue': 'bg-primary-600 text-white',
+      'tenant_added': 'bg-zinc-200 text-zinc-800',
+      'maintenance_request': 'bg-zinc-100 text-zinc-600'
     };
-    return classes[type] || 'bg-slate-100 text-slate-700';
+    return classes[type] || 'bg-zinc-100 text-zinc-600';
   }
 }

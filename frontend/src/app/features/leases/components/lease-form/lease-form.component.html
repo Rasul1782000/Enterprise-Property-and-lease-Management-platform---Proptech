@@ -1,23 +1,125 @@
-  <h2 mat-dialog-title>{{ data.mode === 'create' ? 'Add Lease' : 'Edit Lease' }}</h2>
-  <mat-dialog-content class="min-w-[600px] max-h-[80vh] overflow-y-auto">
-    <form [formGroup]="form" class="space-y-4 p-2">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <mat-form-field appearance="outline" class="w-full"><mat-label>Code *</mat-label><input matInput formControlName="code" required maxlength="50"><mat-error *ngIf="form.get('code')?.hasError('required')">Code is required</mat-error></mat-form-field>
-        <mat-form-field appearance="outline" class="w-full"><mat-label>Type *</mat-label><mat-select formControlName="type" required><mat-option value="fixed">Fixed Term</mat-option><mat-option value="periodic">Periodic</mat-option><mat-option value="commercial">Commercial</mat-option><mat-option value="residential">Residential</mat-option></mat-select></mat-form-field>
-        <mat-form-field appearance="outline" class="w-full"><mat-label>Start Date *</mat-label><input matInput [matDatepicker]="startPicker" formControlName="start_date" required><mat-datepicker-toggle matSuffix [for]="startPicker"></mat-datepicker-toggle><mat-datepicker #startPicker></mat-datepicker></mat-form-field>
-        <mat-form-field appearance="outline" class="w-full"><mat-label>End Date *</mat-label><input matInput [matDatepicker]="endPicker" formControlName="end_date" required><mat-datepicker-toggle matSuffix [for]="endPicker"></mat-datepicker-toggle><mat-datepicker #endPicker></mat-datepicker></mat-form-field>
-        <mat-form-field appearance="outline" class="w-full"><mat-label>Rent Amount *</mat-label><input matInput type="number" formControlName="rent_amount" required min="0" step="0.01"></mat-form-field>
-        <mat-form-field appearance="outline" class="w-full"><mat-label>Deposit Amount *</mat-label><input matInput type="number" formControlName="deposit_amount" required min="0" step="0.01"></mat-form-field>
-        <mat-form-field appearance="outline" class="w-full"><mat-label>Payment Frequency *</mat-label><mat-select formControlName="payment_frequency" required><mat-option value="monthly">Monthly</mat-option><mat-option value="quarterly">Quarterly</mat-option><mat-option value="annually">Annually</mat-option></mat-select></mat-form-field>
-        <mat-form-field appearance="outline" class="w-full"><mat-label>Escalation Clause</mat-label><input matInput formControlName="escalation_clause" placeholder="e.g., 3% annual increase"></mat-form-field>
-        <mat-form-field appearance="outline" class="w-full"><mat-label>Renewal Options (months)</mat-label><input matInput type="number" formControlName="renewal_options" min="0" max="60"></mat-form-field>
-      </div>
-      <mat-form-field appearance="outline" class="w-full"><mat-label>Terms & Conditions</mat-label><textarea matInput formControlName="terms" rows="4"></textarea></mat-form-field>
-    </form>
-  </mat-dialog-content>
-  <mat-dialog-actions align="end" class="gap-2">
-    <button mat-button (click)="onCancel()">Cancel</button>
-    <button mat-flat-button color="primary" (click)="onSubmit()" [disabled]="form.invalid || loading()">
-      @if (loading()) { <mat-spinner diameter="20"></mat-spinner> } @else { {{ data.mode === 'create' ? 'Create' : 'Update' }} }
-    </button>
-  </mat-dialog-actions>
+<p-dialog
+  [header]="data.mode === 'create' ? 'Add Lease' : 'Edit Lease'"
+  [visible]="true"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: '42rem' }"
+  (onHide)="onCancel()"
+>
+  <form [formGroup]="form" class="lease-form">
+    <div class="field">
+      <label class="field-label" for="lease-code">Code *</label>
+      <input pInputText id="lease-code" class="w-full" formControlName="code" maxlength="50" [invalid]="isInvalid('code')" />
+      @if (form.get('code')?.hasError('required')) {
+        <small class="field-error">Code is required</small>
+      }
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="lease-type">Type *</label>
+      <p-select
+        inputId="lease-type"
+        class="w-full"
+        formControlName="type"
+        [options]="typeOptions"
+        optionLabel="label"
+        optionValue="value"
+        placeholder="Select type"
+        appendTo="body"
+      />
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="lease-start">Start Date *</label>
+      <p-datepicker
+        inputId="lease-start"
+        class="w-full"
+        formControlName="start_date"
+        [showIcon]="true"
+        appendTo="body"
+        dateFormat="M d, yy"
+      />
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="lease-end">End Date *</label>
+      <p-datepicker
+        inputId="lease-end"
+        class="w-full"
+        formControlName="end_date"
+        [showIcon]="true"
+        appendTo="body"
+        dateFormat="M d, yy"
+      />
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="lease-rent">Rent Amount *</label>
+      <p-inputnumber
+        inputId="lease-rent"
+        class="w-full"
+        formControlName="rent_amount"
+        mode="currency"
+        currency="USD"
+        locale="en-US"
+        [minFractionDigits]="2"
+        [maxFractionDigits]="2"
+      />
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="lease-deposit">Deposit Amount *</label>
+      <p-inputnumber
+        inputId="lease-deposit"
+        class="w-full"
+        formControlName="deposit_amount"
+        mode="currency"
+        currency="USD"
+        locale="en-US"
+        [minFractionDigits]="2"
+        [maxFractionDigits]="2"
+      />
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="lease-frequency">Payment Frequency *</label>
+      <p-select
+        inputId="lease-frequency"
+        class="w-full"
+        formControlName="payment_frequency"
+        [options]="frequencyOptions"
+        optionLabel="label"
+        optionValue="value"
+        placeholder="Select frequency"
+        appendTo="body"
+      />
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="lease-escalation">Escalation Clause</label>
+      <input pInputText id="lease-escalation" class="w-full" formControlName="escalation_clause" placeholder="e.g., 3% annual increase" />
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="lease-renewal">Renewal Options (months)</label>
+      <p-inputnumber inputId="lease-renewal" class="w-full" formControlName="renewal_options" [maxFractionDigits]="0" />
+    </div>
+
+    <div class="field field-full">
+      <label class="field-label" for="lease-terms">Terms &amp; Conditions</label>
+      <textarea pTextarea id="lease-terms" class="w-full" formControlName="terms" rows="4" [invalid]="isInvalid('terms')"></textarea>
+    </div>
+  </form>
+
+  <ng-template #footer>
+    <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="onCancel()" />
+    <p-button
+      [label]="data.mode === 'create' ? 'Create' : 'Update'"
+      icon="pi pi-check"
+      [loading]="loading()"
+      [disabled]="form.invalid"
+      (onClick)="onSubmit()"
+    />
+  </ng-template>
+</p-dialog>

@@ -1,32 +1,28 @@
 import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
+import { MessageService } from 'primeng/api';
 import { catchError } from 'rxjs/operators';
 
 export const errorInterceptor: HttpInterceptorFn = (req, next) => {
-  const snackBar = inject(MatSnackBar);
+  const messages = inject(MessageService);
   const router = inject(Router);
 
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
       if (error.status === 401) {
-        // Unauthorized - redirect to login
         router.navigate(['/login']);
-        snackBar.open('Session expired. Please log in again.', 'Close', { duration: 3000 });
+        messages.add({ severity: 'warn', summary: 'Session expired', detail: 'Please log in again.', life: 3000 });
       } else if (error.status === 403) {
-        // Forbidden - redirect to dashboard with message
         router.navigate(['/dashboard']);
-        snackBar.open('Access denied. You do not have permission to access this resource.', 'Close', { duration: 3000 });
+        messages.add({ severity: 'warn', summary: 'Access denied', detail: 'You do not have permission to view this resource.', life: 3000 });
       } else if (error.status >= 500) {
-        // Server error - show generic error message
-        snackBar.open('A server error occurred. Please try again later.', 'Close', { duration: 5000 });
+        messages.add({ severity: 'error', summary: 'Server error', detail: 'Something went wrong. Please try again later.', life: 5000 });
       } else if (error.error?.message) {
-        // Other errors with custom message
-        snackBar.open(error.error.message, 'Close', { duration: 3000 });
+        messages.add({ severity: 'error', summary: 'Request failed', detail: error.error.message, life: 4000 });
       }
 
       throw error;
     })
   );
-}
+};

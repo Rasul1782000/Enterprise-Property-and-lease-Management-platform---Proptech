@@ -1,76 +1,234 @@
-  <div class="max-w-3xl mx-auto space-y-6">
-    <div class="text-center">
-      <h1 class="page-title">New Lease Wizard</h1>
-      <p class="text-slate-500">Create a new lease in 4 steps</p>
-    </div>
-
-    <mat-horizontal-stepper [linear]="true" #stepper>
-      <!-- Step 1: Property & Unit -->
-      <mat-step [stepControl]="step1Form" label="Property & Unit">
-        <form [formGroup]="step1Form" class="space-y-4 p-4">
-          <h3 class="font-medium text-slate-900 mb-4">Select Property & Unit</h3>
-          <mat-form-field appearance="outline" class="w-full"><mat-label>Property *</mat-label><mat-select formControlName="property_id" required (selectionChange)="onPropertyChange($event.value)"><mat-option *ngFor="let p of properties()" [value]="p.id">{{p.name}} ({{p.code}})</mat-option></mat-select></mat-form-field>
-          <mat-form-field appearance="outline" class="w-full"><mat-label>Building *</mat-label><mat-select formControlName="building_id" required><mat-option *ngFor="let b of buildings()" [value]="b.id">{{b.name}} ({{b.code}})</mat-option></mat-select></mat-form-field>
-          <mat-form-field appearance="outline" class="w-full"><mat-label>Unit *</mat-label><mat-select formControlName="unit_id" required><mat-option *ngFor="let u of units()" [value]="u.id">{{u.name}} ({{u.code}}) - ${{u.base_rent}}/mo</mat-option></mat-select></mat-form-field>
-        </form>
-      </mat-step>
-
-      <!-- Step 2: Tenant -->
-      <mat-step [stepControl]="step2Form" label="Tenant">
-        <form [formGroup]="step2Form" class="space-y-4 p-4">
-          <h3 class="font-medium text-slate-900 mb-4">Select Tenant</h3>
-          <mat-form-field appearance="outline" class="w-full"><mat-label>Tenant *</mat-label><mat-select formControlName="tenant_id" required><mat-option *ngFor="let t of tenants()" [value]="t.id">{{t.first_name}} {{t.last_name}} ({{t.email}})</mat-option></mat-select></mat-form-field>
-        </form>
-      </mat-step>
-
-      <!-- Step 3: Lease Terms -->
-      <mat-step [stepControl]="step3Form" label="Lease Terms">
-        <form [formGroup]="step3Form" class="space-y-4 p-4">
-          <h3 class="font-medium text-slate-900 mb-4">Lease Terms</h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <mat-form-field appearance="outline" class="w-full"><mat-label>Lease Code *</mat-label><input matInput formControlName="code" required maxlength="50"></mat-form-field>
-            <mat-form-field appearance="outline" class="w-full"><mat-label>Lease Type *</mat-label><mat-select formControlName="type" required><mat-option value="fixed">Fixed Term</mat-option><mat-option value="periodic">Periodic</mat-option><mat-option value="commercial">Commercial</mat-option><mat-option value="residential">Residential</mat-option></mat-select></mat-form-field>
-            <mat-form-field appearance="outline" class="w-full"><mat-label>Start Date *</mat-label><input matInput [matDatepicker]="startPicker" formControlName="start_date" required><mat-datepicker-toggle matSuffix [for]="startPicker"></mat-datepicker-toggle><mat-datepicker #startPicker></mat-datepicker></mat-form-field>
-            <mat-form-field appearance="outline" class="w-full"><mat-label>End Date *</mat-label><input matInput [matDatepicker]="endPicker" formControlName="end_date" required><mat-datepicker-toggle matSuffix [for]="endPicker"></mat-datepicker-toggle><mat-datepicker #endPicker></mat-datepicker></mat-form-field>
-            <mat-form-field appearance="outline" class="w-full"><mat-label>Rent Amount *</mat-label><input matInput type="number" formControlName="rent_amount" required min="0" step="0.01"></mat-form-field>
-            <mat-form-field appearance="outline" class="w-full"><mat-label>Deposit Amount *</mat-label><input matInput type="number" formControlName="deposit_amount" required min="0" step="0.01"></mat-form-field>
-            <mat-form-field appearance="outline" class="w-full"><mat-label>Payment Frequency *</mat-label><mat-select formControlName="payment_frequency" required><mat-option value="monthly">Monthly</mat-option><mat-option value="quarterly">Quarterly</mat-option><mat-option value="annually">Annually</mat-option></mat-select></mat-form-field>
-            <mat-form-field appearance="outline" class="w-full"><mat-label>Escalation Clause</mat-label><input matInput formControlName="escalation_clause" placeholder="e.g., 3% annual increase"></mat-form-field>
-            <mat-form-field appearance="outline" class="w-full"><mat-label>Renewal Options (months)</mat-label><input matInput type="number" formControlName="renewal_options" min="0" max="60"></mat-form-field>
-          </div>
-          <mat-form-field appearance="outline" class="w-full"><mat-label>Terms & Conditions</mat-label><textarea matInput formControlName="terms" rows="4"></textarea></mat-form-field>
-        </form>
-      </mat-step>
-
-      <!-- Step 4: Review -->
-      <mat-step label="Review & Create">
-        <div class="p-4 space-y-4">
-          <h3 class="font-medium text-slate-900">Review Lease Details</h3>
-          <mat-card class="bg-slate-50">
-            <mat-card-content>
-              <dl class="grid grid-cols-2 gap-4 text-sm">
-                <dt class="text-slate-500">Property</dt><dd class="font-medium">{{ getPropertyName() }}</dd>
-                <dt class="text-slate-500">Building</dt><dd class="font-medium">{{ getBuildingName() }}</dd>
-                <dt class="text-slate-500">Unit</dt><dd class="font-medium">{{ getUnitName() }}</dd>
-                <dt class="text-slate-500">Tenant</dt><dd class="font-medium">{{ getTenantName() }}</dd>
-                <dt class="text-slate-500">Lease Code</dt><dd class="font-medium">{{ step3Form.value.code }}</dd>
-                <dt class="text-slate-500">Type</dt><dd class="font-medium">{{ step3Form.value.type }}</dd>
-                <dt class="text-slate-500">Term</dt><dd class="font-medium">{{ step3Form.value.start_date | date:'shortDate' }} – {{ step3Form.value.end_date | date:'shortDate' }}</dd>
-<dt class="text-slate-500">Rent</dt><dd class="font-medium">${{ step3Form.value.rent_amount }}</dd>
-<dt class="text-slate-500">Deposit</dt><dd class="font-medium">${{ step3Form.value.deposit_amount }}</dd>
-                <dt class="text-slate-500">Frequency</dt><dd class="font-medium">{{ step3Form.value.payment_frequency }}</dd>
-              </dl>
-            </mat-card-content>
-          </mat-card>
-        </div>
-      </mat-step>
-    </mat-horizontal-stepper>
-
-    <div class="flex justify-end gap-2">
-      <button mat-button (click)="stepper.previous()" *ngIf="stepper.selectedIndex > 0">Back</button>
-      <button mat-flat-button color="primary" (click)="onSubmit()" *ngIf="stepper.selectedIndex === 3" [disabled]="submitting()">
-        @if (submitting()) { <mat-spinner diameter="20"></mat-spinner> } @else { Create Lease }
-      </button>
-      <button mat-flat-button color="primary" matStepperNext *ngIf="stepper.selectedIndex < 3">Next</button>
-    </div>
+<div class="lease-wizard">
+  <div class="wizard-header">
+    <h1 class="page-title">New Lease Wizard</h1>
+    <p class="page-subtitle">Create a new lease in 4 steps</p>
   </div>
+
+  <p-stepper [value]="stepIndex()" (valueChange)="onStepChange($event)" [linear]="false">
+    <p-step-list>
+      <p-step [value]="1">Select property</p-step>
+      <p-step [value]="2">Select tenant</p-step>
+      <p-step [value]="3">Terms</p-step>
+      <p-step [value]="4">Review</p-step>
+    </p-step-list>
+
+    <p-step-panels>
+      <p-step-panel [value]="1">
+        <form [formGroup]="step1Form" class="wizard-form">
+          <h3 class="section-heading">Select Property &amp; Unit</h3>
+
+          <div class="field">
+            <label class="field-label" for="wz-property">Property *</label>
+            <p-select
+              inputId="wz-property"
+              class="w-full"
+              formControlName="property_id"
+              [options]="propertyOptions()"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Select a property"
+              appendTo="body"
+              (onChange)="onPropertyChange($event.value)"
+            />
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="wz-building">Building *</label>
+            <p-select
+              inputId="wz-building"
+              class="w-full"
+              formControlName="building_id"
+              [options]="buildingOptions()"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Select a building"
+              appendTo="body"
+            />
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="wz-unit">Unit *</label>
+            <p-select
+              inputId="wz-unit"
+              class="w-full"
+              formControlName="unit_id"
+              [options]="unitOptions()"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Select a unit"
+              appendTo="body"
+            />
+          </div>
+        </form>
+      </p-step-panel>
+
+      <p-step-panel [value]="2">
+        <form [formGroup]="step2Form" class="wizard-form">
+          <h3 class="section-heading">Select Tenant</h3>
+
+          <div class="field">
+            <label class="field-label" for="wz-tenant">Tenant *</label>
+            <p-select
+              inputId="wz-tenant"
+              class="w-full"
+              formControlName="tenant_id"
+              [options]="tenantOptions()"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Select a tenant"
+              [filter]="true"
+              appendTo="body"
+            />
+          </div>
+        </form>
+      </p-step-panel>
+
+      <p-step-panel [value]="3">
+        <form [formGroup]="step3Form" class="wizard-form wizard-form-grid">
+          <h3 class="section-heading field-full">Lease Terms</h3>
+
+          <div class="field">
+            <label class="field-label" for="wz-code">Lease Code *</label>
+            <input pInputText id="wz-code" class="w-full" formControlName="code" maxlength="50" [invalid]="isInvalid(step3Form, 'code')" />
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="wz-type">Lease Type *</label>
+            <p-select
+              inputId="wz-type"
+              class="w-full"
+              formControlName="type"
+              [options]="typeOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Select type"
+              appendTo="body"
+            />
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="wz-start">Start Date *</label>
+            <p-datepicker
+              inputId="wz-start"
+              class="w-full"
+              formControlName="start_date"
+              [showIcon]="true"
+              appendTo="body"
+              dateFormat="M d, yy"
+            />
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="wz-end">End Date *</label>
+            <p-datepicker
+              inputId="wz-end"
+              class="w-full"
+              formControlName="end_date"
+              [showIcon]="true"
+              appendTo="body"
+              dateFormat="M d, yy"
+            />
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="wz-rent">Rent Amount *</label>
+            <p-inputnumber
+              inputId="wz-rent"
+              class="w-full"
+              formControlName="rent_amount"
+              mode="currency"
+              currency="USD"
+              locale="en-US"
+              [minFractionDigits]="2"
+              [maxFractionDigits]="2"
+            />
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="wz-deposit">Deposit Amount *</label>
+            <p-inputnumber
+              inputId="wz-deposit"
+              class="w-full"
+              formControlName="deposit_amount"
+              mode="currency"
+              currency="USD"
+              locale="en-US"
+              [minFractionDigits]="2"
+              [maxFractionDigits]="2"
+            />
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="wz-frequency">Payment Frequency *</label>
+            <p-select
+              inputId="wz-frequency"
+              class="w-full"
+              formControlName="payment_frequency"
+              [options]="frequencyOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Select frequency"
+              appendTo="body"
+            />
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="wz-escalation">Escalation Clause</label>
+            <input pInputText id="wz-escalation" class="w-full" formControlName="escalation_clause" placeholder="e.g., 3% annual increase" />
+          </div>
+
+          <div class="field field-full">
+            <label class="field-label" for="wz-renewal">Renewal Options (months)</label>
+            <p-inputnumber inputId="wz-renewal" class="w-full" formControlName="renewal_options" [maxFractionDigits]="0" />
+          </div>
+
+          <div class="field field-full">
+            <label class="field-label" for="wz-terms">Terms &amp; Conditions</label>
+            <textarea pTextarea id="wz-terms" class="w-full" formControlName="terms" rows="4"></textarea>
+          </div>
+        </form>
+      </p-step-panel>
+
+      <p-step-panel [value]="4">
+        <div class="review">
+          <h3 class="section-heading">Review Lease Details</h3>
+
+          <p-card>
+            <ng-template #content>
+              <ul class="detail-list">
+                <li><span>Property</span><strong>{{ getPropertyName() }}</strong></li>
+                <li><span>Building</span><strong>{{ getBuildingName() }}</strong></li>
+                <li><span>Unit</span><strong>{{ getUnitName() }}</strong></li>
+                <li><span>Tenant</span><strong>{{ getTenantName() }}</strong></li>
+                <li><span>Lease Code</span><strong>{{ step3Form.value.code }}</strong></li>
+                <li><span>Type</span><strong class="capitalize">{{ step3Form.value.type }}</strong></li>
+                <li><span>Term</span><strong>{{ dateOnly(step3Form.value.start_date) }} – {{ dateOnly(step3Form.value.end_date) }}</strong></li>
+                <li><span>Rent</span><strong>{{ money(step3Form.value.rent_amount) }}</strong></li>
+                <li><span>Deposit</span><strong>{{ money(step3Form.value.deposit_amount) }}</strong></li>
+                <li><span>Frequency</span><strong class="capitalize">{{ step3Form.value.payment_frequency }}</strong></li>
+              </ul>
+            </ng-template>
+          </p-card>
+
+          <p-button
+            label="Create Lease"
+            icon="pi pi-check"
+            iconPos="right"
+            [loading]="submitting()"
+            [disabled]="step1Form.invalid || step2Form.invalid || step3Form.invalid"
+            (onClick)="onSubmit()"
+          />
+        </div>
+      </p-step-panel>
+    </p-step-panels>
+  </p-stepper>
+
+  <div class="wizard-nav">
+    @if (stepIndex() > 1) {
+      <p-button label="Back" icon="pi pi-arrow-left" [outlined]="true" (onClick)="prev()" />
+    }
+    @if (stepIndex() < 4) {
+      <p-button label="Next" icon="pi pi-arrow-right" iconPos="right" (onClick)="next()" />
+    }
+  </div>
+</div>

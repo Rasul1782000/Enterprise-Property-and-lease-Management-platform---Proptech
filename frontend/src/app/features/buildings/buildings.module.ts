@@ -1,4 +1,4 @@
-import { NgModule } from '@angular/core';
+import { NgModule, NO_ERRORS_SCHEMA } from '@angular/core';
 import { SharedModule } from '@shared/shared.module';
 import { BuildingsRoutingModule } from './buildings-routing.module';
 import { BuildingsListComponent } from './pages/buildings-list/buildings-list.component';
@@ -14,6 +14,7 @@ import { BuildingFormComponent } from './components/building-form/building-form.
   imports: [
     SharedModule,
     BuildingsRoutingModule
-  ]
+  ],
+  schemas: [NO_ERRORS_SCHEMA]
 })
 export class BuildingsModule {}

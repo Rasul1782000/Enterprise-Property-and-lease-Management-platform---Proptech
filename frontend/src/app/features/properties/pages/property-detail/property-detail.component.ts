@@ -1,15 +1,5 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { MatCardModule } from '@angular/material/card';
-import { MatTabsModule } from '@angular/material/tabs';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatTableModule } from '@angular/material/table';
-import { MatDividerModule } from '@angular/material/divider';
-import { MatTooltipModule } from '@angular/material/tooltip';
+import { Component, OnInit, inject, signal } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { PropertiesApiService, Property } from '../../services/properties-api.service';
 import { BuildingsApiService, Building } from '../../../buildings/services/buildings-api.service';
 import { UnitsApiService, Unit } from '../../../units/services/units-api.service';
@@ -83,13 +73,70 @@ export class PropertyDetailComponent implements OnInit {
     if (p) this.router.navigate(['/properties', p.id, 'edit']);
   }
 
+  goToBuildings() {
+    const p = this.property();
+    if (p) this.router.navigate(['/buildings'], { queryParams: { property_id: p.id } });
+  }
+
+  goToUnits() {
+    const p = this.property();
+    if (p) this.router.navigate(['/units'], { queryParams: { property_id: p.id } });
+  }
+
+  goToBuilding(id: number) {
+    this.router.navigate(['/buildings', id]);
+  }
+
+  goToUnit(id: number) {
+    this.router.navigate(['/units', id]);
+  }
+
   getUnitStatusClass(status: string): string {
     const classes: Record<string, string> = {
-      'vacant': 'bg-emerald-100 text-emerald-700',
-      'occupied': 'bg-blue-100 text-blue-700',
-      'reserved': 'bg-amber-100 text-amber-700',
-      'under_maintenance': 'bg-slate-100 text-slate-700'
+      'vacant': 'bg-primary-100 text-primary-800',
+      'occupied': 'bg-zinc-200 text-zinc-800',
+      'reserved': 'bg-primary-50 text-primary-700',
+      'under_maintenance': 'bg-zinc-100 text-zinc-600'
     };
-    return classes[status] || 'bg-slate-100';
+    return classes[status] || 'bg-zinc-100';
+  }
+
+  statusSeverity(status: string): 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast' {
+    switch (status) {
+      case 'active':
+      case 'occupied':
+      case 'paid':
+        return 'success';
+      case 'inactive':
+      case 'former':
+      case 'cancelled':
+        return 'secondary';
+      case 'under_maintenance':
+      case 'pending':
+      case 'partial':
+      case 'draft':
+      case 'prospect':
+      case 'reserved':
+        return 'warn';
+      case 'overdue':
+      case 'terminated':
+      case 'vacant':
+      case 'expired':
+        return 'danger';
+      default:
+        return 'info';
+    }
+  }
+
+  money(v: any): string {
+    return '$' + Number(v || 0).toLocaleString();
+  }
+
+  dateOnly(v: any): string {
+    return new Date(v).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  pct(v: any): string {
+    return Number(v || 0).toFixed(1) + '%';
   }
 }

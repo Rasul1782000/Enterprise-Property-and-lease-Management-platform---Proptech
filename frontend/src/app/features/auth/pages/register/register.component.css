@@ -1,0 +1,118 @@
+.auth-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 1.5rem 1rem;
+  background:
+    radial-gradient(120% 80% at 50% -10%, var(--brand-50) 0%, transparent 60%),
+    var(--surface-page);
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 26rem;
+  padding: 1.75rem;
+  background: #fff;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-raised);
+}
+
+.auth-card h2 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.auth-subtitle {
+  margin: 0.25rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--ink-500);
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.form-field label {
+  font-weight: 600;
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-500);
+}
+
+.form-field input {
+  padding: 0.5rem 0.625rem;
+  background: #fff;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  font-size: 0.8125rem;
+  font-family: inherit;
+  color: var(--ink-900);
+}
+
+.form-field input::placeholder { color: var(--ink-400); }
+
+.form-field input:focus {
+  outline: none;
+  border-color: var(--brand-500);
+  box-shadow: var(--focus-ring);
+}
+
+.btn-primary {
+  padding: 0.625rem 1rem;
+  background-color: var(--brand-600);
+  color: #fff;
+  border: 1px solid var(--brand-600);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color .12s ease;
+}
+
+.btn-primary:hover:not(:disabled) { background-color: var(--brand-700); border-color: var(--brand-700); }
+.btn-primary:focus-visible { box-shadow: var(--focus-ring); }
+
+.btn-primary:disabled {
+  background-color: var(--ink-200);
+  border-color: var(--ink-200);
+  color: var(--ink-400);
+  cursor: not-allowed;
+}
+
+.error-message {
+  color: var(--brand-800);
+  background: var(--brand-50);
+  border: 1px solid var(--brand-100);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.625rem;
+  font-size: 0.75rem;
+}
+
+.auth-link {
+  margin: 1.25rem 0 0;
+  text-align: center;
+  font-size: 0.8125rem;
+  color: var(--ink-500);
+}
+
+.auth-link a {
+  color: var(--brand-700);
+  font-weight: 500;
+}
+
+.auth-link a:hover { text-decoration: underline; }

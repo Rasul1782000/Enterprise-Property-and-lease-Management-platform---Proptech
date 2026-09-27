@@ -1,14 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
-import { MatCardModule } from '@angular/material/card';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
+import { MessageService } from 'primeng/api';
 import { AuthApiService } from '../../services/auth-api.service';
 
 @Component({
@@ -17,14 +10,15 @@ import { AuthApiService } from '../../services/auth-api.service';
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss']
 })
-export class LoginComponent {
+export class LoginPage {
   private fb = inject(FormBuilder);
   private router = inject(Router);
-  private snackBar = inject(MatSnackBar);
+  private messages = inject(MessageService);
   private authApi = inject(AuthApiService);
 
   hidePassword = signal(true);
   loading = signal(false);
+  error = signal('');
 
   loginForm: FormGroup = this.fb.group({
     email: ['', [Validators.required, Validators.email]],
@@ -33,13 +27,21 @@ export class LoginComponent {
   });
 
   async onSubmit() {
-    if (this.loginForm.invalid) return;
+    if (this.loginForm.invalid) {
+      this.loginForm.markAllAsTouched();
+      this.error.set('Please fix the highlighted fields and try again.');
+      return;
+    }
+    this.error.set('');
     this.loading.set(true);
     try {
       await this.authApi.login(this.loginForm.value).toPromise();
+      this.messages.add({ severity: 'success', summary: 'Welcome', detail: 'You are signed in.' });
       this.router.navigate(['/dashboard']);
     } catch (error: any) {
-      this.snackBar.open(error.error?.message || 'Invalid credentials', 'Close', { duration: 3000 });
+      const detail = error?.error?.message || 'Invalid credentials';
+      this.error.set(detail);
+      this.messages.add({ severity: 'error', summary: 'Sign in failed', detail });
     } finally {
       this.loading.set(false);
     }

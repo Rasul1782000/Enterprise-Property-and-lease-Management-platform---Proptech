@@ -1,0 +1,205 @@
+<div class="space-y-5">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Ejari Tawtheeq Console</h1>
+      <p class="page-subtitle">UAE tenancy contract registration, certificate tracking and gateway exceptions.</p>
+    </div>
+    <p-button label="Refresh" icon="pi pi-refresh" severity="secondary" [outlined]="true" (onClick)="reload()" />
+  </div>
+
+  <app-stat-cards [cards]="cards()" />
+
+  <p-card class="table-card">
+    <ng-template #content>
+      <div class="flex flex-wrap items-center gap-3 mb-4">
+        <p-iconfield>
+          <p-inputicon styleClass="pi pi-search" />
+          <input pInputText type="text" placeholder="Search Ejari no, tenant, unit…" [ngModel]="searchTerm" (ngModelChange)="onSearch($event)" />
+        </p-iconfield>
+
+        <p-select
+          [options]="statuses"
+          optionLabel="label"
+          optionValue="value"
+          [ngModel]="statusFilter"
+          (ngModelChange)="onStatusFilter($event)"
+          placeholder="All statuses"
+          [showClear]="true"
+          styleClass="w-56" />
+
+        <p-select
+          [options]="types"
+          [ngModel]="typeFilter"
+          (ngModelChange)="onTypeFilter($event)"
+          styleClass="w-40" />
+
+        <p-button label="Reset" icon="pi pi-filter-slash" severity="secondary" [text]="true" (onClick)="resetFilters(); onTypeFilter('All types')" />
+        <span class="ml-auto text-sm text-zinc-500">{{ rows().length }} of {{ total() }}</span>
+      </div>
+
+      <p-table
+        [value]="rows()"
+        [lazy]="true"
+        [lazyLoadOnInit]="false"
+        [paginator]="true"
+        [rows]="perPage"
+        [rowsPerPageOptions]="[10, 15, 25, 50]"
+        [totalRecords]="total()"
+        [loading]="loading()"
+        [rowHover]="true"
+        [tableStyle]="{ 'min-width': '82rem' }"
+        (onLazyLoad)="onLazyLoad($event)">
+
+        <ng-template #header>
+          <tr>
+            <th pSortableColumn="code">Case <p-sorticon field="code" /></th>
+            <th>Ejari no.</th>
+            <th>Contract / Unit</th>
+            <th>Tenant</th>
+            <th>Type</th>
+            <th pSortableColumn="expiry_date">Contract expiry <p-sorticon field="expiry_date" /></th>
+            <th>Deed ref.</th>
+            <th>Attempts</th>
+            <th>Status</th>
+            <th style="width: 12rem"></th>
+          </tr>
+        </ng-template>
+
+        <ng-template #body let-row>
+          <tr>
+            <td>
+              <div class="font-mono text-xs px-2 py-1 rounded bg-zinc-100">{{ row.code }}</div>
+              @if (row.free_zone_property) {
+                <p-tag value="Free zone" severity="contrast" styleClass="mt-1 text-[10px]" />
+              }
+            </td>
+            <td class="font-mono text-xs">{{ row.ejari_number || '—' }}</td>
+            <td>
+              <div class="font-mono text-xs">{{ row.lease_code }}</div>
+              <div class="text-xs text-zinc-400">{{ row.unit_code }} · {{ row.property_name }}</div>
+            </td>
+            <td>
+              <div class="font-medium">{{ row.tenant_name }}</div>
+              <div class="text-xs text-zinc-400">{{ row.tenant_company }}</div>
+            </td>
+            <td class="capitalize">{{ titleCase(row.ejari_type) }}</td>
+            <td>{{ dateOnly(row.expiry_date) }}</td>
+            <td class="font-mono text-xs">{{ row.deed_reference }}</td>
+            <td class="text-center">
+              <span [class.text-primary-900]="row.attempts > 1">{{ row.attempts }}</span>
+            </td>
+            <td>
+              <p-tag [value]="titleCase(row.status)" [severity]="severity(row.status)" />
+              @if (row.penalty_amount) {
+                <div class="text-xs text-primary-900 mt-1">Penalty {{ money(row.penalty_amount) }}</div>
+              }
+            </td>
+            <td>
+              <div class="flex items-center gap-1">
+                @if (row.status === 'draft') {
+                  <p-button icon="pi pi-send" [text]="true" [rounded]="true" severity="info" pTooltip="Submit" (onClick)="submit(row)" />
+                }
+                @if (row.status === 'submitted' || row.status === 'rejected') {
+                  <p-button icon="pi pi-verified" [text]="true" [rounded]="true" severity="success" pTooltip="Register" (onClick)="register(row)" />
+                }
+                @if (row.status === 'submitted') {
+                  <p-button icon="pi pi-times" [text]="true" [rounded]="true" severity="danger" pTooltip="Reject" (onClick)="reject(row)" />
+                }
+                <p-button icon="pi pi-eye" [text]="true" [rounded]="true" severity="secondary" pTooltip="Open" (onClick)="open(row)" />
+                <p-button icon="pi pi-trash" [text]="true" [rounded]="true" severity="danger" pTooltip="Delete" (onClick)="remove(row, row.code)" />
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+
+        <ng-template #emptymessage>
+          <div class="empty-state">
+            <i class="pi pi-verified"></i>
+            <p>No Ejari registrations match these filters</p>
+          </div>
+        </ng-template>
+      </p-table>
+    </ng-template>
+  </p-card>
+
+  @if (failures().length) {
+    <p-card>
+      <ng-template #header>
+        <ng-template #title>
+          <span class="inline-flex items-center gap-2"><i class="pi pi-exclamation-triangle"></i> Gateway exceptions ({{ failures().length }})</span>
+        </ng-template>
+      </ng-template>
+      <ng-template #content>
+        <ul class="space-y-2">
+          @for (f of failures(); track f.id) {
+            <li class="section-card p-3 border-l-4 border-l-primary-600">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <p class="font-mono text-xs text-zinc-500">{{ f.code }} · {{ f.ejari_number ?? 'no number issued' }}</p>
+                  <p class="text-sm font-medium text-zinc-800">{{ f.tenant_name }} — {{ f.unit_code }}, {{ f.property_name }}</p>
+                </div>
+                <p-button label="Resubmit" icon="pi pi-refresh" size="small" severity="warn" [outlined]="true" (onClick)="resubmit(f)" />
+              </div>
+              <p class="text-xs text-primary-900 mt-1">{{ f.last_error || 'Awaiting a gateway response — no error recorded yet.' }}</p>
+            </li>
+          }
+        </ul>
+      </ng-template>
+    </p-card>
+  }
+</div>
+
+<p-drawer
+  position="right"
+  [visible]="!!selected()"
+  (visibleChange)="$event ? null : close()"
+  [style]="{ width: '32rem' }"
+  header="Ejari registration">
+  @if (selected(); as c) {
+    <div class="space-y-4">
+      <div>
+        <p class="text-xs uppercase tracking-wide text-zinc-400">{{ c.code }}</p>
+        <h2 class="text-lg font-semibold text-zinc-800 font-mono">{{ c.ejari_number ?? 'Not yet issued' }}</h2>
+        <p class="text-sm text-zinc-500">{{ c.tenant_name }} · {{ c.tenant_company }}</p>
+        <p-tag [value]="titleCase(c.status)" [severity]="severity(c.status)" />
+      </div>
+
+      <div class="grid grid-cols-2 gap-3 text-sm">
+        <div><p class="text-zinc-400 text-xs">Contract</p><p class="font-mono text-xs">{{ c.lease_code }}</p></div>
+        <div><p class="text-zinc-400 text-xs">Unit</p><p>{{ c.unit_code }}</p></div>
+        <div><p class="text-zinc-400 text-xs">Property</p><p>{{ c.property_name }}</p></div>
+        <div><p class="text-zinc-400 text-xs">Registration type</p><p class="capitalize">{{ c.ejari_type }}</p></div>
+        <div><p class="text-zinc-400 text-xs">Registered on</p><p>{{ c.registration_date ? dateOnly(c.registration_date) : '—' }}</p></div>
+        <div><p class="text-zinc-400 text-xs">Certificate</p><p>{{ c.certificate_issued_on ? dateOnly(c.certificate_issued_on) : '—' }}</p></div>
+        <div><p class="text-zinc-400 text-xs">Deed reference</p><p class="font-mono text-xs">{{ c.deed_reference }}</p></div>
+        <div><p class="text-zinc-400 text-xs">Contract expiry</p><p>{{ dateOnly(c.expiry_date) }}</p></div>
+        <div><p class="text-zinc-400 text-xs">Registration fee</p><p>{{ money(c.registration_fee) }}</p></div>
+        <div><p class="text-zinc-400 text-xs">Penalty</p><p [class.text-primary-900]="c.penalty_amount">{{ money(c.penalty_amount) }}</p></div>
+      </div>
+
+      @if (c.last_error) {
+        <div class="p-3 rounded-lg bg-primary-50 text-sm text-primary-900 border border-primary-200">
+          <i class="pi pi-times-circle mr-1"></i>{{ c.last_error }}
+        </div>
+      }
+      @if (c.notes) {
+        <div class="p-3 rounded-lg bg-zinc-50 text-sm text-zinc-600 border border-zinc-100">
+          <i class="pi pi-comment mr-1"></i>{{ c.notes }}
+        </div>
+      }
+
+      <div class="flex flex-wrap gap-2">
+        @if (c.status === 'draft') {
+          <p-button label="Submit to Ejari" icon="pi pi-send" severity="info" (onClick)="submit(c)" />
+        }
+        @if (c.status === 'submitted' || c.status === 'rejected') {
+          <p-button label="Register &amp; issue certificate" icon="pi pi-verified" severity="success" (onClick)="register(c)" />
+        }
+        @if (c.status === 'submitted') {
+          <p-button label="Mark rejected" icon="pi pi-times" severity="danger" [outlined]="true" (onClick)="reject(c)" />
+        }
+        <p-button label="Close" severity="secondary" [outlined]="true" (onClick)="close()" />
+      </div>
+    </div>
+  }
+</p-drawer>

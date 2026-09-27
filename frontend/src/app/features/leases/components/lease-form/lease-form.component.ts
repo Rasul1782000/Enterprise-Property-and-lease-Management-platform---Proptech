@@ -1,15 +1,5 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
-import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MatNativeDateModule } from '@angular/material/core';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { Component, EventEmitter, Input, Output, inject, signal, OnInit } from '@angular/core';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { LeasesApiService, Lease, CreateLeaseDto, UpdateLeaseDto } from '../../services/leases-api.service';
 
 export interface LeaseFormDialogData { mode: 'create' | 'edit'; lease?: Lease; }
@@ -23,9 +13,24 @@ export interface LeaseFormDialogData { mode: 'create' | 'edit'; lease?: Lease; }
 export class LeaseFormComponent implements OnInit {
   private fb = inject(FormBuilder);
   private api = inject(LeasesApiService);
-  private dialogRef = inject(MatDialogRef<LeaseFormComponent>);
-  public data = inject(MAT_DIALOG_DATA) as LeaseFormDialogData;
+
+  @Input() data: LeaseFormDialogData = { mode: 'create' };
+  @Output() closed = new EventEmitter<boolean>();
+
   loading = signal(false);
+
+  typeOptions = [
+    { label: 'Fixed Term', value: 'fixed' },
+    { label: 'Periodic', value: 'periodic' },
+    { label: 'Commercial', value: 'commercial' },
+    { label: 'Residential', value: 'residential' }
+  ];
+
+  frequencyOptions = [
+    { label: 'Monthly', value: 'monthly' },
+    { label: 'Quarterly', value: 'quarterly' },
+    { label: 'Annually', value: 'annually' }
+  ];
 
   form: FormGroup = this.fb.group({
     code: ['', Validators.required],
@@ -42,6 +47,11 @@ export class LeaseFormComponent implements OnInit {
 
   ngOnInit() { if (this.data.mode === 'edit' && this.data.lease) { const l = this.data.lease; this.form.patchValue({ ...l, start_date: new Date(l.start_date), end_date: new Date(l.end_date) }); } }
 
-  onSubmit() { if (this.form.invalid) return; this.loading.set(true); const dto = this.form.value; const req = this.data.mode === 'create' ? this.api.create(dto as CreateLeaseDto) : this.api.update(this.data.lease!.id, dto as UpdateLeaseDto); req.subscribe({ next: () => this.dialogRef.close(true), error: () => this.loading.set(false) }); }
-  onCancel() { this.dialogRef.close(false); }
+  isInvalid(name: string): boolean {
+    const control = this.form.get(name);
+    return !!control && control.invalid && (control.touched || control.dirty);
+  }
+
+  onSubmit() { if (this.form.invalid) return; this.loading.set(true); const dto = this.form.value; const req = this.data.mode === 'create' ? this.api.create(dto as CreateLeaseDto) : this.api.update(this.data.lease!.id, dto as UpdateLeaseDto); req.subscribe({ next: () => this.closed.emit(true), error: () => this.loading.set(false) }); }
+  onCancel() { this.closed.emit(false); }
 }

@@ -1,19 +1,12 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, FormArray, Validators, ReactiveFormsModule } from '@angular/forms';
-import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
-import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MatNativeDateModule } from '@angular/material/core';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { Component, inject, signal, output, input, OnInit } from '@angular/core';
+import { FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
+import { MessageService } from 'primeng/api';
 import { LeasesApiService, Lease } from '../../../leases/services/leases-api.service';
 import { InvoicesApiService, Invoice, CreateInvoiceDto, InvoiceLineItem } from '../../services/invoices-api.service';
 
 export interface InvoiceFormDialogData { mode: 'create' | 'edit'; invoice?: Invoice; }
+
+interface Option { label: string; value: any; }
 
 @Component({
   selector: 'app-invoice-form',
@@ -25,11 +18,27 @@ export class InvoiceFormComponent implements OnInit {
   private fb = inject(FormBuilder);
   private leasesApi = inject(LeasesApiService);
   private api = inject(InvoicesApiService);
-  private dialogRef = inject(MatDialogRef<InvoiceFormComponent>);
-  public data = inject(MAT_DIALOG_DATA) as InvoiceFormDialogData;
+  private messages = inject(MessageService);
+
+  readonly mode = input<'create' | 'edit'>('create');
+  readonly invoice = input<Invoice | undefined>(undefined);
+  readonly closed = output<boolean>();
+
   loading = signal(false);
 
   leases = signal<Lease[]>([]);
+
+  leaseOptions = signal<Option[]>([]);
+  readonly typeOptions: Option[] = [
+    { label: 'Rent', value: 'rent' },
+    { label: 'Deposit', value: 'deposit' },
+    { label: 'Late Fee', value: 'late_fee' },
+    { label: 'Utility', value: 'utility' },
+    { label: 'Maintenance', value: 'maintenance' },
+    { label: 'Other', value: 'other' }
+  ];
+
+  get data(): InvoiceFormDialogData { return { mode: this.mode(), invoice: this.invoice() }; }
 
   form: FormGroup = this.fb.group({
     lease_id: [null, Validators.required],
@@ -45,7 +54,13 @@ export class InvoiceFormComponent implements OnInit {
   get lineItems(): FormArray { return this.form.get('line_items') as FormArray; }
 
   ngOnInit() {
-    this.leasesApi.getActive({ per_page: 1000 }).subscribe(res => this.leases.set(res.data));
+    this.leasesApi.getActive({ per_page: 1000 }).subscribe(res => {
+      this.leases.set(res.data);
+      this.leaseOptions.set(res.data.map(l => ({
+        label: `${l.code} - ${l.tenant?.first_name} ${l.tenant?.last_name} ($${l.rent_amount}/mo)`,
+        value: l.id
+      })));
+    });
     if (this.data.mode === 'edit' && this.data.invoice) {
       const inv = this.data.invoice;
       this.form.patchValue({ ...inv, issue_date: new Date(inv.issue_date), due_date: new Date(inv.due_date) });
@@ -82,6 +97,19 @@ export class InvoiceFormComponent implements OnInit {
   removeLineItem(index: number) { this.lineItems.removeAt(index); }
   updateTotal() { const total = this.lineItems.controls.reduce((sum, c) => sum + (c.get('quantity')?.value || 0) * (c.get('unit_price')?.value || 0), 0); this.form.get('amount')?.setValue(total); }
 
-  onSubmit() { if (this.form.invalid) return; this.loading.set(true); const dto = this.form.value; const req = this.data.mode === 'create' ? this.api.create(dto as CreateInvoiceDto) : this.api.update(this.data.invoice!.id, dto); req.subscribe({ next: () => this.dialogRef.close(true), error: () => this.loading.set(false) }); }
-  onCancel() { this.dialogRef.close(false); }
+  lineTotal(item: FormGroup): number { return (item.get('quantity')?.value || 0) * (item.get('unit_price')?.value || 0); }
+
+  onSubmit() {
+    if (this.form.invalid) { this.form.markAllAsTouched(); this.messages.add({ severity: 'error', summary: 'Invalid form', detail: 'Please review the highlighted fields.' }); return; }
+    this.loading.set(true);
+    const dto = this.form.value;
+    const req = this.data.mode === 'create' ? this.api.create(dto as CreateInvoiceDto) : this.api.update(this.data.invoice!.id, dto);
+    req.subscribe({
+      next: () => { this.messages.add({ severity: 'success', summary: 'Saved', detail: this.data.mode === 'create' ? 'Invoice created.' : 'Invoice updated.' }); this.closed.emit(true); },
+      error: () => { this.loading.set(false); this.messages.add({ severity: 'error', summary: 'Failed', detail: 'The invoice could not be saved.' }); }
+    });
+  }
+  onCancel() { this.closed.emit(false); }
+
+  money(v: any): string { return '$' + Number(v || 0).toLocaleString(); }
 }

@@ -1,14 +1,5 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { MatCardModule } from '@angular/material/card';
-import { MatTabsModule } from '@angular/material/tabs';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatTableModule } from '@angular/material/table';
-import { MatDividerModule } from '@angular/material/divider';
+import { ActivatedRoute, Router } from '@angular/router';
 import { TenantsApiService, Tenant } from '../../services/tenants-api.service';
 import { LeasesApiService, Lease } from '../../../leases/services/leases-api.service';
 
@@ -46,5 +37,20 @@ export class TenantDetailComponent implements OnInit {
   }
 
   editTenant() { const t = this.tenant(); if (t) this.router.navigate(['/tenants', t.id, 'edit']); }
-  getLeaseStatusClass(s: string) { const c: Record<string,string> = {'active':'bg-emerald-100 text-emerald-700','draft':'bg-slate-100','expired':'bg-red-100 text-red-700','terminated':'bg-slate-100','renewed':'bg-blue-100 text-blue-700'}; return c[s] || 'bg-slate-100'; }
+  viewLease(l: Lease) { this.router.navigate(['/leases', l.id]); }
+  getLeaseStatusClass(s: string) { const c: Record<string,string> = {'active':'bg-primary-100 text-primary-800','draft':'bg-zinc-100','expired':'bg-primary-600 text-white','terminated':'bg-zinc-100','renewed':'bg-zinc-200 text-zinc-800'}; return c[s] || 'bg-zinc-100'; }
+
+  statusSeverity(status: string): 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast' {
+    const map: Record<string, 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast'> = {
+      active: 'success', occupied: 'success', paid: 'success',
+      inactive: 'secondary', former: 'secondary', cancelled: 'secondary',
+      under_maintenance: 'warn', pending: 'warn', partial: 'warn', draft: 'warn', prospect: 'warn', reserved: 'warn',
+      overdue: 'danger', terminated: 'danger', vacant: 'danger', expired: 'danger'
+    };
+    return map[status] ?? 'info';
+  }
+
+  money(v: any): string { return '$' + Number(v || 0).toLocaleString(); }
+  dateOnly(v: any): string { return new Date(v).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); }
+  pct(v: any): string { return Number(v || 0).toFixed(1) + '%'; }
 }

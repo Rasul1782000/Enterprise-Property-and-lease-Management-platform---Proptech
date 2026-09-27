@@ -47,7 +47,7 @@ export interface CreateLeaseDto {
   terms?: string;
 }
 
-export interface UpdateLeaseDto extends Partial<CreateLeaseDto> {}
+export type UpdateLeaseDto = Partial<CreateLeaseDto>;
 
 export interface LeaseWizardData {
   step: number;
@@ -88,7 +88,7 @@ export class LeasesApiService {
     return this.api.getPaginated<Lease>(this.endpoint, { ...params, 'filter[status]': 'active' });
   }
 
-  getExpiring(days: number = 90, params?: ApiParams): Observable<PaginatedResponse<Lease>> {
+  getExpiring(days = 90, params?: ApiParams): Observable<PaginatedResponse<Lease>> {
     return this.api.getPaginated<Lease>(this.endpoint, { ...params, 'filter[expiring_within]': days });
   }
 

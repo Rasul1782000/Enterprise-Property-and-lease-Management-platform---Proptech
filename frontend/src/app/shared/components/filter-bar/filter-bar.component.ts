@@ -1,11 +1,7 @@
 import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
+import { FormBuilder, FormGroup } from '@angular/forms';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { debounceTime, distinctUntilChanged } from 'rxjs';
 
 export interface FilterOption {
   label: string;
@@ -27,6 +23,7 @@ export class FilterBarComponent {
   private fb = inject(FormBuilder);
 
   @Input() statusOptions: FilterOption[] = [];
+  @Input() searchPlaceholder = 'Search by name, code, address...';
   @Output() filterChange = new EventEmitter<FilterEvent>();
 
   form: FormGroup = this.fb.group({
@@ -35,16 +32,16 @@ export class FilterBarComponent {
   });
 
   constructor() {
-    this.form.valueChanges.subscribe(value => {
-      this.filterChange.emit({ search: value.search || '', status: value.status || '' });
-    });
+    this.form.valueChanges
+      .pipe(debounceTime(250), distinctUntilChanged(), takeUntilDestroyed())
+      .subscribe(value => this.filterChange.emit({ search: value.search || '', status: value.status || '' }));
   }
 
   hasFilters(): boolean {
     return !!this.form.get('search')?.value || !!this.form.get('status')?.value;
   }
 
-  clearFilters() {
-    this.form.reset({ search: '', status: '' });
+  clearFilters(): void {
+    this.form.setValue({ search: '', status: '' });
   }
 }

@@ -1,0 +1,157 @@
+<div class="space-y-5">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Post-Dated Cheque Vault</h1>
+      <p class="page-subtitle">Cheque instruments lodged as security, tracked from issuance to clearance.</p>
+    </div>
+    <p-button label="Refresh" icon="pi pi-refresh" severity="secondary" [outlined]="true" (onClick)="reload()" />
+  </div>
+
+  <app-stat-cards [cards]="cards()" />
+
+  <p-card class="table-card">
+    <ng-template #content>
+      <div class="flex flex-wrap items-center gap-3 mb-4">
+        <p-iconfield>
+          <p-inputicon styleClass="pi pi-search" />
+          <input pInputText type="text" placeholder="Search cheque no, payer, lease…" [ngModel]="searchTerm" (ngModelChange)="onSearch($event)" />
+        </p-iconfield>
+
+        <p-select
+          [options]="statuses"
+          optionLabel="label"
+          optionValue="value"
+          [ngModel]="statusFilter"
+          (ngModelChange)="onStatusFilter($event)"
+          placeholder="All statuses"
+          [showClear]="true"
+          styleClass="w-56" />
+
+        <p-button
+          label="Overdue only"
+          icon="pi pi-clock"
+          severity="danger"
+          [outlined]="!onlyOverdue()"
+          (onClick)="toggleOverdue()" />
+
+        <p-button label="Reset" icon="pi pi-filter-slash" severity="secondary" [text]="true" (onClick)="resetFilters()" />
+        <span class="ml-auto text-sm text-zinc-500">{{ rows().length }} of {{ total() }}</span>
+      </div>
+
+      <p-table
+        [value]="rows()"
+        [lazy]="true"
+        [lazyLoadOnInit]="false"
+        [paginator]="true"
+        [rows]="perPage"
+        [rowsPerPageOptions]="[10, 15, 25, 50]"
+        [totalRecords]="total()"
+        [loading]="loading()"
+        [rowHover]="true"
+        [tableStyle]="{ 'min-width': '78rem' }"
+        (onLazyLoad)="onLazyLoad($event)">
+
+        <ng-template #header>
+          <tr>
+            <th>Cheque</th>
+            <th>Bank / Branch</th>
+            <th>Payer</th>
+            <th>Lease / Unit</th>
+            <th pSortableColumn="amount">Amount <p-sorticon field="amount" /></th>
+            <th pSortableColumn="due_on">Due <p-sorticon field="due_on" /></th>
+            <th>Deposited</th>
+            <th>Status</th>
+            <th style="width: 13rem"></th>
+          </tr>
+        </ng-template>
+
+        <ng-template #body let-row>
+          <tr>
+            <td>
+              <div class="font-mono text-xs px-2 py-1 rounded bg-zinc-100">{{ row.cheque_no }}</div>
+              <div class="text-xs text-zinc-400 mt-1">{{ row.instalment_label }}</div>
+            </td>
+            <td>
+              <div>{{ row.bank }}</div>
+              <div class="text-xs text-zinc-400">{{ row.branch }}</div>
+            </td>
+            <td>
+              <div class="font-medium">{{ row.payer }}</div>
+              <div class="text-xs text-zinc-400">{{ row.payer_company }}</div>
+            </td>
+            <td>
+              <div class="font-mono text-xs">{{ row.lease_code }}</div>
+              <div class="text-xs text-zinc-400">{{ row.unit_code }} · {{ row.property_name }}</div>
+            </td>
+            <td class="font-semibold">{{ money(row.amount, row.currency) }}</td>
+            <td [class.text-primary-900]="isOverdue(row.due_on)">
+              {{ dateOnly(row.due_on) }}
+              @if (isOverdue(row.due_on) && row.status !== 'cleared' && row.status !== 'replaced') {
+                <i class="pi pi-exclamation-triangle text-primary-800 text-xs ml-1" pTooltip="Past due"></i>
+              }
+            </td>
+            <td>{{ row.deposited_on ? dateOnly(row.deposited_on) : '—' }}</td>
+            <td>
+              <p-tag [value]="titleCase(row.status)" [severity]="severity(row.status)" />
+              @if (row.bounce_case_code) {
+                <div class="text-xs text-primary-800 mt-1">{{ row.bounce_case_code }}</div>
+              }
+            </td>
+            <td>
+              <div class="flex items-center gap-1">
+                @if (row.status === 'pending') {
+                  <p-button icon="pi pi-send" [text]="true" [rounded]="true" severity="info" pTooltip="Deposit" (onClick)="deposit(row)" />
+                }
+                @if (row.status === 'deposited') {
+                  <p-button icon="pi pi-check" [text]="true" [rounded]="true" severity="success" pTooltip="Clear" (onClick)="clear(row)" />
+                }
+                @if (row.status === 'deposited' || row.status === 'pending') {
+                  <p-button icon="pi pi-undo" [text]="true" [rounded]="true" severity="danger" pTooltip="Return unpaid" (onClick)="bounce(row)" />
+                }
+                @if (row.status === 'returned') {
+                  <p-button icon="pi pi-refresh" [text]="true" [rounded]="true" severity="warn" pTooltip="Replace" (onClick)="replace(row)" />
+                }
+                <p-button icon="pi pi-trash" [text]="true" [rounded]="true" severity="danger" pTooltip="Delete" (onClick)="remove(row, row.cheque_no)" />
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+
+        <ng-template #emptymessage>
+          <div class="empty-state">
+            <i class="pi pi-wallet"></i>
+            <p>No cheques match these filters</p>
+          </div>
+        </ng-template>
+      </p-table>
+    </ng-template>
+  </p-card>
+
+  <p-card>
+    <ng-template #header>
+      <ng-template #title><span class="inline-flex items-center gap-2"><i class="pi pi-exclamation-circle"></i> Past due, uncleared</span></ng-template>
+    </ng-template>
+    <ng-template #content>
+      @if (overdue().length === 0) {
+        <div class="empty-state">
+          <i class="pi pi-verified"></i>
+          <p>Everything due has been presented or replaced</p>
+        </div>
+      } @else {
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+          @for (c of overdue(); track c.id) {
+            <div class="section-card p-4 border-l-4" [class.border-l-primary-600]="isOverdue(c.due_on)" [class.border-l-primary-300]="!isOverdue(c.due_on)">
+              <div class="flex items-center justify-between gap-2">
+                <p class="font-mono text-xs text-zinc-500">{{ c.cheque_no }}</p>
+                <p-tag [value]="titleCase(c.status)" [severity]="severity(c.status)" />
+              </div>
+              <p class="mt-1 font-semibold text-zinc-800">{{ money(c.amount, c.currency) }}</p>
+              <p class="text-xs text-zinc-500">{{ c.payer }} · {{ c.unit_code }}</p>
+              <p class="text-xs text-primary-900 mt-2">Due {{ dateOnly(c.due_on) }} · {{ Math.abs(daysUntil(c.due_on)) }} days overdue</p>
+            </div>
+          }
+        </div>
+      }
+    </ng-template>
+  </p-card>
+</div>

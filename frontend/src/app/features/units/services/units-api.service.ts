@@ -36,7 +36,7 @@ export interface CreateUnitDto {
   base_rent: number;
 }
 
-export interface UpdateUnitDto extends Partial<CreateUnitDto> {}
+export type UpdateUnitDto = Partial<CreateUnitDto>;
 
 @Injectable({ providedIn: 'root' })
 export class UnitsApiService {

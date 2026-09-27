@@ -34,7 +34,7 @@ export interface CreateTenantDto {
   notes?: string;
 }
 
-export interface UpdateTenantDto extends Partial<CreateTenantDto> {}
+export type UpdateTenantDto = Partial<CreateTenantDto>;
 
 @Injectable({ providedIn: 'root' })
 export class TenantsApiService {

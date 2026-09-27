@@ -1,0 +1,200 @@
+<div class="space-y-5">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Fit-out &amp; Alterations Board</h1>
+      <p class="page-subtitle">Permit queue for tenant alterations, deposits, inspections and no-objection certificates.</p>
+    </div>
+    <p-button label="Refresh" icon="pi pi-refresh" severity="secondary" [outlined]="true" (onClick)="reload()" />
+  </div>
+
+  <app-stat-cards [cards]="cards()" />
+
+  @if (awaitingNoc().length) {
+    <div class="stat-card flex flex-wrap items-center justify-between gap-3 border-l-4 border-l-primary-300">
+      <div class="flex items-center gap-3">
+        <i class="pi pi-calendar-clock text-2xl text-primary-500"></i>
+        <div>
+          <p class="font-semibold text-zinc-800">{{ awaitingNoc().length }} approved permit(s) awaiting a no-objection certificate</p>
+          <p class="text-sm text-zinc-500">Schedule the inspection, then issue the NOC to release the deposit.</p>
+        </div>
+      </div>
+    </div>
+  }
+
+  <p-card class="table-card">
+    <ng-template #content>
+      <div class="flex flex-wrap items-center gap-3 mb-4">
+        <p-iconfield>
+          <p-inputicon styleClass="pi pi-search" />
+          <input pInputText type="text" placeholder="Search contractor, unit, scope…" [ngModel]="searchTerm" (ngModelChange)="onSearch($event)" />
+        </p-iconfield>
+
+        <p-select
+          [options]="permitStatuses"
+          optionLabel="label"
+          optionValue="value"
+          [ngModel]="statusFilter"
+          (ngModelChange)="onStatusFilter($event)"
+          placeholder="All permit states"
+          [showClear]="true"
+          styleClass="w-52" />
+
+        <p-button label="Reset" icon="pi pi-filter-slash" severity="secondary" [text]="true" (onClick)="resetFilters()" />
+        <span class="ml-auto text-sm text-zinc-500">{{ rows().length }} of {{ total() }}</span>
+      </div>
+
+      <p-table
+        [value]="rows()"
+        [lazy]="true"
+        [lazyLoadOnInit]="false"
+        [paginator]="true"
+        [rows]="perPage"
+        [rowsPerPageOptions]="[10, 15, 25, 50]"
+        [totalRecords]="total()"
+        [loading]="loading()"
+        [rowHover]="true"
+        [tableStyle]="{ 'min-width': '86rem' }"
+        (onLazyLoad)="onLazyLoad($event)">
+
+        <ng-template #header>
+          <tr>
+            <th pSortableColumn="code">Request <p-sorticon field="code" /></th>
+            <th>Unit / Property</th>
+            <th>Tenant &amp; contractor</th>
+            <th>Scope</th>
+            <th pSortableColumn="estimated_cost">Est. cost <p-sorticon field="estimated_cost" /></th>
+            <th>Deposit</th>
+            <th>Progress</th>
+            <th>Permit</th>
+            <th>NOC</th>
+            <th style="width: 13rem"></th>
+          </tr>
+        </ng-template>
+
+        <ng-template #body let-row>
+          <tr>
+            <td>
+              <div class="font-mono text-xs px-2 py-1 rounded bg-zinc-100">{{ row.code }}</div>
+              <div class="text-xs text-zinc-400 mt-1">{{ dateOnly(row.requested_on) }}</div>
+              <p-tag [value]="titleCase(row.priority)" [severity]="prioritySeverity(row.priority)" styleClass="mt-1" />
+            </td>
+            <td>
+              <div class="font-mono text-xs font-semibold">{{ row.unit_code }}</div>
+              <div class="text-xs text-zinc-400">{{ row.property_name }}</div>
+            </td>
+            <td>
+              <div class="font-medium">{{ row.tenant_name }}</div>
+              <div class="text-xs text-zinc-400">{{ row.tenant_company }}</div>
+              <div class="text-xs text-zinc-500 mt-1">
+                <i class="pi pi-hammer mr-1"></i>{{ row.contractor_name }}
+                <span class="text-zinc-400">· TRN {{ row.contractor_trn }}</span>
+              </div>
+            </td>
+            <td class="max-w-xs">
+              <span class="text-sm">{{ row.scope }}</span>
+              <div class="text-xs text-zinc-400 mt-1">Board owner: {{ row.owner_name }}</div>
+            </td>
+            <td class="font-semibold">{{ money(row.estimated_cost) }}</td>
+            <td>
+              @if (row.deposit_amount) {
+                <div class="text-sm">{{ money(row.deposit_amount) }}</div>
+                <p-tag [value]="titleCase(row.deposit_status)" [severity]="severity(row.deposit_status)" styleClass="mt-1" />
+              } @else {
+                <span class="text-zinc-400">—</span>
+              }
+            </td>
+            <td style="min-width: 8rem">
+              <p-progressbar [value]="row.progress_percent" [showValue]="false" styleClass="h-1.5" />
+              <div class="text-xs text-zinc-400 mt-1">{{ row.progress_percent }}% · due {{ dateOnly(row.expected_completion) }}</div>
+            </td>
+            <td><p-tag [value]="titleCase(row.permit_status)" [severity]="severity(row.permit_status)" /></td>
+            <td>
+              <p-tag [value]="titleCase(row.noc_status)" [severity]="severity(row.noc_status)" />
+              @if (row.inspection_date) {
+                <div class="text-xs text-zinc-400 mt-1">insp. {{ dateOnly(row.inspection_date) }}</div>
+              }
+            </td>
+            <td>
+              <div class="flex items-center gap-1">
+                @if (row.permit_status === 'not_submitted' || row.permit_status === 'under_review') {
+                  <p-button icon="pi pi-check" [text]="true" [rounded]="true" severity="success" pTooltip="Approve permit" (onClick)="approve(row)" />
+                  <p-button icon="pi pi-ban" [text]="true" [rounded]="true" severity="danger" pTooltip="Reject" (onClick)="reject(row)" />
+                }
+                @if (row.permit_status === 'approved' && row.noc_status === 'pending') {
+                  <p-button icon="pi pi-calendar-plus" [text]="true" [rounded]="true" severity="info" pTooltip="Schedule inspection" (onClick)="scheduleInspection(row)" />
+                }
+                @if (row.permit_status === 'approved' && row.noc_status !== 'noc_issued') {
+                  <p-button icon="pi pi-verified" [text]="true" [rounded]="true" severity="success" pTooltip="Issue NOC" (onClick)="issueNoc(row)" />
+                }
+                <p-button icon="pi pi-eye" [text]="true" [rounded]="true" severity="secondary" pTooltip="Open" (onClick)="open(row)" />
+                <p-button icon="pi pi-trash" [text]="true" [rounded]="true" severity="danger" pTooltip="Delete" (onClick)="remove(row, row.code)" />
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+
+        <ng-template #emptymessage>
+          <div class="empty-state">
+            <i class="pi pi-hammer"></i>
+            <p>No fit-out requests match these filters</p>
+          </div>
+        </ng-template>
+      </p-table>
+    </ng-template>
+  </p-card>
+</div>
+
+<p-drawer
+  position="right"
+  [visible]="!!selected()"
+  (visibleChange)="$event ? null : close()"
+  [style]="{ width: '34rem' }"
+  header="Fit-out request">
+  @if (selected(); as f) {
+    <div class="space-y-4">
+      <div>
+        <p class="text-xs uppercase tracking-wide text-zinc-400">{{ f.code }} · {{ dateOnly(f.requested_on) }}</p>
+        <h2 class="text-lg font-semibold text-zinc-800">{{ f.scope }}</h2>
+        <p class="text-sm text-zinc-500">{{ f.unit_code }}, {{ f.property_name }}</p>
+        <div class="flex gap-2 mt-2">
+          <p-tag [value]="titleCase(f.permit_status)" [severity]="severity(f.permit_status)" />
+          <p-tag [value]="titleCase(f.noc_status)" [severity]="severity(f.noc_status)" />
+          <p-tag [value]="titleCase(f.priority) + ' priority'" [severity]="prioritySeverity(f.priority)" />
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3 text-sm">
+        <div><p class="text-zinc-400 text-xs">Tenant</p><p>{{ f.tenant_name }}</p></div>
+        <div><p class="text-zinc-400 text-xs">Company</p><p>{{ f.tenant_company }}</p></div>
+        <div><p class="text-zinc-400 text-xs">Contractor</p><p>{{ f.contractor_name }}</p></div>
+        <div><p class="text-zinc-400 text-xs">TRN</p><p class="font-mono text-xs">{{ f.contractor_trn }}</p></div>
+        <div><p class="text-zinc-400 text-xs">Estimated cost</p><p class="font-semibold">{{ money(f.estimated_cost) }}</p></div>
+        <div><p class="text-zinc-400 text-xs">Deposit</p><p>{{ f.deposit_amount ? money(f.deposit_amount) : '—' }} <span class="text-xs text-zinc-400">({{ titleCase(f.deposit_status) }})</span></p></div>
+        <div><p class="text-zinc-400 text-xs">Expected completion</p><p>{{ dateOnly(f.expected_completion) }}</p></div>
+        <div><p class="text-zinc-400 text-xs">Inspection</p><p>{{ f.inspection_date ? dateOnly(f.inspection_date) : 'Not scheduled' }}</p></div>
+        <div><p class="text-zinc-400 text-xs">Board owner</p><p>{{ f.owner_name }}</p></div>
+        <div><p class="text-zinc-400 text-xs">Progress</p><p>{{ f.progress_percent }}%</p></div>
+      </div>
+
+      @if (f.notes) {
+        <div class="p-3 rounded-lg bg-primary-50 text-sm text-primary-900 border border-primary-100">
+          <i class="pi pi-comment mr-1"></i>{{ f.notes }}
+        </div>
+      }
+
+      <div class="flex flex-wrap gap-2">
+        @if (f.permit_status === 'not_submitted' || f.permit_status === 'under_review') {
+          <p-button label="Approve permit" icon="pi pi-check" severity="success" (onClick)="approve(f)" />
+          <p-button label="Reject" icon="pi pi-ban" severity="danger" [outlined]="true" (onClick)="reject(f)" />
+        }
+        @if (f.permit_status === 'approved' && f.noc_status === 'pending') {
+          <p-button label="Schedule inspection" icon="pi pi-calendar-plus" severity="info" (onClick)="scheduleInspection(f)" />
+        }
+        @if (f.permit_status === 'approved' && f.noc_status !== 'noc_issued') {
+          <p-button label="Issue NOC" icon="pi pi-verified" severity="success" (onClick)="issueNoc(f)" />
+        }
+        <p-button label="Close" severity="secondary" [outlined]="true" (onClick)="close()" />
+      </div>
+    </div>
+  }
+</p-drawer>

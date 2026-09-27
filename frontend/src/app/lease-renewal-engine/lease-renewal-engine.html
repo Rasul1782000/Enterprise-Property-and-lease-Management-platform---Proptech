@@ -1,0 +1,265 @@
+<div class="space-y-5">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Lease Renewal Engine</h1>
+      <p class="page-subtitle">Expiring leases scored, priced and negotiated before the notice window closes.</p>
+    </div>
+    <p-button label="Refresh" icon="pi pi-refresh" severity="secondary" [outlined]="true" (onClick)="reload()" />
+  </div>
+
+  <app-stat-cards [cards]="cards()" />
+
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+    <p-card class="xl:col-span-1">
+      <ng-template #header>
+        <ng-template #title><span class="inline-flex items-center gap-2"><i class="pi pi-filter"></i> Expiry horizon</span></ng-template>
+      </ng-template>
+      <ng-template #content>
+        <div class="flex flex-col gap-2">
+          @for (h of horizonOptions; track h.value) {
+            <button
+              type="button"
+              class="flex items-center justify-between px-3 py-2 rounded-lg text-sm border transition"
+              [class.bg-orange-50]="horizon() === h.value"
+              [class.border-orange-300]="horizon() === h.value"
+              [class.text-orange-800]="horizon() === h.value"
+              [class.bg-white]="horizon() !== h.value"
+              [class.border-zinc-200]="horizon() !== h.value"
+              (click)="setHorizon(h.value)">
+              <span>{{ h.label }}</span>
+              <span class="text-xs font-semibold">
+                {{ countWithin(h.value) }}
+              </span>
+            </button>
+          }
+        </div>
+        <p class="text-xs text-zinc-400 mt-4">
+          Counts reflect the rows currently loaded. Use the search box to narrow the source set first.
+        </p>
+      </ng-template>
+    </p-card>
+
+    <p-card class="xl:col-span-2">
+      <ng-template #header>
+        <ng-template #title>
+          <span class="inline-flex items-center gap-2"><i class="pi pi-bolt"></i> Renewal queue — next {{ horizon() }} days</span>
+        </ng-template>
+      </ng-template>
+      <ng-template #content>
+        @if (pipeline().length === 0) {
+          <div class="empty-state">
+            <i class="pi pi-verified"></i>
+            <p>No leases in this horizon need a renewal decision</p>
+          </div>
+        } @else {
+          <ul class="space-y-2">
+            @for (r of pipeline(); track r.id) {
+              <li class="section-card p-3 flex flex-wrap items-center gap-3">
+                <span class="w-1.5 h-10 rounded-full" [class.bg-primary-500]="r.days_to_expiry <= 30" [class.bg-primary-400]="r.days_to_expiry > 30 && r.days_to_expiry <= 60" [class.bg-zinc-300]="r.days_to_expiry > 60"></span>
+                <div class="min-w-0 flex-1">
+                  <p class="font-medium text-zinc-800 truncate">{{ r.tenant_name }} <span class="text-zinc-400 font-normal">· {{ r.tenant_company }}</span></p>
+                  <p class="text-xs text-zinc-500 font-mono">{{ r.lease_code }} · {{ r.unit_code }} · {{ r.property_name }}</p>
+                </div>
+                <div class="text-right text-xs">
+                  <p class="font-semibold text-zinc-700">{{ r.days_to_expiry }} days left</p>
+                  <p class="text-zinc-400">expires {{ dateOnly(r.expiry_date) }}</p>
+                </div>
+                <div class="text-right text-xs">
+                  <p class="font-semibold text-primary-800">{{ money(r.proposed_rent) }}</p>
+                  <p class="text-zinc-400">from {{ money(r.current_rent) }} · +{{ r.uplift_percent }}%</p>
+                </div>
+                <p-tag [value]="titleCase(r.status)" [severity]="severity(r.status)" />
+                <div class="flex gap-1">
+                  @if (r.status === 'draft') {
+                    <p-button icon="pi pi-send" [text]="true" [rounded]="true" severity="info" pTooltip="Send offer" (onClick)="send(r)" />
+                  }
+                  <p-button icon="pi pi-eye" [text]="true" [rounded]="true" severity="secondary" pTooltip="Open" (onClick)="open(r)" />
+                </div>
+              </li>
+            }
+          </ul>
+        }
+      </ng-template>
+    </p-card>
+  </div>
+
+  <p-card class="table-card">
+    <ng-template #content>
+      <div class="flex flex-wrap items-center gap-3 mb-4">
+        <p-iconfield>
+          <p-inputicon styleClass="pi pi-search" />
+          <input pInputText type="text" placeholder="Search tenant, lease, unit…" [ngModel]="searchTerm" (ngModelChange)="onSearch($event)" />
+        </p-iconfield>
+
+        <p-select
+          [options]="statuses"
+          optionLabel="label"
+          optionValue="value"
+          [ngModel]="statusFilter"
+          (ngModelChange)="onStatusFilter($event)"
+          placeholder="All statuses"
+          [showClear]="true"
+          styleClass="w-56" />
+
+        <p-button label="Reset" icon="pi pi-filter-slash" severity="secondary" [text]="true" (onClick)="resetFilters()" />
+        <span class="ml-auto text-sm text-zinc-500">{{ rows().length }} of {{ total() }}</span>
+      </div>
+
+      <p-table
+        [value]="rows()"
+        [lazy]="true"
+        [lazyLoadOnInit]="false"
+        [paginator]="true"
+        [rows]="perPage"
+        [rowsPerPageOptions]="[10, 15, 25, 50]"
+        [totalRecords]="total()"
+        [loading]="loading()"
+        [rowHover]="true"
+        [tableStyle]="{ 'min-width': '80rem' }"
+        (onLazyLoad)="onLazyLoad($event)">
+
+        <ng-template #header>
+          <tr>
+            <th pSortableColumn="code">Offer <p-sorticon field="code" /></th>
+            <th>Tenant / Lease</th>
+            <th pSortableColumn="expiry_date">Expires <p-sorticon field="expiry_date" /></th>
+            <th>Days left</th>
+            <th pSortableColumn="current_rent">Current <p-sorticon field="current_rent" /></th>
+            <th pSortableColumn="proposed_rent">Proposed <p-sorticon field="proposed_rent" /></th>
+            <th>Uplift</th>
+            <th>New term</th>
+            <th>Response</th>
+            <th>Status</th>
+            <th style="width: 13rem"></th>
+          </tr>
+        </ng-template>
+
+        <ng-template #body let-row>
+          <tr>
+            <td>
+              <div class="font-mono text-xs px-2 py-1 rounded bg-zinc-100">{{ row.code }}</div>
+              <div class="text-xs text-zinc-400 mt-1">{{ row.owner_note || 'Standard terms' }}</div>
+            </td>
+            <td>
+              <div class="font-medium">{{ row.tenant_name }}</div>
+              <div class="text-xs text-zinc-400">{{ row.tenant_company }}</div>
+              <div class="text-xs text-zinc-400 font-mono mt-0.5">{{ row.lease_code }} · {{ row.unit_code }}</div>
+            </td>
+            <td>{{ dateOnly(row.expiry_date) }}</td>
+            <td>
+              <span
+                class="px-2 py-1 rounded text-xs font-semibold"
+                [class.bg-primary-600]="row.days_to_expiry <= 30"
+                [class.text-white]="row.days_to_expiry <= 30"
+                [class.bg-primary-100]="row.days_to_expiry > 30 && row.days_to_expiry <= 60"
+                [class.text-primary-800]="row.days_to_expiry > 30 && row.days_to_expiry <= 60"
+                [class.bg-zinc-100]="row.days_to_expiry > 60"
+                [class.text-zinc-600]="row.days_to_expiry > 60">
+                {{ row.days_to_expiry }}d
+              </span>
+            </td>
+            <td>{{ money(row.current_rent) }}</td>
+            <td class="font-semibold">{{ money(row.proposed_rent) }}</td>
+            <td>
+              <span class="text-primary-800 font-semibold">+{{ row.uplift_percent }}%</span>
+              @if (row.discount_percent) {
+                <div class="text-xs text-primary-700">-{{ row.discount_percent }}% countered</div>
+              }
+            </td>
+            <td class="text-xs">
+              {{ dateOnly(row.new_start_date) }}<br />
+              <span class="text-zinc-400">to {{ dateOnly(row.new_end_date) }} · {{ row.term_months }}m</span>
+            </td>
+            <td class="text-xs">
+              <div>Due {{ dateOnly(row.response_due_on) }}</div>
+              @if (row.responded_on) {
+                <div class="text-primary-700">Replied {{ dateOnly(row.responded_on) }}</div>
+              } @else if (isOverdue(row.response_due_on)) {
+                <div class="text-primary-900">Overdue</div>
+              }
+            </td>
+            <td><p-tag [value]="titleCase(row.status)" [severity]="severity(row.status)" /></td>
+            <td>
+              <div class="flex items-center gap-1">
+                @if (row.status === 'draft') {
+                  <p-button icon="pi pi-send" [text]="true" [rounded]="true" severity="info" pTooltip="Send offer" (onClick)="send(row)" />
+                }
+                @if (row.status === 'sent') {
+                  <p-button icon="pi pi-check" [text]="true" [rounded]="true" severity="success" pTooltip="Accept" (onClick)="accept(row)" />
+                  <p-button icon="pi pi-times" [text]="true" [rounded]="true" severity="danger" pTooltip="Decline" (onClick)="decline(row)" />
+                }
+                @if (row.status === 'under_negotiation') {
+                  <p-button icon="pi pi-check" [text]="true" [rounded]="true" severity="success" pTooltip="Accept" (onClick)="accept(row)" />
+                }
+                @if (row.status === 'sent' || row.status === 'under_negotiation') {
+                  <p-button icon="pi pi-comments" [text]="true" [rounded]="true" severity="warn" pTooltip="Negotiate" (onClick)="negotiate(row)" />
+                }
+                <p-button icon="pi pi-eye" [text]="true" [rounded]="true" severity="secondary" pTooltip="Open" (onClick)="open(row)" />
+                <p-button icon="pi pi-trash" [text]="true" [rounded]="true" severity="danger" pTooltip="Delete" (onClick)="remove(row, row.code)" />
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+
+        <ng-template #emptymessage>
+          <div class="empty-state">
+            <i class="pi pi-sync"></i>
+            <p>No renewal offers match these filters</p>
+          </div>
+        </ng-template>
+      </p-table>
+    </ng-template>
+  </p-card>
+</div>
+
+<p-drawer
+  position="right"
+  [visible]="!!selected()"
+  (visibleChange)="$event ? null : close()"
+  [style]="{ width: '32rem' }"
+  header="Renewal offer">
+  @if (selected(); as r) {
+    <div class="space-y-4">
+      <div>
+        <p class="text-xs uppercase tracking-wide text-zinc-400">{{ r.code }}</p>
+        <h2 class="text-lg font-semibold text-zinc-800">{{ r.tenant_name }}</h2>
+        <p class="text-sm text-zinc-500">{{ r.tenant_company }} · {{ r.unit_code }}, {{ r.property_name }}</p>
+        <p-tag [value]="titleCase(r.status)" [severity]="severity(r.status)" />
+      </div>
+
+      <div class="grid grid-cols-2 gap-3 text-sm">
+        <div><p class="text-zinc-400 text-xs">Lease</p><p class="font-mono text-xs">{{ r.lease_code }}</p></div>
+        <div><p class="text-zinc-400 text-xs">Days to expiry</p><p>{{ r.days_to_expiry }}</p></div>
+        <div><p class="text-zinc-400 text-xs">Current rent</p><p>{{ money(r.current_rent) }}</p></div>
+        <div><p class="text-zinc-400 text-xs">Proposed rent</p><p class="font-semibold">{{ money(r.proposed_rent) }}</p></div>
+        <div><p class="text-zinc-400 text-xs">Term</p><p>{{ r.term_months }} months</p></div>
+        <div><p class="text-zinc-400 text-xs">Offer sent</p><p>{{ r.offer_sent_on ? dateOnly(r.offer_sent_on) : 'Not yet sent' }}</p></div>
+        <div><p class="text-zinc-400 text-xs">Response due</p><p>{{ dateOnly(r.response_due_on) }}</p></div>
+        <div><p class="text-zinc-400 text-xs">Responded</p><p>{{ r.responded_on ? dateOnly(r.responded_on) : '—' }}</p></div>
+      </div>
+
+      @if (r.owner_note) {
+        <div class="p-3 rounded-lg bg-primary-50 text-sm text-primary-800 border border-primary-100">
+          <i class="pi pi-star mr-1"></i>{{ r.owner_note }}
+        </div>
+      }
+      @if (r.notes) {
+        <div class="p-3 rounded-lg bg-primary-50 text-sm text-primary-900 border border-primary-100">
+          <i class="pi pi-comment mr-1"></i>{{ r.notes }}
+        </div>
+      }
+
+      <div class="flex flex-wrap gap-2">
+        @if (r.status === 'draft') {
+          <p-button label="Send offer" icon="pi pi-send" severity="info" (onClick)="send(r)" />
+        }
+        @if (r.status === 'sent' || r.status === 'under_negotiation') {
+          <p-button label="Accept" icon="pi pi-check" severity="success" (onClick)="accept(r)" />
+          <p-button label="Negotiate" icon="pi pi-comments" severity="warn" [outlined]="true" (onClick)="negotiate(r)" />
+          <p-button label="Decline" icon="pi pi-times" severity="danger" [outlined]="true" (onClick)="decline(r)" />
+        }
+        <p-button label="Close" severity="secondary" [outlined]="true" (onClick)="close()" />
+      </div>
+    </div>
+  }
+</p-drawer>

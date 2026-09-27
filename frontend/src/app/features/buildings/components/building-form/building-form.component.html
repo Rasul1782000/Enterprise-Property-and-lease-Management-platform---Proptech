@@ -1,66 +1,116 @@
-  <h2 mat-dialog-title>{{ data.mode === 'create' ? 'Add Building' : 'Edit Building' }}</h2>
-  <mat-dialog-content class="min-w-[500px]">
-    <form [formGroup]="form" class="space-y-4">
-      <mat-form-field appearance="outline" class="w-full">
-        <mat-label>Property *</mat-label>
-        <mat-select formControlName="property_id" required>
-          @for (p of properties(); track p.id) {
-            <mat-option [value]="p.id">{{p.name}} ({{p.code}})</mat-option>
-          }
-        </mat-select>
-        <mat-error *ngIf="form.get('property_id')?.hasError('required')">Property is required</mat-error>
-      </mat-form-field>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <mat-form-field appearance="outline" class="w-full">
-          <mat-label>Code *</mat-label>
-          <input matInput formControlName="code" required maxlength="20">
-          <mat-error *ngIf="form.get('code')?.hasError('required')">Code is required</mat-error>
-        </mat-form-field>
-        <mat-form-field appearance="outline" class="w-full">
-          <mat-label>Name *</mat-label>
-          <input matInput formControlName="name" required maxlength="100">
-          <mat-error *ngIf="form.get('name')?.hasError('required')">Name is required</mat-error>
-        </mat-form-field>
+﻿<p-dialog
+  [header]="title"
+  [modal]="true"
+  [visible]="visible"
+  [draggable]="false"
+  [style]="{ width: '40rem' }"
+  (visibleChange)="visibleChange.emit($event)"
+>
+  @if (data.mode === 'view' && data.building) {
+    <ul class="view-list">
+      <li><span>Code</span><strong>{{ data.building.code }}</strong></li>
+      <li><span>Name</span><strong>{{ data.building.name }}</strong></li>
+      <li><span>Address</span><strong>{{ data.building.address }}</strong></li>
+      <li><span>City</span><strong>{{ data.building.city }}</strong></li>
+      <li><span>State</span><strong>{{ data.building.state }}</strong></li>
+      <li><span>ZIP</span><strong>{{ data.building.zip }}</strong></li>
+      <li><span>Floors</span><strong>{{ data.building.floors }}</strong></li>
+      <li>
+        <span>Status</span>
+        <p-tag [value]="data.building.status" [severity]="statusSeverity(data.building.status)" />
+      </li>
+      <li><span>Units</span><strong>{{ data.building.units_count }}</strong></li>
+      <li><span>Property</span><strong>{{ data.building.property?.name || 'N/A' }}</strong></li>
+    </ul>
+  } @else {
+    <form [formGroup]="form" class="form-grid">
+      <div class="field field-full">
+        <label class="field-label" for="bf-property">Property *</label>
+        <p-select
+          formControlName="property_id"
+          inputId="bf-property"
+          [options]="propertyOptions()"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Select property"
+          appendTo="body"
+        />
+        @if (form.get('property_id')?.hasError('required')) {
+          <small class="field-error">Property is required</small>
+        }
       </div>
 
-      <mat-form-field appearance="outline" class="w-full">
-        <mat-label>Address *</mat-label>
-        <input matInput formControlName="address" required maxlength="255">
-      </mat-form-field>
-
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <mat-form-field appearance="outline" class="w-full">
-          <mat-label>City *</mat-label>
-          <input matInput formControlName="city" required maxlength="100">
-        </mat-form-field>
-        <mat-form-field appearance="outline" class="w-full">
-          <mat-label>State *</mat-label>
-          <input matInput formControlName="state" required maxlength="50">
-        </mat-form-field>
-        <mat-form-field appearance="outline" class="w-full">
-          <mat-label>ZIP *</mat-label>
-          <input matInput formControlName="zip" required maxlength="20">
-        </mat-form-field>
-        <mat-form-field appearance="outline" class="w-full">
-          <mat-label>Floors *</mat-label>
-          <input matInput type="number" formControlName="floors" required min="1" max="100">
-        </mat-form-field>
+      <div class="field">
+        <label class="field-label" for="bf-code">Code *</label>
+        <input pInputText id="bf-code" formControlName="code" maxlength="20" />
+        @if (form.get('code')?.hasError('required')) {
+          <small class="field-error">Code is required</small>
+        }
       </div>
 
-      <mat-form-field appearance="outline" class="w-full">
-        <mat-label>Status</mat-label>
-        <mat-select formControlName="status">
-          <mat-option value="active">Active</mat-option>
-          <mat-option value="inactive">Inactive</mat-option>
-          <mat-option value="under_maintenance">Under Maintenance</mat-option>
-        </mat-select>
-      </mat-form-field>
+      <div class="field">
+        <label class="field-label" for="bf-name">Name *</label>
+        <input pInputText id="bf-name" formControlName="name" maxlength="100" />
+        @if (form.get('name')?.hasError('required')) {
+          <small class="field-error">Name is required</small>
+        }
+      </div>
+
+      <div class="field field-full">
+        <label class="field-label" for="bf-address">Address *</label>
+        <input pInputText id="bf-address" formControlName="address" maxlength="255" />
+        @if (form.get('address')?.hasError('required')) {
+          <small class="field-error">Address is required</small>
+        }
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="bf-city">City *</label>
+        <input pInputText id="bf-city" formControlName="city" maxlength="100" />
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="bf-state">State *</label>
+        <input pInputText id="bf-state" formControlName="state" maxlength="50" />
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="bf-zip">ZIP *</label>
+        <input pInputText id="bf-zip" formControlName="zip" maxlength="20" />
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="bf-floors">Floors *</label>
+        <p-inputnumber formControlName="floors" inputId="bf-floors" [min]="1" [max]="100" [showButtons]="true" />
+      </div>
+
+      <div class="field field-full">
+        <label class="field-label" for="bf-status">Status</label>
+        <p-select
+          formControlName="status"
+          inputId="bf-status"
+          [options]="statusOptions"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Select status"
+          appendTo="body"
+        />
+      </div>
     </form>
-  </mat-dialog-content>
-  <mat-dialog-actions align="end" class="gap-2">
-    <button mat-button (click)="onCancel()">Cancel</button>
-    <button mat-flat-button color="primary" (click)="onSubmit()" [disabled]="form.invalid || loading()">
-      @if (loading()) { <mat-spinner diameter="20"></mat-spinner> } @else { {{ data.mode === 'create' ? 'Create' : 'Update' }} }
-    </button>
-  </mat-dialog-actions>
+  }
+
+  <ng-template #footer>
+    @if (data.mode !== 'view') {
+      <p-button label="Cancel" [text]="true" (onClick)="onCancel()" />
+      <p-button
+        [label]="submitLabel"
+        icon="pi pi-check"
+        [loading]="loading()"
+        [disabled]="form.invalid || loading()"
+        (onClick)="onSubmit()"
+      />
+    } @else {
+      <p-button label="Close" icon="pi pi-times" (onClick)="onCancel()" />
+    }
+  </ng-template>
+</p-dialog>

@@ -1,20 +1,12 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { Router, RouterModule } from '@angular/router';
-import { MatTableModule } from '@angular/material/table';
-import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
-import { MatSortModule, Sort } from '@angular/material/sort';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatDialogModule, MatDialog } from '@angular/material/dialog';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatMenuModule } from '@angular/material/menu';
-import { MatCardModule } from '@angular/material/card';
+import { Router } from '@angular/router';
+import { ConfirmationService, MenuItem, MessageService } from 'primeng/api';
 import { TenantsApiService, Tenant } from '../../services/tenants-api.service';
 import { PaginatedResponse } from '../../../../core/types';
-import { TenantFormComponent } from '../../components/tenant-form/tenant-form.component';
+import { TenantFormDialogData } from '../../components/tenant-form/tenant-form.component';
+
+interface ListSortEvent { field: string; order: number | null | undefined; }
+interface ListPageEvent { first: number; rows: number; }
 
 @Component({
   selector: 'app-tenants-list',
@@ -24,14 +16,18 @@ import { TenantFormComponent } from '../../components/tenant-form/tenant-form.co
 })
 export class TenantsListComponent implements OnInit {
   private api = inject(TenantsApiService);
-  private dialog = inject(MatDialog);
   private router = inject(Router);
+  private confirmation = inject(ConfirmationService);
+  private messages = inject(MessageService);
 
   cols = ['code', 'name', 'company', 'phone', 'status', 'leases_count', 'actions'];
   tenants = signal<Tenant[]>([]);
   total = signal(0);
   loading = signal(false);
   perPage = 15; page = 1; sort = 'created_at'; dir: 'asc' | 'desc' = 'desc';
+  formVisible = signal(false);
+  formData = signal<TenantFormDialogData>({ mode: 'create' });
+  private menuCache = new Map<number, MenuItem[]>();
 
   ngOnInit() { this.load(); }
 
@@ -43,14 +39,55 @@ export class TenantsListComponent implements OnInit {
     });
   }
 
-  onSort(e: Sort) { this.sort = e.active; this.dir = e.direction || 'desc'; this.load(); }
-  onPage(e: PageEvent) { this.page = e.pageIndex + 1; this.perPage = e.pageSize; this.load(); }
+  onSort(e: ListSortEvent) { this.sort = e.field || this.sort; this.dir = e.order === 1 ? 'asc' : 'desc'; this.page = 1; this.load(); }
+  onPage(e: ListPageEvent) { this.perPage = e.rows; this.page = Math.floor(e.first / e.rows) + 1; this.load(); }
 
-  getStatusClass(s: string) { const c: Record<string,string> = {'active':'bg-emerald-100 text-emerald-700','inactive':'bg-slate-100','prospect':'bg-blue-100 text-blue-700','former':'bg-amber-100 text-amber-700'}; return c[s] || 'bg-slate-100'; }
+  getStatusClass(s: string) { const c: Record<string,string> = {'active':'bg-primary-100 text-primary-800','inactive':'bg-zinc-100','prospect':'bg-zinc-200 text-zinc-800','former':'bg-primary-50 text-primary-700'}; return c[s] || 'bg-zinc-100'; }
+
+  statusSeverity(status: string): 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast' {
+    const map: Record<string, 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast'> = {
+      active: 'success', occupied: 'success', paid: 'success',
+      inactive: 'secondary', former: 'secondary', cancelled: 'secondary',
+      under_maintenance: 'warn', pending: 'warn', partial: 'warn', draft: 'warn', prospect: 'warn', reserved: 'warn',
+      overdue: 'danger', terminated: 'danger', vacant: 'danger', expired: 'danger'
+    };
+    return map[status] ?? 'info';
+  }
+
+  money(v: any): string { return '$' + Number(v || 0).toLocaleString(); }
+  dateOnly(v: any): string { return new Date(v).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); }
+  pct(v: any): string { return Number(v || 0).toFixed(1) + '%'; }
+
+  rowMenu(t: Tenant): MenuItem[] {
+    let items = this.menuCache.get(t.id);
+    if (!items) {
+      items = [
+        { label: 'View', icon: 'pi pi-eye', command: () => this.router.navigate(['/tenants', t.id]) },
+        { label: 'Edit', icon: 'pi pi-pencil', command: () => this.editTenant(t) },
+        { separator: true },
+        { label: 'Delete', icon: 'pi pi-trash', command: () => this.deleteTenant(t) }
+      ];
+      this.menuCache.set(t.id, items);
+    }
+    return items;
+  }
 
   editTenant(t: Tenant) { this.openEditDialog(t); }
-  deleteTenant(t: Tenant) { if (confirm(`Delete tenant "${t.first_name} ${t.last_name}"?`)) this.api.delete(t.id).subscribe(() => this.load()); }
+  deleteTenant(t: Tenant) {
+    this.confirmation.confirm({
+      header: 'Delete tenant',
+      message: `Delete tenant "${t.first_name} ${t.last_name}"?`,
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Delete',
+      rejectLabel: 'Cancel',
+      accept: () => this.api.delete(t.id).subscribe(() => {
+        this.messages.add({ severity: 'success', summary: 'Deleted', detail: `Tenant "${t.first_name} ${t.last_name}" was deleted` });
+        this.load();
+      })
+    });
+  }
 
-  openCreateDialog() { const ref = this.dialog.open(TenantFormComponent, { width: '600px', data: { mode: 'create' } }); ref.afterClosed().subscribe(r => r && this.load()); }
-  openEditDialog(t: Tenant) { const ref = this.dialog.open(TenantFormComponent, { width: '600px', data: { mode: 'edit', tenant: t } }); ref.afterClosed().subscribe(r => r && this.load()); }
+  openCreateDialog() { this.formData.set({ mode: 'create' }); this.formVisible.set(true); }
+  openEditDialog(t: Tenant) { this.formData.set({ mode: 'edit', tenant: t }); this.formVisible.set(true); }
+  onFormClosed(result: boolean) { this.formVisible.set(false); if (result) this.load(); }
 }

@@ -1,2 +1,11 @@
-.stat-card { transition: transform 0.2s, box-shadow 0.2s; }
-    .stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
+.stat-card { transition: box-shadow .15s ease, border-color .15s ease; }
+.stat-card:hover { box-shadow: var(--shadow-raised); border-color: var(--brand-200); }
+
+/* Activity type chips sit inside a p-tag, so flatten the PrimeNG chrome. */
+:host ::ng-deep .p-tag.activity-tag {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font-size: 0.75rem;
+  line-height: 1.4;
+}

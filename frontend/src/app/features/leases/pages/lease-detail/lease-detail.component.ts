@@ -1,14 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { MatCardModule } from '@angular/material/card';
-import { MatTabsModule } from '@angular/material/tabs';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatTableModule } from '@angular/material/table';
-import { MatDividerModule } from '@angular/material/divider';
+import { ActivatedRoute, Router } from '@angular/router';
+import { MessageService } from 'primeng/api';
 import { LeasesApiService, Lease } from '../../services/leases-api.service';
 import { InvoicesApiService, Invoice } from '../../../invoices/services/invoices-api.service';
 
@@ -23,6 +15,7 @@ export class LeaseDetailComponent implements OnInit {
   private router = inject(Router);
   private api = inject(LeasesApiService);
   private invoicesApi = inject(InvoicesApiService);
+  private messages = inject(MessageService);
 
   lease = signal<Lease | null>(null);
   invoices = signal<Invoice[]>([]);
@@ -43,8 +36,34 @@ export class LeaseDetailComponent implements OnInit {
   }
 
   editLease() { const l = this.lease(); if (l) this.router.navigate(['/leases', l.id, 'edit']); }
-  generateDocument() { const l = this.lease(); if (l) this.api.generateDocument(l.id, 'standard').subscribe(blob => { const url = URL.createObjectURL(blob); window.open(url); }); }
 
-  getStatusClass(s: string) { const c: Record<string,string> = {'draft':'bg-slate-100','active':'bg-emerald-100 text-emerald-700','expired':'bg-red-100 text-red-700','terminated':'bg-slate-100','renewed':'bg-blue-100 text-blue-700'}; return c[s] || 'bg-slate-100'; }
-  getInvoiceStatusClass(s: string) { const c: Record<string,string> = {'draft':'bg-slate-100','sent':'bg-blue-100 text-blue-700','paid':'bg-emerald-100 text-emerald-700','partial':'bg-amber-100 text-amber-700','overdue':'bg-red-100 text-red-700','cancelled':'bg-slate-100'}; return c[s] || 'bg-slate-100'; }
+  generateDocument() {
+    const l = this.lease();
+    if (!l) return;
+    this.api.generateDocument(l.id, 'standard').subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        window.open(url);
+        this.messages.add({ severity: 'success', summary: 'Document', detail: 'Lease PDF generated.' });
+      },
+      error: () => this.messages.add({ severity: 'error', summary: 'Error', detail: 'Could not generate the PDF.' })
+    });
+  }
+
+  statusSeverity(status: string): 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast' {
+    const map: Record<string, 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast'> = {
+      active: 'success', signed: 'success', paid: 'success', renewed: 'success',
+      inactive: 'secondary', former: 'secondary', cancelled: 'secondary',
+      draft: 'warn', pending: 'warn', partial: 'warn', reserved: 'warn', prospect: 'warn',
+      overdue: 'danger', terminated: 'danger', vacant: 'danger', expired: 'danger'
+    };
+    return map[status] ?? 'info';
+  }
+
+  money(v: any): string { return '$' + Number(v || 0).toLocaleString(); }
+  dateOnly(v: any): string { return new Date(v).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); }
+  daysUntil(v: any): number { return Math.ceil((new Date(v).getTime() - Date.now()) / 86400000); }
+
+  getStatusClass(s: string) { const c: Record<string,string> = {'draft':'bg-zinc-100','active':'bg-primary-100 text-primary-800','expired':'bg-primary-600 text-white','terminated':'bg-zinc-100','renewed':'bg-zinc-200 text-zinc-800'}; return c[s] || 'bg-zinc-100'; }
+  getInvoiceStatusClass(s: string) { const c: Record<string,string> = {'draft':'bg-zinc-100','sent':'bg-zinc-200 text-zinc-800','paid':'bg-primary-100 text-primary-800','partial':'bg-primary-50 text-primary-700','overdue':'bg-primary-600 text-white','cancelled':'bg-zinc-100'}; return c[s] || 'bg-zinc-100'; }
 }
