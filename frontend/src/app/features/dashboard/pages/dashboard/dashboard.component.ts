@@ -1,5 +1,8 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { DashboardApiService, DashboardStats, RecentActivity } from '../../services/dashboard-api.service';
+import { Chart, ChartConfiguration, registerables } from 'chart.js';
+import { forkJoin } from 'rxjs';
+Chart.register(...registerables);
 
 @Component({
   selector: 'app-dashboard',
@@ -21,8 +24,16 @@ export class DashboardComponent implements OnInit {
   });
   recentActivity = signal<RecentActivity[]>([]);
   loading = signal(true);
+  isChartExpanded = signal(false);
+  performanceSources = signal({
+    occupancy: null as any,
+    revenue: null as any,
+    expiringLeases: null as any
+  });
 
   activityCols = ['timestamp', 'type', 'title', 'description'];
+
+  private chart?: Chart;
 
   ngOnInit() {
     this.loadData();
@@ -30,8 +41,18 @@ export class DashboardComponent implements OnInit {
 
   loadData() {
     this.loading.set(true);
-    this.dashboardApi.getStats().subscribe({
-      next: (data) => { this.stats.set(data); this.loading.set(false); },
+    forkJoin({
+      stats: this.dashboardApi.getStats(),
+      occupancy: this.dashboardApi.getOccupancyChart(12),
+      revenue: this.dashboardApi.getRevenueChart(12),
+      expiringLeases: this.dashboardApi.getExpiringLeasesChart(6)
+    }).subscribe({
+      next: ({ stats, occupancy, revenue, expiringLeases }) => {
+        this.stats.set(stats);
+        this.performanceSources.set({ occupancy, revenue, expiringLeases });
+        this.loading.set(false);
+        this.updateChart();
+      },
       error: () => this.loading.set(false)
     });
     this.dashboardApi.getRecentActivity(10).subscribe({
@@ -69,5 +90,143 @@ export class DashboardComponent implements OnInit {
       'maintenance_request': 'bg-zinc-100 text-zinc-600'
     };
     return classes[type] || 'bg-zinc-100 text-zinc-600';
+  }
+
+  private createChart(): void {
+    if (this.chart) return;
+    const canvas = document.getElementById('bubbleChartCanvas') as HTMLCanvasElement;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const config: ChartConfiguration = {
+      type: 'bar',
+      data: {
+        labels: ['Occupancy', 'Revenue Collected', 'Revenue Outstanding', 'Expiring Leases'],
+        datasets: [
+          {
+            label: 'Latest dashboard value',
+            data: this.getComparisonValues(),
+            backgroundColor: 'rgba(59, 130, 246, 0.6)',
+            borderColor: 'rgba(59, 130, 246, 1)',
+            borderWidth: 1,
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: 'index',
+          intersect: false
+        },
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: 'Performance Metrics'
+            }
+          },
+          y: {
+            type: 'linear',
+            display: true,
+            position: 'left',
+            title: {
+              display: true,
+              text: 'Value'
+            },
+            min: 0,
+            ticks: {
+              callback: function(value: any) {
+                if (typeof value === 'number') {
+                  return value.toLocaleString();
+                }
+                return value;
+              }
+            }
+          }
+        },
+        plugins: {
+          title: {
+            display: true,
+            text: 'Performance Metrics Comparison - All Dashboard Sources'
+          },
+          legend: {
+            position: 'top',
+            labels: {
+              usePointStyle: true,
+              padding: 20
+            }
+          },
+          tooltip: {
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            titleFont: {
+              size: 14,
+              weight: 'bold'
+            },
+            bodyFont: {
+              size: 12
+            },
+            callbacks: {
+              label: function(context: any) {
+                let label = context.dataset.label || '';
+                if (label) {
+                  label += ': ';
+                }
+                let value = context.raw;
+                if (typeof value === 'number') {
+                  if (context.dataIndex === 0) {
+                    label += value.toFixed(1) + '%';
+                  } else if (context.dataIndex === 1 || context.dataIndex === 2) {
+                    label += '$' + value.toLocaleString();
+                  } else {
+                    label += value;
+                  }
+                } else {
+                  label += value;
+                }
+                return label;
+              }
+            }
+          }
+        }
+      }
+    };
+
+    this.chart = new Chart(ctx, config);
+  }
+
+  private updateChart(): void {
+    this.createChart();
+    const canvas = document.getElementById('bubbleChartCanvas') as HTMLCanvasElement;
+    if (!canvas || !this.chart) return;
+    this.chart.data.datasets[0].data = this.getComparisonValues();
+    this.chart.update();
+  }
+
+  toggleBubble(): void {
+    this.isChartExpanded.set(!this.isChartExpanded());
+    if (this.isChartExpanded()) {
+      setTimeout(() => this.updateChart());
+    }
+  }
+
+  private getComparisonValues(): number[] {
+    const sources = this.performanceSources();
+    const latest = (source: any, datasetIndex = 0): number => {
+      const data = source?.datasets?.[datasetIndex]?.data;
+      return Array.isArray(data) && data.length ? Number(data[data.length - 1]) : 0;
+    };
+    const occupancyRate = this.stats().units.total > 0
+      ? this.stats().units.occupied / this.stats().units.total * 100
+      : latest(sources.occupancy) ;
+
+    return [
+      occupancyRate,
+      latest(sources.revenue),
+      latest(sources.revenue, 1),
+      latest(sources.expiringLeases)
+    ];
   }
 }

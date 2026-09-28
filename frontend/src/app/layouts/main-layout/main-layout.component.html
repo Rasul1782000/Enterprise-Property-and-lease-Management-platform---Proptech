@@ -1,17 +1,98 @@
 <a class="skip-link" href="#portal-content">Skip to main content</a>
 
 <div class="portal-shell" [class.nav-open]="navOpen">
-  <aside class="portal-sidenav">
-    <div class="brand-lockup">
-      <span class="brand-mark"><i class="pi pi-building"></i></span>
-      <span>Lottly</span>
+  <header class="portal-header">
+    <div class="header-brand">
+      <button
+        #navToggle
+        type="button"
+        class="nav-toggle"
+        aria-label="Toggle navigation"
+        [attr.aria-expanded]="navOpen"
+        aria-controls="primary-navigation"
+        (click)="toggleNav()"
+      >
+        <i class="pi pi-bars"></i>
+      </button>
+      <a class="brand-lockup" routerLink="/dashboard">
+        <span class="brand-mark"><i class="pi pi-building"></i></span>
+        <span class="brand-name">Lottly</span>
+      </a>
     </div>
 
-    <nav class="primary-nav" id="primary-navigation" aria-label="Primary navigation">
+    <nav class="primary-nav" aria-label="Primary navigation">
       @for (section of navSections; track section.heading) {
+        <div class="nav-group">
+          <button
+            type="button"
+            class="group-trigger"
+            [class.is-open]="openGroup === section.heading"
+            [class.is-active]="isSectionActive(section)"
+            [attr.aria-expanded]="openGroup === section.heading"
+            aria-haspopup="true"
+            (click)="toggleGroup(section.heading, $event)"
+          >
+            <span>{{ section.heading }}</span>
+            <i class="pi pi-angle-down chevron"></i>
+          </button>
+
+          @if (openGroup === section.heading) {
+            <div class="group-panel">
+              @for (item of section.items; track item.route) {
+                <a
+                  [routerLink]="item.route"
+                  routerLinkActive="is-active"
+                  [routerLinkActiveOptions]="{ exact: !!item.exact }"
+                  (click)="closeGroup()"
+                >
+                  <i [class]="item.icon"></i>
+                  <span class="item-label">{{ item.label }}</span>
+                  @if (item.badge) {
+                    <span class="nav-badge">{{ item.badge }}</span>
+                  }
+                  @if (item.tag) {
+                    <span class="nav-new">{{ item.tag }}</span>
+                  }
+                </a>
+              }
+            </div>
+          }
+        </div>
+      }
+    </nav>
+
+    <div class="header-actions">
+      <div class="protection-card">
+        <span class="protection-icon"><i class="pi pi-shield"></i></span>
+        <span class="protection-text">
+          <strong>Protection Plan</strong>
+          <small>Your rent safeguard</small>
+        </span>
+        <a class="protection-link" routerLink="/invoices" (click)="closeNav()">Learn More</a>
+      </div>
+
+      <p-menu #menu [popup]="true" [model]="profileMenu" styleClass="profile-menu" appendTo="body" />
+      <button type="button" class="profile-button" (click)="menu.toggle($event)">
+        <span class="avatar">{{ initial }}</span>
+        <span class="profile-name">{{ auth.user()?.name || 'John Smith' }}</span>
+        <i class="pi pi-angle-down"></i>
+      </button>
+    </div>
+  </header>
+
+  <button type="button" class="scrim" aria-label="Close navigation" (click)="closeNav(true)"></button>
+
+  <nav class="nav-drawer" id="primary-navigation" aria-label="Primary navigation">
+    @for (section of navSections; track section.heading) {
+      <div class="drawer-group">
         <p class="nav-heading">{{ section.heading }}</p>
         @for (item of section.items; track item.route) {
-          <a [routerLink]="item.route" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: !!item.exact }" (click)="closeNav()">
+          <a
+            [routerLink]="item.route"
+            routerLinkActive="is-active"
+            [routerLinkActiveOptions]="{ exact: !!item.exact }"
+            (click)="closeNav()"
+          >
             <i [class]="item.icon"></i>
             <span>{{ item.label }}</span>
             @if (item.badge) {
@@ -22,47 +103,11 @@
             }
           </a>
         }
-      }
-    </nav>
+      </div>
+    }
+  </nav>
 
-    <div class="protection-card">
-      <div class="protection-icon"><i class="pi pi-shield"></i></div>
-      <strong>PROTECTION PLAN</strong>
-      <small>Your rent safeguard</small>
-      <button type="button" routerLink="/invoices" (click)="closeNav()">Learn More</button>
-    </div>
-
-    <button type="button" class="logout-link" (click)="logout()">
-      <i class="pi pi-sign-out"></i> Logout
-    </button>
-  </aside>
-
-  <button type="button" class="scrim" aria-label="Close navigation" (click)="closeNav(true)"></button>
-
-  <section class="portal-content">
-    <header class="portal-header">
-      <button
-        #navToggle
-        type="button"
-        class="nav-toggle"
-        aria-label="Toggle navigation"
-        [attr.aria-expanded]="navOpen"
-        aria-controls="primary-navigation"
-        (click)="toggleNav()">
-        <i class="pi pi-bars"></i>
-      </button>
-      <span class="mobile-brand">Lottly</span>
-      <span class="header-spacer"></span>
-      <p-menu #menu [popup]="true" [model]="profileMenu" styleClass="profile-menu" appendTo="body" />
-      <button type="button" class="profile-button" (click)="menu.toggle($event)">
-        <span class="avatar">{{ initial }}</span>
-        <span class="profile-name">{{ auth.user()?.name || 'John Smith' }}</span>
-        <i class="pi pi-angle-down"></i>
-      </button>
-    </header>
-
-    <main class="portal-main" id="portal-content" tabindex="-1">
-      <router-outlet />
-    </main>
-  </section>
+  <main class="portal-main" id="portal-content" tabindex="-1">
+    <router-outlet />
+  </main>
 </div>

@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Mail;
 class GenerateMonthlyInvoices extends Command
 {
     protected $signature = 'invoices:generate {--test-date= : YYYY-MM-DD for manual testing} {--dry-run : simulate without creating}';
+
     protected $description = 'Generate monthly rent invoices for all active leases (run daily via scheduler, creates once per month on 1st)';
 
     public function handle(): int
@@ -24,25 +25,33 @@ class GenerateMonthlyInvoices extends Command
 
         $this->info("Generating invoices for period {$periodStart->toDateString()} - {$periodEnd->toDateString()} (due {$dueDate->toDateString()})");
 
-        $leases = Lease::with(['tenant','unit'])
-            ->where('status','active')
-            ->whereDate('start_date','<=', $periodEnd)
-            ->whereDate('end_date','>=', $periodStart)
+        $leases = Lease::with(['tenant', 'unit'])
+            ->where('status', 'active')
+            ->whereDate('start_date', '<=', $periodEnd)
+            ->whereDate('end_date', '>=', $periodStart)
             ->get();
 
-        $created = 0; $skipped = 0; $dryRun = $this->option('dry-run');
+        $created = 0;
+        $skipped = 0;
+        $dryRun = $this->option('dry-run');
 
         foreach ($leases as $lease) {
-            $exists = Invoice::where('lease_id',$lease->id)
+            $exists = Invoice::where('lease_id', $lease->id)
                 ->where('period_start', $periodStart->toDateString())
                 ->where('period_end', $periodEnd->toDateString())
                 ->exists();
 
-            if ($exists) { $skipped++; continue; }
+            if ($exists) {
+                $skipped++;
+
+                continue;
+            }
 
             if ($dryRun) {
                 $this->line("[DRY] Would create invoice for lease {$lease->lease_number} - {$lease->tenant->full_name} - \${$lease->rent_amount}");
-                $created++; continue;
+                $created++;
+
+                continue;
             }
 
             $invoice = Invoice::create([
@@ -61,7 +70,7 @@ class GenerateMonthlyInvoices extends Command
             // queue email
             try {
                 Mail::to($lease->tenant->email)->send(new RentInvoiceMail($invoice));
-                $invoice->update(['sent_at'=>now()]);
+                $invoice->update(['sent_at' => now()]);
             } catch (\Throwable $e) {
                 $this->warn("Invoice {$invoice->invoice_number} created but email failed: ".$e->getMessage());
             }
@@ -71,6 +80,7 @@ class GenerateMonthlyInvoices extends Command
         }
 
         $this->info("Done. Created: {$created}, Skipped (already exists): {$skipped}, Total active leases: {$leases->count()}");
+
         return self::SUCCESS;
     }
 }

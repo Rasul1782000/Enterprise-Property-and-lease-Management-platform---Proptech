@@ -11,8 +11,8 @@ class Tenant extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'first_name','last_name','email','phone','company_name','id_number',
-        'date_of_birth','address','emergency_contact','status','notes'
+        'first_name', 'last_name', 'email', 'phone', 'company_name', 'id_number',
+        'date_of_birth', 'address', 'emergency_contact', 'status', 'notes',
     ];
 
     protected $casts = [
@@ -38,7 +38,7 @@ class Tenant extends Model
 
     public function activeLeases()
     {
-        return $this->leases()->where('status','active');
+        return $this->leases()->where('status', 'active');
     }
 
     public function invoices()
@@ -48,6 +48,6 @@ class Tenant extends Model
 
     public function scopeSearch($q, $term)
     {
-        return $q->where(fn($qq)=> $qq->where('first_name','like',"%{$term}%")->orWhere('last_name','like',"%{$term}%")->orWhere('email','like',"%{$term}%"));
+        return $q->where(fn ($qq) => $qq->where('first_name', 'like', "%{$term}%")->orWhere('last_name', 'like', "%{$term}%")->orWhere('email', 'like', "%{$term}%"));
     }
 }

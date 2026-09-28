@@ -2,7 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
-import { AuthApiService } from '../../services/auth-api.service';
+import { AuthService } from '../../../../core/services/auth.service';
 
 @Component({
   selector: 'app-login',
@@ -14,7 +14,7 @@ export class LoginPage {
   private fb = inject(FormBuilder);
   private router = inject(Router);
   private messages = inject(MessageService);
-  private authApi = inject(AuthApiService);
+  private auth = inject(AuthService);
 
   hidePassword = signal(true);
   loading = signal(false);
@@ -35,11 +35,14 @@ export class LoginPage {
     this.error.set('');
     this.loading.set(true);
     try {
-      await this.authApi.login(this.loginForm.value).toPromise();
+      const { email, password, remember } = this.loginForm.getRawValue();
+      await this.auth.login(email, password, remember).toPromise();
       this.messages.add({ severity: 'success', summary: 'Welcome', detail: 'You are signed in.' });
       this.router.navigate(['/dashboard']);
     } catch (error: any) {
-      const detail = error?.error?.message || 'Invalid credentials';
+      const detail = error?.status === 429
+        ? 'Too many sign-in attempts. Please wait a moment and try again.'
+        : 'We could not verify those credentials. Check your email and password and try again.';
       this.error.set(detail);
       this.messages.add({ severity: 'error', summary: 'Sign in failed', detail });
     } finally {

@@ -10,9 +10,9 @@ class Invoice extends Model
     use HasFactory;
 
     protected $fillable = [
-        'invoice_number','lease_id','tenant_id','unit_id',
-        'period_start','period_end','due_date','amount','late_fee','total_amount',
-        'status','notes','sent_at'
+        'invoice_number', 'lease_id', 'tenant_id', 'unit_id',
+        'period_start', 'period_end', 'due_date', 'amount', 'late_fee', 'total_amount',
+        'status', 'notes', 'sent_at',
     ];
 
     protected $casts = [
@@ -50,15 +50,26 @@ class Invoice extends Model
         return $this->status !== 'paid' && $this->due_date->isPast();
     }
 
-    public function scopePending($q){ return $q->where('status','pending'); }
-    public function scopeOverdue($q){ return $q->where('status','overdue'); }
-    public function scopeDueThisMonth($q){ return $q->whereMonth('due_date', now()->month)->whereYear('due_date', now()->year); }
+    public function scopePending($q)
+    {
+        return $q->where('status', 'pending');
+    }
+
+    public function scopeOverdue($q)
+    {
+        return $q->where('status', 'overdue');
+    }
+
+    public function scopeDueThisMonth($q)
+    {
+        return $q->whereMonth('due_date', now()->month)->whereYear('due_date', now()->year);
+    }
 
     protected static function booted()
     {
         static::creating(function ($inv) {
             if (empty($inv->invoice_number)) {
-                $inv->invoice_number = 'INV-'.now()->format('Ym').'-'.str_pad((Invoice::whereYear('created_at', now()->year)->count()+1),5,'0',STR_PAD_LEFT);
+                $inv->invoice_number = 'INV-'.now()->format('Ym').'-'.str_pad((Invoice::whereYear('created_at', now()->year)->count() + 1), 5, '0', STR_PAD_LEFT);
             }
             if (empty($inv->total_amount)) {
                 $inv->total_amount = $inv->amount + $inv->late_fee;

@@ -10,7 +10,7 @@ class Payment extends Model
     use HasFactory;
 
     protected $fillable = [
-        'payment_number','invoice_id','tenant_id','amount','method','reference','paid_at','receipt_pdf_path','notes','recorded_by'
+        'payment_number', 'invoice_id', 'tenant_id', 'amount', 'method', 'reference', 'paid_at', 'receipt_pdf_path', 'notes', 'recorded_by',
     ];
 
     protected $casts = [
@@ -37,7 +37,7 @@ class Payment extends Model
     {
         static::creating(function ($pay) {
             if (empty($pay->payment_number)) {
-                $pay->payment_number = 'PAY-'.now()->format('Ym').'-'.str_pad((Payment::count()+1),5,'0',STR_PAD_LEFT);
+                $pay->payment_number = 'PAY-'.now()->format('Ym').'-'.str_pad((Payment::count() + 1), 5, '0', STR_PAD_LEFT);
             }
         });
         static::created(function ($pay) {

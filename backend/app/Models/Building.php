@@ -10,7 +10,7 @@ class Building extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $fillable = ['property_id','name','code','floors','year_built','construction_type','description'];
+    protected $fillable = ['property_id', 'name', 'code', 'floors', 'year_built', 'construction_type', 'description'];
 
     public function property()
     {

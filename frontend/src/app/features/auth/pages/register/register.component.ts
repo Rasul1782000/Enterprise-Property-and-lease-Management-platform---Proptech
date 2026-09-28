@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
-import { AuthApiService } from '../../services/auth-api.service';
+import { AuthService } from '../../../../core/services/auth.service';
 
 @Component({
   selector: 'app-register',
@@ -16,7 +16,7 @@ export class RegisterPage {
   private fb = inject(FormBuilder);
   private router = inject(Router);
   private messages = inject(MessageService);
-  private authApi = inject(AuthApiService);
+  private auth = inject(AuthService);
 
   hidePassword = signal(true);
   loading = signal(false);
@@ -38,7 +38,7 @@ export class RegisterPage {
     this.error.set('');
     this.loading.set(true);
     try {
-      await this.authApi.register(this.registerForm.value).toPromise();
+      await this.auth.register(this.registerForm.value).toPromise();
       this.messages.add({ severity: 'success', summary: 'Account created', detail: 'Please sign in.' });
       this.router.navigate(['/login']);
     } catch (error: any) {

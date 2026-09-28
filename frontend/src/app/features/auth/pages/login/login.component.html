@@ -1,4 +1,12 @@
 <div class="login-shell">
+  <div class="login-aside" aria-hidden="true">
+    <span class="aside-kicker">Portfolio operations</span>
+    <h1>Keep every lease, unit and payment in view.</h1>
+    <p>One secure workspace for the people responsible for property performance.</p>
+    <div class="aside-rule"></div>
+    <span class="aside-meta"><i class="pi pi-shield"></i> Protected workspace</span>
+  </div>
+
   <p-card styleClass="login-card">
     <ng-template #header>
       <div class="login-header">
@@ -6,7 +14,7 @@
           <i class="pi pi-building"></i>
           <span>PropertyLease Portal</span>
         </div>
-        <p class="page-subtitle">Sign in to your account</p>
+        <p class="page-subtitle">Sign in to your secure workspace</p>
       </div>
     </ng-template>
 
@@ -27,6 +35,7 @@
             type="email"
             formControlName="email"
             autocomplete="email"
+            aria-label="Email address"
             class="w-full"
             placeholder="you@company.com"
             [invalid]="!!loginForm.get('email')?.invalid && loginForm.get('email')?.touched" />
@@ -43,6 +52,7 @@
         <p-password
           formControlName="password"
           inputId="loginPassword"
+          autocomplete="current-password"
           [feedback]="false"
           [toggleMask]="true"
           placeholder="Enter your password"
@@ -57,13 +67,13 @@
       </div>
 
       <div class="flex items-center justify-between">
-        <p-checkbox formControlName="remember" [binary]="true" inputId="loginRemember" label="Remember me" />
+        <p-checkbox formControlName="remember" [binary]="true" inputId="loginRemember" label="Remember this device" />
         <a routerLink="/forgot-password" class="text-sm text-primary-700 hover:underline">Forgot password?</a>
       </div>
 
       <p-button
         type="submit"
-        label="Sign In"
+        label="Sign in securely"
         icon="pi pi-sign-in"
         class="w-full"
         [loading]="loading()"

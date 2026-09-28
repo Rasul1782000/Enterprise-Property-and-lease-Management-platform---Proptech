@@ -2,11 +2,15 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Lease;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreLeaseRequest extends FormRequest
 {
-    public function authorize(): bool { return true; }
+    public function authorize(): bool
+    {
+        return true;
+    }
 
     public function rules(): array
     {
@@ -31,16 +35,18 @@ class StoreLeaseRequest extends FormRequest
         $validator->after(function ($v) {
             // prevent double booking: unit already has active lease overlapping dates
             if ($this->unit_id && $this->start_date && $this->end_date) {
-                $conflict = \App\Models\Lease::where('unit_id', $this->unit_id)
-                    ->where('status','active')
-                    ->where(function($q){
+                $conflict = Lease::where('unit_id', $this->unit_id)
+                    ->where('status', 'active')
+                    ->where(function ($q) {
                         $q->whereBetween('start_date', [$this->start_date, $this->end_date])
-                          ->orWhereBetween('end_date', [$this->start_date, $this->end_date])
-                          ->orWhere(function($qq){
-                              $qq->where('start_date','<=',$this->start_date)->where('end_date','>=',$this->end_date);
-                          });
+                            ->orWhereBetween('end_date', [$this->start_date, $this->end_date])
+                            ->orWhere(function ($qq) {
+                                $qq->where('start_date', '<=', $this->start_date)->where('end_date', '>=', $this->end_date);
+                            });
                     })->exists();
-                if ($conflict) $v->errors()->add('unit_id','Unit already has an active lease overlapping these dates.');
+                if ($conflict) {
+                    $v->errors()->add('unit_id', 'Unit already has an active lease overlapping these dates.');
+                }
             }
         });
     }

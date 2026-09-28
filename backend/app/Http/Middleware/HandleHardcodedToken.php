@@ -15,9 +15,9 @@ class HandleHardcodedToken
         if (Auth::guard('sanctum')->check()) {
             return $next($request);
         }
-        
+
         $token = $request->bearerToken();
-        
+
         if (str_starts_with($token, 'hardcoded-admin-token-')) {
             $user = [
                 'id' => 1,
@@ -27,11 +27,11 @@ class HandleHardcodedToken
                 'tenant' => null,
                 'managedProperties' => [],
             ];
-            
+
             $request->setUserResolver(fn () => (object) $user);
             $request->merge(['hardcoded_user' => $user]);
         }
-        
+
         return $next($request);
     }
 }

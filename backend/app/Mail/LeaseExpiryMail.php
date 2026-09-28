@@ -22,6 +22,6 @@ class LeaseExpiryMail extends Mailable
 
     public function content(): Content
     {
-        return new Content(view: 'emails.lease-expiry', with: ['lease'=>$this->lease]);
+        return new Content(view: 'emails.lease-expiry', with: ['lease' => $this->lease]);
     }
 }

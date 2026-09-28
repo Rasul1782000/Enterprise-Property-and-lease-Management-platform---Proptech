@@ -9,3 +9,73 @@
   font-size: 0.75rem;
   line-height: 1.4;
 }
+
+/* Mixed Chart Bubble Styles */
+.section-card {
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.section-card.expanded {
+  border-color: var(--brand-400);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+}
+
+.chart-container-expanded {
+  height: 400px;
+  position: relative;
+  margin-top: 1rem;
+  background: white;
+  border-radius: var(--radius-md);
+  padding: 1rem;
+}
+
+.chart-container-compressed {
+  height: 120px;
+  border: 2px dashed var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-page);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chart-container-compressed:hover {
+  border-color: var(--brand-400);
+  background: var(--brand-50);
+}
+
+.chart-container-compressed .pi {
+  font-size: 2rem;
+  color: var(--ink-400);
+  margin-bottom: 0.5rem;
+}
+
+.chart-container-compressed p {
+  font-size: 0.875rem;
+  color: var(--ink-500);
+}
+
+canvas {
+  max-height: 100%;
+  max-width: 100%;
+}
+
+/* Animation for expanding */
+@keyframes expandIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.section-card.expanded .chart-container-expanded {
+  animation: expandIn 0.3s ease-out;
+}

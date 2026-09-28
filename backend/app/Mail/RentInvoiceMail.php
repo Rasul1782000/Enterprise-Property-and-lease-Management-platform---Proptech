@@ -15,7 +15,7 @@ class RentInvoiceMail extends Mailable
 
     public function __construct(public Invoice $invoice)
     {
-        $this->invoice->load(['tenant','lease.unit.building','unit']);
+        $this->invoice->load(['tenant', 'lease.unit.building', 'unit']);
     }
 
     public function envelope(): Envelope
@@ -29,7 +29,7 @@ class RentInvoiceMail extends Mailable
     {
         return new Content(
             view: 'emails.rent-invoice',
-            with: ['invoice'=>$this->invoice]
+            with: ['invoice' => $this->invoice]
         );
     }
 }

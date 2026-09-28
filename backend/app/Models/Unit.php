@@ -11,8 +11,8 @@ class Unit extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'building_id','unit_number','floor','sqft','bedrooms','bathrooms',
-        'rent_amount','unit_type','status','amenities','description'
+        'building_id', 'unit_number', 'floor', 'sqft', 'bedrooms', 'bathrooms',
+        'rent_amount', 'unit_type', 'status', 'amenities', 'description',
     ];
 
     protected $casts = [
@@ -37,9 +37,16 @@ class Unit extends Model
 
     public function activeLease()
     {
-        return $this->hasOne(Lease::class)->where('status','active')->latestOfMany();
+        return $this->hasOne(Lease::class)->where('status', 'active')->latestOfMany();
     }
 
-    public function scopeVacant($q) { return $q->where('status','vacant'); }
-    public function scopeOccupied($q) { return $q->where('status','occupied'); }
+    public function scopeVacant($q)
+    {
+        return $q->where('status', 'vacant');
+    }
+
+    public function scopeOccupied($q)
+    {
+        return $q->where('status', 'occupied');
+    }
 }

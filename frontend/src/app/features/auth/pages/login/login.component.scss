@@ -5,13 +5,56 @@
 
 .login-shell {
   min-height: 100vh;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(15rem, 24rem) minmax(20rem, 26rem);
+  gap: clamp(2rem, 7vw, 7rem);
   align-items: center;
   justify-content: center;
   padding: 1.5rem 1rem;
   background:
     radial-gradient(120% 80% at 50% -10%, var(--brand-50) 0%, transparent 60%),
     var(--surface-page);
+}
+
+.login-aside {
+  max-width: 22rem;
+  color: var(--ink-900);
+}
+
+.aside-kicker {
+  color: var(--brand-700);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.login-aside h1 {
+  margin: 0.75rem 0 1rem;
+  font-size: clamp(2rem, 4vw, 3.25rem);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+
+.login-aside p {
+  max-width: 19rem;
+  color: var(--ink-500);
+  line-height: 1.6;
+}
+
+.aside-rule {
+  width: 3rem;
+  height: 0.25rem;
+  margin: 2rem 0 1rem;
+  background: var(--brand-600);
+}
+
+.aside-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--ink-500);
+  font-size: 0.8125rem;
 }
 
 :host ::ng-deep .login-card {
@@ -83,4 +126,15 @@
 :host ::ng-deep .p-message {
   border-radius: var(--radius-md);
   font-size: 0.8125rem;
+}
+
+@media (max-width: 700px) {
+  .login-shell {
+    display: flex;
+    padding: 2rem 1rem;
+  }
+
+  .login-aside {
+    display: none;
+  }
 }

@@ -45,8 +45,7 @@ export class MainLayoutComponent {
       items: [
         { label: 'Rental Application', icon: 'pi pi-file-edit', route: '/leases' },
         { label: 'Lease Agreements', icon: 'pi pi-file', route: '/lease-agreement' },
-        { label: 'Lease Renewal', icon: 'pi pi-sync', route: '/lease-renewal-engine', tag: 'New' },
-        { label: 'Protection Plan', icon: 'pi pi-shield', route: '/invoices' }
+        { label: 'Lease Renewal', icon: 'pi pi-sync', route: '/lease-renewal-engine', tag: 'New' }
       ]
     },
     {
@@ -83,26 +82,57 @@ export class MainLayoutComponent {
     return (this.auth.user()?.name || 'J').charAt(0).toUpperCase();
   }
 
-  /** Rail visibility on narrow screens only; the desktop rail is always pinned. */
+  /** Drawer visibility on narrow screens only; the top bar is always pinned. */
   navOpen = false;
+
+  /** Heading of the currently expanded top-bar group, or null when all are shut. */
+  openGroup: string | null = null;
 
   private readonly navToggleRef = viewChild<ElementRef<HTMLButtonElement>>('navToggle');
   private readonly destroyRef = inject(DestroyRef);
 
   constructor() {
     document.addEventListener('keydown', this.onKeydown);
+    // Clicking anywhere outside a group trigger dismisses the open panel; the
+    // trigger's own handler stops propagation so it can toggle instead.
+    document.addEventListener('click', this.onDocumentClick);
     this.destroyRef.onDestroy(() => {
       document.removeEventListener('keydown', this.onKeydown);
+      document.removeEventListener('click', this.onDocumentClick);
       document.body.style.overflow = '';
     });
   }
 
-  private readonly onKeydown = (event: KeyboardEvent): void => {
-    if (event.key === 'Escape' && this.navOpen) this.closeNav(true);
+  private readonly onDocumentClick = (): void => {
+    this.openGroup = null;
   };
+
+  private readonly onKeydown = (event: KeyboardEvent): void => {
+    if (event.key !== 'Escape') return;
+    if (this.openGroup) {
+      this.closeGroup();
+      return;
+    }
+    if (this.navOpen) this.closeNav(true);
+  };
+
+  toggleGroup(heading: string, event: Event): void {
+    event.stopPropagation();
+    this.openGroup = this.openGroup === heading ? null : heading;
+  }
+
+  closeGroup(): void {
+    this.openGroup = null;
+  }
+
+  /** A group reads as current when any of its links matches the live URL. */
+  isSectionActive(section: NavSection): boolean {
+    return section.items.some(item => this.router.isActive(item.route, !!item.exact));
+  }
 
   toggleNav(): void {
     this.navOpen = !this.navOpen;
+    this.openGroup = null;
     document.body.style.overflow = this.navOpen ? 'hidden' : '';
   }
 
@@ -110,6 +140,7 @@ export class MainLayoutComponent {
   closeNav(restoreFocus = false): void {
     if (!this.navOpen) return;
     this.navOpen = false;
+    this.openGroup = null;
     document.body.style.overflow = '';
     if (restoreFocus) this.navToggleRef()?.nativeElement.focus();
   }

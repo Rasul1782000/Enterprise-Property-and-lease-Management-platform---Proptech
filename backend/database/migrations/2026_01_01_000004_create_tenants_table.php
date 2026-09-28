@@ -4,7 +4,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         // tenants before units to satisfy FK in users; units don't reference tenants directly
@@ -25,6 +26,7 @@ return new class extends Migration {
             $table->softDeletes();
         });
     }
+
     public function down(): void
     {
         Schema::dropIfExists('tenants');

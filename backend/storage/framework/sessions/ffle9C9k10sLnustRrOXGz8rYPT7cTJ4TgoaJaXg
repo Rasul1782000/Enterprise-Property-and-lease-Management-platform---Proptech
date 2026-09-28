@@ -1,0 +1,1 @@
+a:3:{s:6:"_token";s:40:"GrqFKziP4FEhXiLFIamz9BXSBK5qTyJOT7DQbsfL";s:9:"_previous";a:2:{s:3:"url";s:104:"http://localhost:8000/api/properties?direction=desc&include=buildings&page=1&per_page=15&sort=created_at";s:5:"route";s:16:"properties.index";}s:6:"_flash";a:2:{s:3:"old";a:0:{}s:3:"new";a:0:{}}}

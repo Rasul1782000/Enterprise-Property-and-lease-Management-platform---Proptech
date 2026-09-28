@@ -7,8 +7,8 @@ use App\Http\Requests\StorePropertyRequest;
 use App\Http\Resources\PropertyResource;
 use App\Models\Property;
 use Illuminate\Http\Request;
-use Spatie\QueryBuilder\QueryBuilder;
 use Spatie\QueryBuilder\AllowedFilter;
+use Spatie\QueryBuilder\QueryBuilder;
 
 class PropertyController extends Controller
 {
@@ -20,10 +20,10 @@ class PropertyController extends Controller
                 AllowedFilter::exact('type'),
                 AllowedFilter::exact('city'),
                 AllowedFilter::partial('name'),
-                'code'
+                'code',
             ])
-            ->allowedSorts(['name','city','created_at','total_area_sqft'])
-            ->allowedIncludes(['buildings','buildings.units','manager','units'])
+            ->allowedSorts(['name', 'city', 'created_at', 'total_area_sqft'])
+            ->allowedIncludes(['buildings', 'buildings.units', 'manager', 'units'])
             ->paginate($request->get('per_page', 15))
             ->appends($request->query());
 
@@ -33,23 +33,68 @@ class PropertyController extends Controller
     public function store(StorePropertyRequest $request)
     {
         $property = Property::create($request->validated());
-        return new PropertyResource($property->load(['buildings','manager']));
+
+        return new PropertyResource($property->load(['buildings', 'manager']));
     }
 
     public function show(Property $property)
     {
-        return new PropertyResource($property->load(['buildings.units','manager','units']));
+        return new PropertyResource($property->load(['buildings.units', 'manager', 'units']));
     }
 
     public function update(StorePropertyRequest $request, Property $property)
     {
         $property->update($request->validated());
-        return new PropertyResource($property->fresh(['buildings','manager']));
+
+        return new PropertyResource($property->fresh(['buildings', 'manager']));
     }
 
     public function destroy(Property $property)
     {
         $property->delete();
+
         return response()->json(null, 204);
+    }
+
+    public function occupancy(Property $property)
+    {
+        $totalUnits = $property->units()->count();
+        $occupiedUnits = $property->units()->where('status', 'occupied')->count();
+        $vacantUnits = $property->units()->where('status', 'vacant')->count();
+        $maintenanceUnits = $property->units()->where('status', 'maintenance')->count();
+        $occupancyRate = $totalUnits > 0 ? round($occupiedUnits / $totalUnits * 100, 2) : 0;
+
+        return response()->json([
+            'property_id' => $property->id,
+            'total_units' => $totalUnits,
+            'occupied_units' => $occupiedUnits,
+            'vacant_units' => $vacantUnits,
+            'maintenance_units' => $maintenanceUnits,
+            'occupancy_rate' => $occupancyRate,
+        ]);
+    }
+
+    public function export()
+    {
+        $properties = Property::with(['buildings', 'manager'])->get();
+        $csv = "ID,Name,Code,Type,City,State,Status,Buildings,Manager\n";
+        foreach ($properties as $property) {
+            $csv .= implode(',', [
+                $property->id,
+                '"'.str_replace('"', '""', $property->name).'"',
+                $property->code,
+                $property->type,
+                '"'.str_replace('"', '""', $property->city).'"',
+                '"'.str_replace('"', '""', $property->state).'"',
+                $property->status,
+                $property->buildings()->count(),
+                $property->manager ? $property->manager->name : 'N/A',
+            ])."\n";
+        }
+
+        return response($csv, 200, [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="properties.csv"',
+        ]);
     }
 }

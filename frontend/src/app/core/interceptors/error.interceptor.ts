@@ -2,15 +2,18 @@ import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
+import { AuthService } from '../services/auth.service';
 import { catchError } from 'rxjs/operators';
 
 export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   const messages = inject(MessageService);
   const router = inject(Router);
+  const auth = inject(AuthService);
 
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
       if (error.status === 401) {
+        auth.clear();
         router.navigate(['/login']);
         messages.add({ severity: 'warn', summary: 'Session expired', detail: 'Please log in again.', life: 3000 });
       } else if (error.status === 403) {

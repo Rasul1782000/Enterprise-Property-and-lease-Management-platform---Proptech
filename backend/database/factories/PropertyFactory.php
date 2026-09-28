@@ -14,13 +14,13 @@ class PropertyFactory extends Factory
         return [
             'name' => $this->faker->company().' Center',
             'code' => 'PROP-'.$this->faker->unique()->bothify('###'),
-            'type' => $this->faker->randomElement(['commercial','multi_family','mixed_use']),
+            'type' => $this->faker->randomElement(['commercial', 'multi_family', 'mixed_use']),
             'address' => $this->faker->streetAddress(),
             'city' => $this->faker->city(),
             'state' => $this->faker->stateAbbr(),
             'zip' => $this->faker->postcode(),
-            'total_area_sqft' => $this->faker->numberBetween(10000,100000),
-            'year_built' => $this->faker->numberBetween(1990,2024),
+            'total_area_sqft' => $this->faker->numberBetween(10000, 100000),
+            'year_built' => $this->faker->numberBetween(1990, 2024),
             'status' => 'active',
         ];
     }
