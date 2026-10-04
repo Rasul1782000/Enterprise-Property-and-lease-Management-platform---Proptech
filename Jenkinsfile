@@ -31,7 +31,9 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 echo '📦 Installing application dependencies...'
-                sh 'npm install'
+                dir('backend') {
+                    sh 'npm install'
+                }
             }
         }
 
