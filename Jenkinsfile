@@ -63,7 +63,7 @@ pipeline {
                 echo '🚀 Starting Floci local cloud services (S3, DynamoDB, RDS, etc.)...'
                 // Spins up Floci instantly using Docker with Docker-in-Docker socket support
                 sh 'docker rm -f floci-emulator || true'
-                sh 'docker run -d --name floci-emulator --network jenkins_default -p 4566:4566 -v /var/run/docker.sock:/var/run/docker.sock floci/floci:latest
+                sh 'docker run -d --name floci-emulator --network jenkins_default -p 4566:4566 -v /var/run/docker.sock:/var/run/docker.sock floci/floci:latest'
 
                 // Allow the native application a split second to finalize bindings
                 sleep(time: 3, unit: 'SECONDS')
