@@ -54,7 +54,6 @@ export class LeaseRenewalEngine extends ModulePage<LeaseRenewal> {
   });
 
   acceptanceRate(): number {
-    const s = this.stats();
     const decided = this.count('accepted') + this.count('declined');
     return decided ? Math.round((this.count('accepted') / decided) * 100) : 0;
   }

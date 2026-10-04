@@ -32,8 +32,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certifi
     && cp /tmp/docker/docker /usr/local/bin/docker \
     && rm -rf /tmp/docker /var/lib/apt/lists/*
 
-# Node.js 20 LTS
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+# Node.js 22 LTS (Angular 22 requires Node ^22.22.3 || ^24.15.0 || >=26)
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
     && apt-get install -y --no-install-recommends nodejs \
     && rm -rf /var/lib/apt/lists/*
 

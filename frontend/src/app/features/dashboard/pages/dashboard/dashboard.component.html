@@ -76,7 +76,7 @@
 
     <!-- Mixed Chart Bubble - Expandable on Double Click -->
     <div class="section-card p-6 transition-all duration-300" [class.expanded]="isChartExpanded()">
-      <div class="flex items-center justify-between mb-4 cursor-pointer" (click)="toggleBubble()">
+      <div class="flex items-center justify-between mb-4 cursor-pointer" (click)="toggleBubble()" (keyup.enter)="toggleBubble()" tabindex="0" role="button">
         <h2 class="text-lg font-semibold flex items-center gap-2">
           <i class="pi pi-chart-bar"></i>
           Performance Metrics Comparison

@@ -174,7 +174,7 @@ export class DashboardComponent implements OnInit {
                 if (label) {
                   label += ': ';
                 }
-                let value = context.raw;
+                const value = context.raw;
                 if (typeof value === 'number') {
                   if (context.dataIndex === 0) {
                     label += value.toFixed(1) + '%';

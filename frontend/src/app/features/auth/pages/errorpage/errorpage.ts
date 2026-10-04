@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 
 @Component({
-  standalone: false,
+  standalone: true,
   selector: 'app-errorpage',
   styleUrl: './errorpage.scss',
   templateUrl: './errorpage.html',

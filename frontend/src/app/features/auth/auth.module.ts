@@ -7,10 +7,13 @@ import { ResetPasswordPage } from './pages/reset-password/reset-password';
 import { Errorpage } from './pages/errorpage/errorpage';
 
 @NgModule({
-  declarations: [LoginPage, ForgotPassword, ResetPasswordPage, Errorpage],
+  declarations: [LoginPage],
   imports: [
     SharedModule,
-    AuthRoutingModule
+    AuthRoutingModule,
+    ForgotPassword,
+    ResetPasswordPage,
+    Errorpage
   ]
 })
 export class AuthModule {}

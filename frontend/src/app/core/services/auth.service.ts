@@ -5,7 +5,7 @@ import { environment } from '../../../environments/environment';
 
 export interface User { id:number; name:string; email:string; role:string; tenant_id?:number; }
 
-type LoginResponse = { user: User; token?: string; access_token?: string };
+interface LoginResponse { user: User; token?: string; access_token?: string }
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
