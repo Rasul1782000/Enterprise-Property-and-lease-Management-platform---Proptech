@@ -31,7 +31,7 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 echo '📦 Installing application dependencies...'
-                dir('backend') {
+                dir('frontend') {
                     sh 'npm install'
                 }
             }
@@ -42,13 +42,17 @@ pipeline {
                 stage('Code Linting') {
                     steps {
                         echo '🔍 Running code linter...'
-                        sh 'npm run lint --if-present'
+                        dir('frontend') {
+                            sh 'npm run lint --if-present'
+                        }
                     }
                 }
                 stage('Security Audit') {
                     steps {
                         echo '🛡️ Running dependency vulnerability audit...'
-                        sh 'npm audit --production || true'
+                        dir('frontend') {
+                            sh 'npm audit --production || true'
+                        }
                     }
                 }
             }
@@ -69,7 +73,9 @@ pipeline {
             steps {
                 echo '🧪 Running integration tests targeting local Floci cloud endpoint...'
                 // Your app tests can safely hit AWS APIs (S3 uploads, queues, etc.) via localhost:4566 without live cloud costs
-                sh 'npm test'
+                dir('frontend') {
+                    sh 'npm test'
+                }
             }
         }
 
@@ -77,7 +83,9 @@ pipeline {
             steps {
                 echo '🐳 Building production container image...'
                 script {
-                    appImage = docker.build("${env.DOCKER_REGISTRY}/${env.IMAGE_NAME}:${env.BUILD_NUMBER}", "--build-arg NODE_ENV=production .")
+                    dir('frontend') {
+                        appImage = docker.build("${env.DOCKER_REGISTRY}/${env.IMAGE_NAME}:${env.BUILD_NUMBER}", "--build-arg NODE_ENV=production .")
+                    }
                 }
             }
         }

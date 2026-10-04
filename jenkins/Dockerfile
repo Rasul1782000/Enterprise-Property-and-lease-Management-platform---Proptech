@@ -23,4 +23,10 @@ RUN jenkins-plugin-cli --plugins \
 USER root
 COPY casc.yaml /etc/jenkins/casc.yaml
 RUN chown jenkins:jenkins /etc/jenkins/casc.yaml
-USER jenkins
+
+# Install the Docker CLI so pipelines can run docker commands
+RUN apt-get update && apt-get install -y --no-install-recommends docker.io \
+    && rm -rf /var/lib/apt/lists/*
+
+# Run as root so Jenkins jobs can access the mounted docker socket
+USER root
