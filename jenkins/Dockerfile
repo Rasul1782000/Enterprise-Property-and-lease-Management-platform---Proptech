@@ -33,3 +33,5 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certifi
 
 # Run as root so Jenkins jobs can access the mounted docker socket
 USER root
+# Allow git to operate on workspaces owned by the jenkins user
+RUN git config --system --add safe.directory '*'
