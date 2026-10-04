@@ -25,8 +25,11 @@ COPY casc.yaml /etc/jenkins/casc.yaml
 RUN chown jenkins:jenkins /etc/jenkins/casc.yaml
 
 # Install the Docker CLI so pipelines can run docker commands
-RUN apt-get update && apt-get install -y --no-install-recommends docker.io \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates \
+    && curl -fsSL https://download.docker.com/linux/static/stable/x86_64/docker-27.5.1.tgz \
+       | tar xz -C /tmp \
+    && cp /tmp/docker/docker /usr/local/bin/docker \
+    && rm -rf /tmp/docker /var/lib/apt/lists/*
 
 # Run as root so Jenkins jobs can access the mounted docker socket
 USER root
