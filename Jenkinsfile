@@ -6,7 +6,7 @@ pipeline {
         AWS_ACCESS_KEY_ID     = 'floci'
         AWS_SECRET_ACCESS_KEY = 'floci'
         AWS_DEFAULT_REGION    = 'us-east-1'
-        AWS_ENDPOINT_URL      = 'http://localhost:4566'
+        AWS_ENDPOINT_URL      = 'http://floci-emulator:4566'
 
         // Container Registry Settings
         DOCKER_REGISTRY       = 'your-registry.azurecr.io' // Change to your container registry URL
@@ -62,7 +62,8 @@ pipeline {
             steps {
                 echo '🚀 Starting Floci local cloud services (S3, DynamoDB, RDS, etc.)...'
                 // Spins up Floci instantly using Docker with Docker-in-Docker socket support
-                sh 'docker run -d --name floci-emulator -p 4566:4566 -v /var/run/docker.sock:/var/run/docker.sock floci/floci:latest'
+                sh 'docker rm -f floci-emulator || true'
+                sh 'docker run -d --name floci-emulator --network jenkins_default -p 4566:4566 -v /var/run/docker.sock:/var/run/docker.sock floci/floci:latest
 
                 // Allow the native application a split second to finalize bindings
                 sleep(time: 3, unit: 'SECONDS')
