@@ -18,9 +18,9 @@
         @for (stage of pipeline; track stage) {
           <button
             type="button"
-            class="text-left p-3 rounded-lg border transition hover:border-orange-300"
-            [class.bg-orange-50]="statusFilter === stage"
-            [class.border-orange-300]="statusFilter === stage"
+            class="text-left p-4 rounded-pill border-2 transition min-h-touch hover:border-coral-300"
+            [class.bg-coral-50]="statusFilter === stage"
+            [class.border-coral-300]="statusFilter === stage"
             [class.bg-white]="statusFilter !== stage"
             [class.border-zinc-200]="statusFilter !== stage"
             (click)="onStatusFilter(statusFilter === stage ? null : stage)">
@@ -61,12 +61,12 @@
               <p-tag [value]="titleCase(c.stage)" [severity]="severity(c.stage)" />
               <div class="flex gap-1">
                 @if (c.stage === 'new') {
-                  <p-button icon="pi pi-envelope" [text]="true" [rounded]="true" severity="info" pTooltip="Notify" (onClick)="notify(c)" />
+                  <p-button icon="pi pi-envelope" [text]="true" [rounded]="true" severity="info" pTooltip="Notify" showDelay="400" (onClick)="notify(c)" />
                 }
                 @if (c.stage === 'notified') {
-                  <p-button icon="pi pi-calendar-check" [text]="true" [rounded]="true" severity="warn" pTooltip="Promise to pay" (onClick)="promise(c)" />
+                  <p-button icon="pi pi-calendar-check" [text]="true" [rounded]="true" severity="warn" pTooltip="Promise to pay" showDelay="400" (onClick)="promise(c)" />
                 }
-                <p-button icon="pi pi-eye" [text]="true" [rounded]="true" severity="secondary" pTooltip="Open case" (onClick)="open(c)" />
+                <p-button icon="pi pi-eye" [text]="true" [rounded]="true" severity="secondary" pTooltip="Open case" showDelay="400" (onClick)="open(c)" />
               </div>
             </li>
           }
@@ -177,25 +177,25 @@
             <td>
               <div class="flex items-center gap-1">
                 @if (row.stage === 'new') {
-                  <p-button icon="pi pi-envelope" [text]="true" [rounded]="true" severity="info" pTooltip="Issue notice" (onClick)="notify(row)" />
+                  <p-button icon="pi pi-envelope" [text]="true" [rounded]="true" severity="info" pTooltip="Issue notice" showDelay="400" (onClick)="notify(row)" />
                 }
                 @if (row.stage === 'notified') {
-                  <p-button icon="pi pi-calendar-check" [text]="true" [rounded]="true" severity="warn" pTooltip="Promise to pay" (onClick)="promise(row)" />
+                  <p-button icon="pi pi-calendar-check" [text]="true" [rounded]="true" severity="warn" pTooltip="Promise to pay" showDelay="400" (onClick)="promise(row)" />
                 }
                 @if (row.stage !== 'recovered' && row.stage !== 'written_off') {
-                  <p-button icon="pi pi-dollar" [text]="true" [rounded]="true" severity="success" pTooltip="Post recovery" (onClick)="recover(row)" />
+                  <p-button icon="pi pi-dollar" [text]="true" [rounded]="true" severity="success" pTooltip="Post recovery" showDelay="400" (onClick)="recover(row)" />
                 }
                 @if (row.stage === 'promise_to_pay' || row.stage === 'partially_recovered') {
-                  <p-button icon="pi pi-check-circle" [text]="true" [rounded]="true" severity="success" pTooltip="Close as recovered" (onClick)="closeCase(row)" />
+                  <p-button icon="pi pi-check-circle" [text]="true" [rounded]="true" severity="success" pTooltip="Close as recovered" showDelay="400" (onClick)="closeCase(row)" />
                 }
                 @if (row.stage === 'notified' || row.stage === 'promise_to_pay' || row.stage === 'escalated') {
-                  <p-button icon="pi pi-arrow-up-right" [text]="true" [rounded]="true" severity="warn" pTooltip="Escalate" (onClick)="escalate(row)" />
+                  <p-button icon="pi pi-arrow-up-right" [text]="true" [rounded]="true" severity="warn" pTooltip="Escalate" showDelay="400" (onClick)="escalate(row)" />
                 }
                 @if (row.stage === 'escalated') {
-                  <p-button icon="pi pi-gavel" [text]="true" [rounded]="true" severity="danger" pTooltip="Refer to legal" (onClick)="legal(row)" />
+                  <p-button icon="pi pi-gavel" [text]="true" [rounded]="true" severity="danger" pTooltip="Refer to legal" showDelay="400" (onClick)="legal(row)" />
                 }
-                <p-button icon="pi pi-eye" [text]="true" [rounded]="true" severity="secondary" pTooltip="Open case" (onClick)="open(row)" />
-                <p-button icon="pi pi-trash" [text]="true" [rounded]="true" severity="danger" pTooltip="Delete" (onClick)="remove(row, row.code)" />
+                <p-button icon="pi pi-eye" [text]="true" [rounded]="true" severity="secondary" pTooltip="Open case" showDelay="400" (onClick)="open(row)" />
+                <p-button icon="pi pi-trash" [text]="true" [rounded]="true" severity="danger" pTooltip="Delete" showDelay="400" (onClick)="remove(row, row.code)" />
               </div>
             </td>
           </tr>

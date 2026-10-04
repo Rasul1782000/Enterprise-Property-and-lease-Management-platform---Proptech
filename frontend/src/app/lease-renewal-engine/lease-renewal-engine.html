@@ -19,10 +19,10 @@
           @for (h of horizonOptions; track h.value) {
             <button
               type="button"
-              class="flex items-center justify-between px-3 py-2 rounded-lg text-sm border transition"
-              [class.bg-orange-50]="horizon() === h.value"
-              [class.border-orange-300]="horizon() === h.value"
-              [class.text-orange-800]="horizon() === h.value"
+              class="flex items-center justify-between px-4 py-3 rounded-pill text-sm border transition min-h-touch"
+              [class.bg-coral-50]="horizon() === h.value"
+              [class.border-coral-300]="horizon() === h.value"
+              [class.text-coral-800]="horizon() === h.value"
               [class.bg-white]="horizon() !== h.value"
               [class.border-zinc-200]="horizon() !== h.value"
               (click)="setHorizon(h.value)">
@@ -71,9 +71,9 @@
                 <p-tag [value]="titleCase(r.status)" [severity]="severity(r.status)" />
                 <div class="flex gap-1">
                   @if (r.status === 'draft') {
-                    <p-button icon="pi pi-send" [text]="true" [rounded]="true" severity="info" pTooltip="Send offer" (onClick)="send(r)" />
+                    <p-button icon="pi pi-send" [text]="true" [rounded]="true" severity="info" pTooltip="Send offer" showDelay="400" (onClick)="send(r)" />
                   }
-                  <p-button icon="pi pi-eye" [text]="true" [rounded]="true" severity="secondary" pTooltip="Open" (onClick)="open(r)" />
+                  <p-button icon="pi pi-eye" [text]="true" [rounded]="true" severity="secondary" pTooltip="Open" showDelay="400" (onClick)="open(r)" />
                 </div>
               </li>
             }
@@ -182,20 +182,20 @@
             <td>
               <div class="flex items-center gap-1">
                 @if (row.status === 'draft') {
-                  <p-button icon="pi pi-send" [text]="true" [rounded]="true" severity="info" pTooltip="Send offer" (onClick)="send(row)" />
+                  <p-button icon="pi pi-send" [text]="true" [rounded]="true" severity="info" pTooltip="Send offer" showDelay="400" (onClick)="send(row)" />
                 }
                 @if (row.status === 'sent') {
-                  <p-button icon="pi pi-check" [text]="true" [rounded]="true" severity="success" pTooltip="Accept" (onClick)="accept(row)" />
-                  <p-button icon="pi pi-times" [text]="true" [rounded]="true" severity="danger" pTooltip="Decline" (onClick)="decline(row)" />
+                  <p-button icon="pi pi-check" [text]="true" [rounded]="true" severity="success" pTooltip="Accept" showDelay="400" (onClick)="accept(row)" />
+                  <p-button icon="pi pi-times" [text]="true" [rounded]="true" severity="danger" pTooltip="Decline" showDelay="400" (onClick)="decline(row)" />
                 }
                 @if (row.status === 'under_negotiation') {
-                  <p-button icon="pi pi-check" [text]="true" [rounded]="true" severity="success" pTooltip="Accept" (onClick)="accept(row)" />
+                  <p-button icon="pi pi-check" [text]="true" [rounded]="true" severity="success" pTooltip="Accept" showDelay="400" (onClick)="accept(row)" />
                 }
                 @if (row.status === 'sent' || row.status === 'under_negotiation') {
-                  <p-button icon="pi pi-comments" [text]="true" [rounded]="true" severity="warn" pTooltip="Negotiate" (onClick)="negotiate(row)" />
+                  <p-button icon="pi pi-comments" [text]="true" [rounded]="true" severity="warn" pTooltip="Negotiate" showDelay="400" (onClick)="negotiate(row)" />
                 }
-                <p-button icon="pi pi-eye" [text]="true" [rounded]="true" severity="secondary" pTooltip="Open" (onClick)="open(row)" />
-                <p-button icon="pi pi-trash" [text]="true" [rounded]="true" severity="danger" pTooltip="Delete" (onClick)="remove(row, row.code)" />
+                <p-button icon="pi pi-eye" [text]="true" [rounded]="true" severity="secondary" pTooltip="Open" showDelay="400" (onClick)="open(row)" />
+                <p-button icon="pi pi-trash" [text]="true" [rounded]="true" severity="danger" pTooltip="Delete" showDelay="400" (onClick)="remove(row, row.code)" />
               </div>
             </td>
           </tr>

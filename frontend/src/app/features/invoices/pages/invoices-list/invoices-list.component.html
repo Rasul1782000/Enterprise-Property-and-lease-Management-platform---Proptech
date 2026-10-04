@@ -46,7 +46,7 @@
           <td>{{ dateOnly(row.issue_date) }}</td>
           <td>
             <span [class.text-primary-900]="isOverdue(row)">{{ dateOnly(row.due_date) }}</span>
-            @if (isOverdue(row)) { <i class="pi pi-exclamation-triangle text-primary-800 text-xs ml-1" pTooltip="Overdue"></i> }
+            @if (isOverdue(row)) { <i class="pi pi-exclamation-triangle text-primary-800 text-xs ml-1" pTooltip="Overdue" showDelay="400"></i> }
           </td>
           <td>{{ money(row.amount) }}</td>
           <td>{{ money(row.paid_amount) }}</td>
@@ -54,11 +54,11 @@
           <td><p-tag [value]="row.status" [severity]="statusSeverity(row.status)" /></td>
           <td>
             <div class="flex items-center gap-1">
-              <p-button icon="pi pi-eye" [text]="true" [rounded]="true" severity="secondary" pTooltip="View" (onClick)="viewInvoice(row)" />
-              @if (row.status === 'draft') { <p-button icon="pi pi-send" [text]="true" [rounded]="true" pTooltip="Send" (onClick)="sendInvoice(row)" /> }
-              @if (row.status !== 'paid' && row.status !== 'cancelled') { <p-button icon="pi pi-dollar" [text]="true" [rounded]="true" pTooltip="Record payment" (onClick)="recordPayment(row)" /> }
-              <p-button icon="pi pi-file-pdf" [text]="true" [rounded]="true" severity="danger" pTooltip="Download PDF" (onClick)="downloadPdf(row)" />
-              <p-button icon="pi pi-trash" [text]="true" [rounded]="true" severity="danger" pTooltip="Delete" (onClick)="deleteInvoice(row)" />
+              <p-button icon="pi pi-eye" [text]="true" [rounded]="true" severity="secondary" pTooltip="View" showDelay="400" (onClick)="viewInvoice(row)" />
+              @if (row.status === 'draft') { <p-button icon="pi pi-send" [text]="true" [rounded]="true" pTooltip="Send" showDelay="400" (onClick)="sendInvoice(row)" /> }
+              @if (row.status !== 'paid' && row.status !== 'cancelled') { <p-button icon="pi pi-dollar" [text]="true" [rounded]="true" pTooltip="Record payment" showDelay="400" (onClick)="recordPayment(row)" /> }
+              <p-button icon="pi pi-file-pdf" [text]="true" [rounded]="true" severity="danger" pTooltip="Download PDF" showDelay="400" (onClick)="downloadPdf(row)" />
+              <p-button icon="pi pi-trash" [text]="true" [rounded]="true" severity="danger" pTooltip="Delete" showDelay="400" (onClick)="deleteInvoice(row)" />
             </div>
           </td>
         </tr>

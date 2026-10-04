@@ -117,17 +117,17 @@
             <td>
               <div class="flex items-center gap-1">
                 @if (row.permit_status === 'not_submitted' || row.permit_status === 'under_review') {
-                  <p-button icon="pi pi-check" [text]="true" [rounded]="true" severity="success" pTooltip="Approve permit" (onClick)="approve(row)" />
-                  <p-button icon="pi pi-ban" [text]="true" [rounded]="true" severity="danger" pTooltip="Reject" (onClick)="reject(row)" />
+                  <p-button icon="pi pi-check" [text]="true" [rounded]="true" severity="success" pTooltip="Approve permit" showDelay="400" (onClick)="approve(row)" />
+                  <p-button icon="pi pi-ban" [text]="true" [rounded]="true" severity="danger" pTooltip="Reject" showDelay="400" (onClick)="reject(row)" />
                 }
                 @if (row.permit_status === 'approved' && row.noc_status === 'pending') {
-                  <p-button icon="pi pi-calendar-plus" [text]="true" [rounded]="true" severity="info" pTooltip="Schedule inspection" (onClick)="scheduleInspection(row)" />
+                  <p-button icon="pi pi-calendar-plus" [text]="true" [rounded]="true" severity="info" pTooltip="Schedule inspection" showDelay="400" (onClick)="scheduleInspection(row)" />
                 }
                 @if (row.permit_status === 'approved' && row.noc_status !== 'noc_issued') {
-                  <p-button icon="pi pi-verified" [text]="true" [rounded]="true" severity="success" pTooltip="Issue NOC" (onClick)="issueNoc(row)" />
+                  <p-button icon="pi pi-verified" [text]="true" [rounded]="true" severity="success" pTooltip="Issue NOC" showDelay="400" (onClick)="issueNoc(row)" />
                 }
-                <p-button icon="pi pi-eye" [text]="true" [rounded]="true" severity="secondary" pTooltip="Open" (onClick)="open(row)" />
-                <p-button icon="pi pi-trash" [text]="true" [rounded]="true" severity="danger" pTooltip="Delete" (onClick)="remove(row, row.code)" />
+                <p-button icon="pi pi-eye" [text]="true" [rounded]="true" severity="secondary" pTooltip="Open" showDelay="400" (onClick)="open(row)" />
+                <p-button icon="pi pi-trash" [text]="true" [rounded]="true" severity="danger" pTooltip="Delete" showDelay="400" (onClick)="remove(row, row.code)" />
               </div>
             </td>
           </tr>

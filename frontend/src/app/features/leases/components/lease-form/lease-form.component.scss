@@ -17,11 +17,16 @@
 }
 
 .field-label {
-  @apply text-sm font-medium text-zinc-700;
+  font-size: var(--text-small);
+  font-weight: 600;
+  color: var(--content-primary);
+  margin-bottom: 6px;
 }
 
 .field-error {
-  @apply text-xs text-primary-900;
+  color: var(--color-error);
+  font-size: var(--text-xs);
+  margin-top: 6px;
 }
 
 .lease-form p-select,

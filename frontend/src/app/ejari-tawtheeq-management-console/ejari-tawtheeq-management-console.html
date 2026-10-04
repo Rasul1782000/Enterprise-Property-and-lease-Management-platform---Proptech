@@ -97,16 +97,16 @@
             <td>
               <div class="flex items-center gap-1">
                 @if (row.status === 'draft') {
-                  <p-button icon="pi pi-send" [text]="true" [rounded]="true" severity="info" pTooltip="Submit" (onClick)="submit(row)" />
+                  <p-button icon="pi pi-send" [text]="true" [rounded]="true" severity="info" pTooltip="Submit" showDelay="400" (onClick)="submit(row)" />
                 }
                 @if (row.status === 'submitted' || row.status === 'rejected') {
-                  <p-button icon="pi pi-verified" [text]="true" [rounded]="true" severity="success" pTooltip="Register" (onClick)="register(row)" />
+                  <p-button icon="pi pi-verified" [text]="true" [rounded]="true" severity="success" pTooltip="Register" showDelay="400" (onClick)="register(row)" />
                 }
                 @if (row.status === 'submitted') {
-                  <p-button icon="pi pi-times" [text]="true" [rounded]="true" severity="danger" pTooltip="Reject" (onClick)="reject(row)" />
+                  <p-button icon="pi pi-times" [text]="true" [rounded]="true" severity="danger" pTooltip="Reject" showDelay="400" (onClick)="reject(row)" />
                 }
-                <p-button icon="pi pi-eye" [text]="true" [rounded]="true" severity="secondary" pTooltip="Open" (onClick)="open(row)" />
-                <p-button icon="pi pi-trash" [text]="true" [rounded]="true" severity="danger" pTooltip="Delete" (onClick)="remove(row, row.code)" />
+                <p-button icon="pi pi-eye" [text]="true" [rounded]="true" severity="secondary" pTooltip="Open" showDelay="400" (onClick)="open(row)" />
+                <p-button icon="pi pi-trash" [text]="true" [rounded]="true" severity="danger" pTooltip="Delete" showDelay="400" (onClick)="remove(row, row.code)" />
               </div>
             </td>
           </tr>

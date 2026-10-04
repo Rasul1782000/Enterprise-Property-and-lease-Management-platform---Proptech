@@ -23,7 +23,7 @@
 
 .aside-kicker {
   color: var(--brand-700);
-  font-size: 0.6875rem;
+  font-size: 0.875rem;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -54,7 +54,7 @@
   align-items: center;
   gap: 0.5rem;
   color: var(--ink-500);
-  font-size: 0.8125rem;
+  font-size: 1rem;
 }
 
 :host ::ng-deep .login-card {
@@ -106,16 +106,16 @@
 }
 
 .field-label {
-  font-size: 0.6875rem;
+  font-size: var(--text-small);
   font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--ink-500);
+  color: var(--content-primary);
+  margin-bottom: 6px;
 }
 
 .field-error {
-  color: var(--brand-800);
-  font-size: 0.75rem;
+  color: var(--color-error);
+  font-size: var(--text-xs);
+  margin-top: 6px;
 }
 
 .login-footer {
@@ -125,7 +125,7 @@
 
 :host ::ng-deep .p-message {
   border-radius: var(--radius-md);
-  font-size: 0.8125rem;
+  font-size: 1rem;
 }
 
 @media (max-width: 700px) {

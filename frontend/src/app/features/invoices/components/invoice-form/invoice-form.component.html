@@ -101,7 +101,7 @@
             <p-inputnumber [inputId]="'li-tax-' + $index" formControlName="tax_rate" [min]="0" [max]="100" [minFractionDigits]="2" class="w-full" />
           </div>
           <div class="line-total">{{ money(lineTotal($any(item))) }}</div>
-          <p-button icon="pi pi-trash" [text]="true" [rounded]="true" severity="danger" type="button" pTooltip="Remove line item" (onClick)="removeLineItem($index)" />
+          <p-button icon="pi pi-trash" [text]="true" [rounded]="true" severity="danger" type="button" pTooltip="Remove line item" showDelay="400" (onClick)="removeLineItem($index)" />
         </div>
       } @empty {
         <div class="empty-state">

@@ -16,21 +16,25 @@ import { mockApiInterceptor } from './core/mock/mock-api.interceptor';
 import { SharedModule } from './shared/shared.module';
 import { AppComponent } from './app.component';
 
-/** Orange-on-neutral preset: the brand accent is orange, everything else is neutral. */
+/**
+ * BounceBox preset: coral drives primary action, teal supports and confirms,
+ * sunshine yellow is reserved for rewards. Everything else is re-pointed in
+ * styles.scss, which loads after PrimeNG injects its theme stylesheet.
+ */
 const PortalPreset = definePreset(Aura, {
   semantic: {
     primary: {
-      50: '#fff8ed',
-      100: '#ffefd4',
-      200: '#fedcab',
-      300: '#fdc179',
-      400: '#fba338',
-      500: '#f88b0c',
-      600: '#ea8a0c',
-      700: '#c26a06',
-      800: '#9a510d',
-      900: '#7c410f',
-      950: '#431f05'
+      50: '#fff5f5',
+      100: '#ffe4e4',
+      200: '#ffcccc',
+      300: '#ffa8a8',
+      400: '#ff8a8a',
+      500: '#ff6b6b',
+      600: '#e85d5d',
+      700: '#d14a4a',
+      800: '#a63a3a',
+      900: '#7a2b2b',
+      950: '#461616'
     }
   }
 });
@@ -49,7 +53,7 @@ const PortalPreset = definePreset(Aura, {
     provideAnimationsAsync(),
     providePrimeNG({
       ripple: true,
-      inputVariant: 'filled',
+      inputVariant: 'outlined',
       theme: { preset: PortalPreset, options: { darkModeSelector: '.app-dark' } }
     }),
     MessageService,

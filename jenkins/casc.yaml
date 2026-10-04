@@ -1,0 +1,19 @@
+jenkins:
+  systemMessage: "Enterprise Property & Lease Management Portal - CI/CD Server"
+  numExecutors: 2
+  mode: NORMAL
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: "admin"
+          name: "Administrator"
+          password: "admin123"
+  authorizationStrategy:
+    loggedInUsersCanDoAnything:
+      allowAnonymousRead: false
+
+unclassified:
+  location:
+    url: "http://localhost:8888/"
+    adminAddress: "admin@localhost"

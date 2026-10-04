@@ -87,7 +87,7 @@
             <td [class.text-primary-900]="isOverdue(row.due_on)">
               {{ dateOnly(row.due_on) }}
               @if (isOverdue(row.due_on) && row.status !== 'cleared' && row.status !== 'replaced') {
-                <i class="pi pi-exclamation-triangle text-primary-800 text-xs ml-1" pTooltip="Past due"></i>
+                <i class="pi pi-exclamation-triangle text-primary-800 text-xs ml-1" pTooltip="Past due" showDelay="400"></i>
               }
             </td>
             <td>{{ row.deposited_on ? dateOnly(row.deposited_on) : '—' }}</td>
@@ -100,18 +100,18 @@
             <td>
               <div class="flex items-center gap-1">
                 @if (row.status === 'pending') {
-                  <p-button icon="pi pi-send" [text]="true" [rounded]="true" severity="info" pTooltip="Deposit" (onClick)="deposit(row)" />
+                  <p-button icon="pi pi-send" [text]="true" [rounded]="true" severity="info" pTooltip="Deposit" showDelay="400" (onClick)="deposit(row)" />
                 }
                 @if (row.status === 'deposited') {
-                  <p-button icon="pi pi-check" [text]="true" [rounded]="true" severity="success" pTooltip="Clear" (onClick)="clear(row)" />
+                  <p-button icon="pi pi-check" [text]="true" [rounded]="true" severity="success" pTooltip="Clear" showDelay="400" (onClick)="clear(row)" />
                 }
                 @if (row.status === 'deposited' || row.status === 'pending') {
-                  <p-button icon="pi pi-undo" [text]="true" [rounded]="true" severity="danger" pTooltip="Return unpaid" (onClick)="bounce(row)" />
+                  <p-button icon="pi pi-undo" [text]="true" [rounded]="true" severity="danger" pTooltip="Return unpaid" showDelay="400" (onClick)="bounce(row)" />
                 }
                 @if (row.status === 'returned') {
-                  <p-button icon="pi pi-refresh" [text]="true" [rounded]="true" severity="warn" pTooltip="Replace" (onClick)="replace(row)" />
+                  <p-button icon="pi pi-refresh" [text]="true" [rounded]="true" severity="warn" pTooltip="Replace" showDelay="400" (onClick)="replace(row)" />
                 }
-                <p-button icon="pi pi-trash" [text]="true" [rounded]="true" severity="danger" pTooltip="Delete" (onClick)="remove(row, row.cheque_no)" />
+                <p-button icon="pi pi-trash" [text]="true" [rounded]="true" severity="danger" pTooltip="Delete" showDelay="400" (onClick)="remove(row, row.cheque_no)" />
               </div>
             </td>
           </tr>

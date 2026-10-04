@@ -103,15 +103,15 @@
                     <td>
                       <div class="flex items-center gap-1">
                         @if (row.status === 'draft') {
-                          <p-button icon="pi pi-send" [text]="true" [rounded]="true" severity="info" pTooltip="Issue" (onClick)="issue(row)" />
+                          <p-button icon="pi pi-send" [text]="true" [rounded]="true" severity="info" pTooltip="Issue" showDelay="400" (onClick)="issue(row)" />
                         }
                         @if (row.outstanding > 0) {
-                          <p-button icon="pi pi-dollar" [text]="true" [rounded]="true" severity="success" pTooltip="Post collection" (onClick)="collect(row)" />
+                          <p-button icon="pi pi-dollar" [text]="true" [rounded]="true" severity="success" pTooltip="Post collection" showDelay="400" (onClick)="collect(row)" />
                         }
                         @if (row.status === 'paid') {
-                          <p-button icon="pi pi-flag" [text]="true" [rounded]="true" severity="secondary" pTooltip="Close" (onClick)="closeCharge(row)" />
+                          <p-button icon="pi pi-flag" [text]="true" [rounded]="true" severity="secondary" pTooltip="Close" showDelay="400" (onClick)="closeCharge(row)" />
                         }
-                        <p-button icon="pi pi-trash" [text]="true" [rounded]="true" severity="danger" pTooltip="Delete" (onClick)="remove(row, row.code)" />
+                        <p-button icon="pi pi-trash" [text]="true" [rounded]="true" severity="danger" pTooltip="Delete" showDelay="400" (onClick)="remove(row, row.code)" />
                       </div>
                     </td>
                   </tr>

@@ -9,7 +9,7 @@
 .form-title {
   font-size: 1.125rem;
   font-weight: 600;
-  color: #27272a;
+  color: var(--ink-900);
   margin: 0 0 1rem;
 }
 
@@ -21,20 +21,20 @@
 }
 
 .field-label {
-  font-size: 0.75rem;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  color: #71717a;
+  font-size: var(--text-small);
+  font-weight: 600;
+  color: var(--content-primary);
+  margin-bottom: 6px;
 }
 
 .field-label .req {
-  color: #9a510d;
+  color: var(--color-error);
 }
 
 .field-error {
-  color: #9a510d;
-  font-size: 0.75rem;
+  color: var(--color-error);
+  font-size: var(--text-xs);
+  margin-top: 6px;
 }
 
 .line-items {
@@ -49,14 +49,14 @@
   gap: 0.5rem;
   align-items: end;
   padding: 0.75rem;
-  border: 1px solid #e4e4e7;
-  border-radius: 0.75rem;
-  background: #fafafa;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--surface-sunken);
 }
 
 .line-total {
   font-weight: 600;
-  color: #18181b;
+  color: var(--ink-900);
   white-space: nowrap;
   padding-bottom: 0.5rem;
 }
@@ -66,7 +66,7 @@
   justify-content: flex-end;
   gap: 0.5rem;
   padding-top: 0.5rem;
-  border-top: 1px solid #e4e4e7;
+  border-top: 1px solid var(--border-strong);
 }
 
 @media (max-width: 900px) {

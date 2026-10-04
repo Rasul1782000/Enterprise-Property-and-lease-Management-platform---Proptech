@@ -1,12 +1,12 @@
 .stat-card { transition: box-shadow .15s ease, border-color .15s ease; }
-.stat-card:hover { box-shadow: var(--shadow-raised); border-color: var(--brand-200); }
+.stat-card:hover { box-shadow: var(--shadow-md); border-color: var(--teal-500); }
 
 /* Activity type chips sit inside a p-tag, so flatten the PrimeNG chrome. */
 :host ::ng-deep .p-tag.activity-tag {
   background: transparent;
   border: 0;
   padding: 0;
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   line-height: 1.4;
 }
 
@@ -18,8 +18,8 @@
 }
 
 .section-card.expanded {
-  border-color: var(--brand-400);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+  border-color: var(--coral-400);
+  box-shadow: var(--shadow-coral);
 }
 
 .chart-container-expanded {
@@ -44,8 +44,8 @@
 }
 
 .chart-container-compressed:hover {
-  border-color: var(--brand-400);
-  background: var(--brand-50);
+  border-color: var(--coral-400);
+  background: #fff5f5;
 }
 
 .chart-container-compressed .pi {

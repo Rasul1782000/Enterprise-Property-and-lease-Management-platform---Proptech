@@ -28,7 +28,7 @@
 
 .auth-subtitle {
   margin: 0.25rem 0 0;
-  font-size: 0.8125rem;
+  font-size: 1rem;
   color: var(--ink-500);
 }
 
@@ -47,7 +47,7 @@
 
 .form-field label {
   font-weight: 600;
-  font-size: 0.6875rem;
+  font-size: 0.875rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--ink-500);
@@ -58,7 +58,7 @@
   background: #fff;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
-  font-size: 0.8125rem;
+  font-size: 1rem;
   font-family: inherit;
   color: var(--ink-900);
 }
@@ -72,19 +72,20 @@
 }
 
 .btn-primary {
-  padding: 0.625rem 1rem;
-  background-color: var(--brand-600);
+  padding: 0.75rem 1.5rem;
+  min-height: 44px;
+  background-color: var(--coral-500);
   color: #fff;
-  border: 1px solid var(--brand-600);
-  border-radius: var(--radius-sm);
+  border: 2px solid var(--coral-500);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-coral);
   font-family: inherit;
-  font-size: 0.8125rem;
+  font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color .12s ease;
+  transition: background-color .12s ease, box-shadow .12s ease;
 }
-
-.btn-primary:hover:not(:disabled) { background-color: var(--brand-700); border-color: var(--brand-700); }
+.btn-primary:hover:not(:disabled) { background-color: var(--coral-600); border-color: var(--coral-600); }
 .btn-primary:focus-visible { box-shadow: var(--focus-ring); }
 
 .btn-primary:disabled {
@@ -100,13 +101,13 @@
   border: 1px solid var(--brand-100);
   border-radius: var(--radius-sm);
   padding: 0.5rem 0.625rem;
-  font-size: 0.75rem;
+  font-size: 0.875rem;
 }
 
 .auth-link {
   margin: 1.25rem 0 0;
   text-align: center;
-  font-size: 0.8125rem;
+  font-size: 1rem;
   color: var(--ink-500);
 }
 

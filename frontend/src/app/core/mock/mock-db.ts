@@ -866,8 +866,8 @@ export class MockDb {
     return {
       labels,
       datasets: [
-        { label: 'Occupied units', data: labels.map((_, i) => 92 + ((i * 3) % 7)), backgroundColor: '#c26a06', borderColor: '#c26a06' },
-        { label: 'Vacant units', data: labels.map((_, i) => 6 + ((i * 2) % 6)), backgroundColor: '#fdc179', borderColor: '#fdc179' }
+        { label: 'Occupied units', data: labels.map((_, i) => 92 + ((i * 3) % 7)), backgroundColor: '#4ECDC4', borderColor: '#3DBEB5' },
+        { label: 'Vacant units', data: labels.map((_, i) => 6 + ((i * 2) % 6)), backgroundColor: '#FFE66D', borderColor: '#F5D44E' }
       ]
     };
   }
@@ -878,8 +878,8 @@ export class MockDb {
     return {
       labels,
       datasets: [
-        { label: 'Collected', data: paid, backgroundColor: 'rgba(234,138,12,.85)', borderColor: '#c26a06' },
-        { label: 'Outstanding', data: paid.map(v => Math.round(v * 0.18)), backgroundColor: 'rgba(253,193,121,.85)', borderColor: '#fdc179' }
+        { label: 'Collected', data: paid, backgroundColor: 'rgba(78,205,196,.85)', borderColor: '#3DBEB5' },
+        { label: 'Outstanding', data: paid.map(v => Math.round(v * 0.18)), backgroundColor: 'rgba(255,107,107,.85)', borderColor: '#E85D5D' }
       ]
     };
   }
@@ -891,8 +891,8 @@ export class MockDb {
       datasets: [{
         label: 'Leases expiring',
         data: labels.map((_, i) => 2 + ((i * 2) % 5)),
-        backgroundColor: 'rgba(239,68,68,.8)',
-        borderColor: '#9a510d'
+        backgroundColor: 'rgba(255,230,109,.8)',
+        borderColor: '#F5D44E'
       }]
     };
   }

@@ -8,14 +8,18 @@ export interface StatCard {
   hint?: string;
 }
 
+/**
+ * BounceBox tones: coral for attention, teal for correct and supporting
+ * navigation, sunshine yellow for rewards and gentle alerts.
+ */
 const TONES: Record<StatCard['tone'], { chip: string; icon: string }> = {
-  blue: { chip: 'bg-primary-100', icon: 'text-primary-600' },
-  emerald: { chip: 'bg-zinc-100', icon: 'text-zinc-600' },
-  amber: { chip: 'bg-primary-100', icon: 'text-primary-700' },
-  red: { chip: 'bg-primary-600', icon: 'text-white' },
-  purple: { chip: 'bg-primary-50', icon: 'text-primary-700' },
+  blue: { chip: 'bg-teal-100', icon: 'text-teal-800' },
+  emerald: { chip: 'bg-teal-500', icon: 'text-white' },
+  amber: { chip: 'bg-sunny-300', icon: 'text-sunny-900' },
+  red: { chip: 'bg-coral-500', icon: 'text-white' },
+  purple: { chip: 'bg-coral-100', icon: 'text-coral-800' },
   slate: { chip: 'bg-zinc-100', icon: 'text-zinc-600' },
-  indigo: { chip: 'bg-primary-100', icon: 'text-primary-700' }
+  indigo: { chip: 'bg-sunny-100', icon: 'text-sunny-900' }
 };
 
 @Component({

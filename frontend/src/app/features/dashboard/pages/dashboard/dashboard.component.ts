@@ -108,8 +108,8 @@ export class DashboardComponent implements OnInit {
           {
             label: 'Latest dashboard value',
             data: this.getComparisonValues(),
-            backgroundColor: 'rgba(59, 130, 246, 0.6)',
-            borderColor: 'rgba(59, 130, 246, 1)',
+            backgroundColor: 'rgba(255, 107, 107, 0.65)',
+            borderColor: 'rgba(255, 107, 107, 1)',
             borderWidth: 1,
           }
         ]
@@ -160,13 +160,13 @@ export class DashboardComponent implements OnInit {
             }
           },
           tooltip: {
-            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            backgroundColor: 'rgba(45, 45, 45, 0.9)',
             titleFont: {
-              size: 14,
+              size: 16,
               weight: 'bold'
             },
             bodyFont: {
-              size: 12
+              size: 14
             },
             callbacks: {
               label: function(context: any) {
