@@ -17,3 +17,24 @@ unclassified:
   location:
     url: "http://localhost:8888/"
     adminAddress: "admin@localhost"
+
+jobs:
+  - script: >
+      pipelineJob('enterprise-property-portal') {
+        definition {
+          cpsScm {
+            scm {
+              git {
+                remote {
+                  url('https://github.com/Rasul1782000/Enterprise-Property-and-lease-Management-platform---Proptech.git')
+                }
+                branches('*/main')
+              }
+            }
+            scriptPath('Jenkinsfile')
+          }
+        }
+        triggers {
+          scm('H/5 * * * *')
+        }
+      }

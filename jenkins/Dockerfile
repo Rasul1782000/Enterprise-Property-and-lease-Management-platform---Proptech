@@ -14,7 +14,10 @@ RUN jenkins-plugin-cli --plugins \
     credentials-binding \
     ssh-agent \
     matrix-auth \
-    role-strategy
+    role-strategy \
+    job-dsl \
+    pipeline-stage-view \
+    timestamper
 
 # Copy JCasC config outside the home volume so it is not shadowed by it
 USER root
