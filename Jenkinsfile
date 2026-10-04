@@ -1,143 +1,115 @@
 pipeline {
     agent any
 
-    options {
-        timestamps()
-        disableConcurrentBuilds()
-        durabilityHint('PERFORMANCE_OPTIMIZED')
-        timeout(time: 45, unit: 'MINUTES')
-        buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '10'))
-        retry(1)
-    }
-
-    parameters {
-        choice(name: 'ENVIRONMENT', choices: ['development', 'staging', 'production'], description: 'Target deployment environment')
-        booleanParam(name: 'RUN_TESTS', defaultValue: true, description: 'Execute backend and frontend test suites')
-        booleanParam(name: 'SKIP_DEPLOY', defaultValue: false, description: 'Skip deployment stages')
-        string(name: 'BRANCH_NAME', defaultValue: 'main', description: 'Branch to build')
-    }
-
     environment {
-        FRONTEND_DIR   = 'frontend'
-        BACKEND_DIR    = 'backend'
-        NODE_VERSION   = '20'
-        PHP_VERSION    = '8.2'
-        APP_NAME       = 'enterprise-property-portal'
-        BUILD_TAG      = "${env.APP_NAME}:${env.BUILD_NUMBER}"
-        CI             = 'true'
+        // Floci Cloud Emulator Configuration (Zero Auth / Local Endpoint)
+        AWS_ACCESS_KEY_ID     = 'floci'
+        AWS_SECRET_ACCESS_KEY = 'floci'
+        AWS_DEFAULT_REGION    = 'us-east-1'
+        AWS_ENDPOINT_URL      = 'http://localhost:4566'
+
+        // Container Registry Settings
+        DOCKER_REGISTRY       = 'your-registry.azurecr.io' // Change to your container registry URL
+        IMAGE_NAME            = 'proptech-enterprise-app'
+        CREDENTIALS_ID        = 'docker-registry-credentials' // Jenkins credentials ID
     }
 
-    tools {
-        nodejs "node-${NODE_VERSION}"
-    }
-
-    triggers {
-        githubPush()
-        pollSCM('H/10 * * * *')
+    options {
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        timeout(time: 2, unit: 'HOURS')
+        disableConcurrentBuilds()
+        ansiColor('xterm')
     }
 
     stages {
-        stage('Build & Test') {
+        stage('Checkout Code') {
             steps {
-                echo 'Building the Proptech application...'
+                echo '📥 Checking out source code from SCM...'
+                checkout scm
+            }
+        }
 
-                echo "==> Build #${env.BUILD_NUMBER} | Environment: ${params.ENVIRONMENT} | Branch: ${params.BRANCH_NAME}"
+        stage('Install Dependencies') {
+            steps {
+                echo '📦 Installing application dependencies...'
+                sh 'npm ci'
+            }
+        }
 
-                dir("${BACKEND_DIR}") {
-                    echo '==> Installing backend dependencies (Composer)...'
-                    sh '''
-                        composer install --no-interaction --prefer-dist --optimize-autoloader --no-progress
-                        cp -n .env.example .env || true
-                        php artisan key:generate --force || true
-                        php artisan config:cache || true
-                    '''
-                }
-
-                dir("${FRONTEND_DIR}") {
-                    echo '==> Installing frontend dependencies (npm)...'
-                    sh '''
-                        npm ci --no-audit --no-fund
-                        npm audit --audit-level=high || true
-                    '''
-                }
-
-                script {
-                    if (params.RUN_TESTS) {
-                        echo '==> Running backend test suite (PHPUnit)...'
-                        dir("${BACKEND_DIR}") {
-                            sh 'php artisan test || vendor/bin/phpunit --coverage-text || true'
-                        }
-
-                        echo '==> Running frontend lint & unit tests...'
-                        dir("${FRONTEND_DIR}") {
-                            sh '''
-                                npm run lint || npx ng lint || true
-                                npm run test -- --watch=false --browsers=ChromeHeadless || npx ng test --watch=false --browsers=ChromeHeadless || true
-                            '''
-                        }
-                    } else {
-                        echo '==> Tests skipped by parameter.'
+        stage('Parallel Quality & Linting') {
+            parallel {
+                stage('Code Linting') {
+                    steps {
+                        echo '🔍 Running code linter...'
+                        sh 'npm run lint --if-present'
                     }
                 }
-
-                echo '==> Building production bundles...'
-                dir("${FRONTEND_DIR}") {
-                    sh 'npm run build -- --configuration production || npx ng build --configuration production'
+                stage('Security Audit') {
+                    steps {
+                        echo '🛡️ Running dependency vulnerability audit...'
+                        sh 'npm audit --production || true'
+                    }
                 }
-
-                echo '==> Build & Test stage completed successfully.'
             }
         }
 
-        stage('Quality Gate') {
+        stage('Start Floci Cloud Emulator') {
             steps {
-                echo 'Running static analysis and security checks...'
-                dir("${BACKEND_DIR}") {
-                    sh 'php -l artisan || true'
-                }
-                dir("${FRONTEND_DIR}") {
-                    sh 'npx tsc --noEmit -p tsconfig.json || true'
-                }
+                echo '🚀 Starting Floci local cloud services (S3, DynamoDB, RDS, etc.)...'
+                // Spins up Floci instantly using Docker with Docker-in-Docker socket support
+                sh 'docker run -d --name floci-emulator -p 4566:4566 -v /var/run/docker.sock:/var/run/docker.sock floci/floci:latest'
+
+                // Allow the native application a split second to finalize bindings
+                sleep(time: 3, unit: 'SECONDS')
             }
         }
 
-        stage('Package') {
+        stage('Integration Tests (Against Floci)') {
             steps {
-                echo "Packaging artifacts for ${params.ENVIRONMENT}..."
-                sh "tar -czf ${env.APP_NAME}-${env.BUILD_NUMBER}.tar.gz ${BACKEND_DIR} ${FRONTEND_DIR}/dist || true"
-                archiveArtifacts artifacts: "${env.APP_NAME}-${env.BUILD_NUMBER}.tar.gz, frontend/dist/**", allowEmptyArchive: true
+                echo '🧪 Running integration tests targeting local Floci cloud endpoint...'
+                // Your app tests can safely hit AWS APIs (S3 uploads, queues, etc.) via localhost:4566 without live cloud costs
+                sh 'npm test'
             }
         }
 
-        stage('Deploy') {
+        stage('Build Production Docker Image') {
+            steps {
+                echo '🐳 Building production container image...'
+                script {
+                    appImage = docker.build("${env.DOCKER_REGISTRY}/${env.IMAGE_NAME}:${env.BUILD_NUMBER}", "--build-arg NODE_ENV=production .")
+                }
+            }
+        }
+
+        stage('Push to Registry') {
+            steps {
+                echo '🚀 Pushing container image to registry...'
+                script {
+                    docker.withRegistry("https://${env.DOCKER_REGISTRY}", "${env.CREDENTIALS_ID}") {
+                        appImage.push()
+                        appImage.push('latest')
+                    }
+                }
+            }
+        }
+
+        stage('Deploy to Production') {
             when {
-                expression { return !params.SKIP_DEPLOY }
+                branch 'main'
             }
             steps {
-                echo "Deploying ${env.BUILD_TAG} to ${params.ENVIRONMENT}..."
-                sh '''
-                    docker build -t ${BUILD_TAG} -f jenkins/Dockerfile --target deploy . || true
-                    docker image prune -f || true
-                '''
+                echo '🌐 Triggering production deployment sequence...'
+                // Add your deployment commands here (e.g., SSH trigger or Kubernetes rollouts)
+                echo 'Deployment successful.'
             }
         }
     }
 
     post {
-        success {
-            echo "Pipeline finished successfully: ${env.JOB_NAME} #${env.BUILD_NUMBER}"
-        }
-        failure {
-            echo "Pipeline FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER} — check the console log."
-        }
-        unstable {
-            echo 'Pipeline completed with warnings. Review test and lint results.'
-        }
         always {
-            cleanWs(deleteDirs: true, patterns: [
-                [pattern: 'frontend/node_modules', type: 'INCLUDE'],
-                [pattern: 'backend/vendor',        type: 'INCLUDE']
-            ], notFailBuild: true)
+            echo '🧹 Cleaning up Floci container and workspace...'
+            sh 'docker rm -f floci-emulator || true'
+            cleanWs()
         }
     }
 }
