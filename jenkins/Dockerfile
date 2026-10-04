@@ -24,12 +24,26 @@ USER root
 COPY casc.yaml /etc/jenkins/casc.yaml
 RUN chown jenkins:jenkins /etc/jenkins/casc.yaml
 
-# Install the Docker CLI so pipelines can run docker commands
+# Install Node.js (for frontend npm stages), PHP CLI + Composer (for Laravel backend), and Docker CLI
+USER root
 RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates \
     && curl -fsSL https://download.docker.com/linux/static/stable/x86_64/docker-27.5.1.tgz \
        | tar xz -C /tmp \
     && cp /tmp/docker/docker /usr/local/bin/docker \
     && rm -rf /tmp/docker /var/lib/apt/lists/*
+
+# Node.js 20 LTS
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
+    && rm -rf /var/lib/apt/lists/*
+
+# PHP CLI, extensions commonly needed by Laravel, and Composer
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        php-cli php-mbstring php-xml php-curl php-zip php-sqlite3 php-mysql unzip git \
+    && rm -rf /var/lib/apt/lists/* \
+    && curl -sS https://getcomposer.org/installer -o /tmp/composer-setup.php \
+    && php /tmp/composer-setup.php --install-dir=/usr/local/bin --filename=composer \
+    && rm /tmp/composer-setup.php
 
 # Run as root so Jenkins jobs can access the mounted docker socket
 USER root
