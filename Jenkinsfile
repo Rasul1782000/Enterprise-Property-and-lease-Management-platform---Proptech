@@ -31,7 +31,7 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 echo '📦 Installing application dependencies...'
-                dir('frontend') {
+                dir('backend') {
                     sh 'npm install'
                 }
             }
@@ -42,7 +42,7 @@ pipeline {
                 stage('Code Linting') {
                     steps {
                         echo '🔍 Running code linter...'
-                        dir('frontend') {
+                        dir('backend') {
                             sh 'npm run lint --if-present'
                         }
                     }
@@ -50,7 +50,7 @@ pipeline {
                 stage('Security Audit') {
                     steps {
                         echo '🛡️ Running dependency vulnerability audit...'
-                        dir('frontend') {
+                        dir('backend') {
                             sh 'npm audit --production || true'
                         }
                     }
@@ -73,7 +73,7 @@ pipeline {
             steps {
                 echo '🧪 Running integration tests targeting local Floci cloud endpoint...'
                 // Your app tests can safely hit AWS APIs (S3 uploads, queues, etc.) via localhost:4566 without live cloud costs
-                dir('frontend') {
+                dir('backend') {
                     sh 'npm test'
                 }
             }
@@ -83,7 +83,7 @@ pipeline {
             steps {
                 echo '🐳 Building production container image...'
                 script {
-                    dir('frontend') {
+                    dir('backend') {
                         appImage = docker.build("${env.DOCKER_REGISTRY}/${env.IMAGE_NAME}:${env.BUILD_NUMBER}", "--build-arg NODE_ENV=production .")
                     }
                 }
