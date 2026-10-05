@@ -18,6 +18,31 @@
   grid-column: 1 / -1;
 }
 
+.doc-icon {
+  font-size: 1.25rem;
+  color: var(--ink-500);
+  flex: 0 0 auto;
+}
+
+.doc-icon-pdf {
+  color: var(--brand-600);
+}
+
+.doc-name {
+  margin: 0;
+  font-weight: 500;
+  color: var(--ink-900);
+  word-break: break-word;
+}
+
+.doc-sub {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--ink-500);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
 @media (max-width: 1024px) {
   .stat-grid,
   .detail-grid {

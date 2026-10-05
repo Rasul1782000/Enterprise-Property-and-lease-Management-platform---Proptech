@@ -41,8 +41,17 @@
             <td><p-tag [value]="row.status" [severity]="statusSeverity(row.status)" /></td>
             <td>{{ row.leases_count }}</td>
             <td>
-              <p-button icon="pi pi-ellipsis-v" [text]="true" [rounded]="true" (click)="ref.toggle($event)" />
-              <p-menu #ref [popup]="true" [model]="rowMenu(row)" appendTo="body" />
+              <div class="flex gap-1 justify-end">
+                <p-button
+                  icon="pi pi-cloud-upload"
+                  [text]="true"
+                  [rounded]="true"
+                  pTooltip="Upload document"
+                  showDelay="400"
+                  (onClick)="openUpload(row)" />
+                <p-button icon="pi pi-ellipsis-v" [text]="true" [rounded]="true" (click)="ref.toggle($event)" />
+                <p-menu #ref [popup]="true" [model]="rowMenu(row)" appendTo="body" />
+              </div>
             </td>
           </tr>
         </ng-template>
@@ -69,4 +78,39 @@
           (onClick)="formRef.onSubmit()" />
       </ng-template>
     </p-dialog>
+
+    @if (uploadTarget(); as target) {
+      <app-document-upload-dialog
+        [header]="'Upload Document — ' + target.first_name + ' ' + target.last_name"
+        submitLabel="Upload"
+        [busy]="uploading()"
+        [categories]="documentCategories"
+        [allowedExtensions]="allowedExtensions"
+        [maxKb]="maxKb"
+        (picked)="onUploadPicked($event)"
+        (cancelled)="onUploadCancelled()">
+        <div dialogExtra>
+          @if (recentDocuments().length) {
+            <div>
+              <h4 class="text-sm font-medium text-zinc-500 mb-2">Recent documents</h4>
+              <ul class="recent-docs">
+                @for (doc of recentDocuments(); track doc.id) {
+                  <li>
+                    <i [class]="doc.extension === 'pdf' ? 'pi pi-file-pdf doc-icon-pdf' : 'pi pi-file doc-icon'"></i>
+                    <span class="recent-doc-name">{{ doc.name }}</span>
+                    <span class="recent-doc-meta">{{ categoryLabel(doc.category) }}</span>
+                  </li>
+                }
+              </ul>
+              <p-button
+                label="View all documents"
+                icon="pi pi-external-link"
+                [text]="true"
+                size="small"
+                (onClick)="viewDocuments(target)" />
+            </div>
+          }
+        </div>
+      </app-document-upload-dialog>
+    }
   </div>

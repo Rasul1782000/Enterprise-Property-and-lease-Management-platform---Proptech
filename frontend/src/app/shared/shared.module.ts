@@ -43,10 +43,10 @@ import { ChartModule } from 'primeng/chart';
 import { PanelModule } from 'primeng/panel';
 import { ToolbarModule } from 'primeng/toolbar';
 import { ListboxModule } from 'primeng/listbox';
-
 import { FilterBarComponent } from './components/filter-bar/filter-bar.component';
 import { ConfirmDialogComponent } from './components/confirm-dialog/confirm-dialog.component';
 import { StatCardsComponent } from './components/stat-cards/stat-cards.component';
+import { DocumentUploadDialogComponent } from './components/document-upload-dialog/document-upload-dialog.component';
 
 const PRIME_MODULES = [
   ButtonModule, CardModule, TableModule, TagModule, ChipModule, InputTextModule, TextareaModule,
@@ -62,7 +62,8 @@ const PRIME_MODULES = [
   declarations: [
     FilterBarComponent,
     ConfirmDialogComponent,
-    StatCardsComponent
+    StatCardsComponent,
+    DocumentUploadDialogComponent
   ],
   imports: [
     CommonModule,
@@ -79,7 +80,8 @@ const PRIME_MODULES = [
     ...PRIME_MODULES,
     FilterBarComponent,
     ConfirmDialogComponent,
-    StatCardsComponent
+    StatCardsComponent,
+    DocumentUploadDialogComponent
   ]
 })
 export class SharedModule {}

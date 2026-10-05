@@ -1,9 +1,17 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { ConfirmationService, MenuItem, MessageService } from 'primeng/api';
-import { TenantsApiService, Tenant } from '../../services/tenants-api.service';
+import {
+  TenantsApiService,
+  Tenant,
+  TenantDocument,
+  TENANT_DOCUMENT_CATEGORIES,
+  TENANT_DOCUMENT_EXTENSIONS,
+  TENANT_DOCUMENT_MAX_KB
+} from '../../services/tenants-api.service';
 import { PaginatedResponse } from '../../../../core/types';
 import { TenantFormDialogData } from '../../components/tenant-form/tenant-form.component';
+import { PickedDocument } from '../../../../shared/components/document-upload-dialog/document-upload-dialog.component';
 
 interface ListSortEvent { field: string; order: number | null | undefined; }
 interface ListPageEvent { first: number; rows: number; }
@@ -28,6 +36,15 @@ export class TenantsListComponent implements OnInit {
   formVisible = signal(false);
   formData = signal<TenantFormDialogData>({ mode: 'create' });
   private menuCache = new Map<number, MenuItem[]>();
+
+  /* Document upload straight from the list, so filing a document never needs
+     a detour through the tenant's detail page. */
+  readonly documentCategories = TENANT_DOCUMENT_CATEGORIES;
+  readonly allowedExtensions = TENANT_DOCUMENT_EXTENSIONS;
+  readonly maxKb = TENANT_DOCUMENT_MAX_KB;
+  readonly uploadTarget = signal<Tenant | null>(null);
+  readonly uploading = signal(false);
+  readonly recentDocuments = signal<TenantDocument[]>([]);
 
   ngOnInit() { this.load(); }
 
@@ -63,6 +80,7 @@ export class TenantsListComponent implements OnInit {
     if (!items) {
       items = [
         { label: 'View', icon: 'pi pi-eye', command: () => this.router.navigate(['/tenants', t.id]) },
+        { label: 'Upload Document', icon: 'pi pi-cloud-upload', command: () => this.openUpload(t) },
         { label: 'Edit', icon: 'pi pi-pencil', command: () => this.editTenant(t) },
         { separator: true },
         { label: 'Delete', icon: 'pi pi-trash', command: () => this.deleteTenant(t) }
@@ -90,4 +108,42 @@ export class TenantsListComponent implements OnInit {
   openCreateDialog() { this.formData.set({ mode: 'create' }); this.formVisible.set(true); }
   openEditDialog(t: Tenant) { this.formData.set({ mode: 'edit', tenant: t }); this.formVisible.set(true); }
   onFormClosed(result: boolean) { this.formVisible.set(false); if (result) this.load(); }
+
+  /* ------------------------------------------------------------------ */
+  /* Document upload                                                     */
+  /* ------------------------------------------------------------------ */
+
+  openUpload(t: Tenant) {
+    this.uploadTarget.set(t);
+    this.recentDocuments.set([]);
+    this.api.getDocuments(t.id, { per_page: 5, sort: 'created_at', direction: 'desc' })
+      .subscribe({ next: (res) => this.recentDocuments.set(res.data), error: () => this.recentDocuments.set([]) });
+  }
+
+  onUploadPicked(picked: PickedDocument) {
+    const target = this.uploadTarget();
+    if (!target) return;
+
+    this.uploading.set(true);
+    this.api.uploadDocument(target.id, picked.file, picked.name, picked.category).subscribe({
+      next: (doc) => {
+        this.uploading.set(false);
+        this.recentDocuments.update(rows => [doc, ...rows].slice(0, 5));
+        this.messages.add({ severity: 'success', summary: 'Uploaded', detail: `"${doc.name}" was attached to ${target.first_name} ${target.last_name}.` });
+      },
+      error: () => this.uploading.set(false)
+    });
+  }
+
+  onUploadCancelled() { this.uploadTarget.set(null); }
+
+  viewDocuments(t: Tenant) {
+    this.uploadTarget.set(null);
+    this.router.navigate(['/tenants', t.id]);
+  }
+
+  /** Label for a stored category key. */
+  categoryLabel(value: string): string {
+    return this.documentCategories.find(c => c.value === value)?.label ?? value;
+  }
 }

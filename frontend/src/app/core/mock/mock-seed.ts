@@ -415,11 +415,48 @@ export const MOCK_PAYMENTS: PaymentRecord[] = MOCK_INVOICES.flatMap(i => i.payme
 /* Tenant documents                                                    */
 /* ------------------------------------------------------------------ */
 
-export const MOCK_TENANT_DOCUMENTS = (tenantId: number) => ([
-  { id: tenantId * 100 + 1, name: 'Signed lease agreement.pdf', type: 'pdf', size_kb: 412, uploaded_at: iso(-300) },
-  { id: tenantId * 100 + 2, name: 'Proof of insurance.pdf', type: 'pdf', size_kb: 180, uploaded_at: iso(-290) },
-  { id: tenantId * 100 + 3, name: 'W-9 tax form.pdf', type: 'pdf', size_kb: 96, uploaded_at: iso(-120) }
-]);
+export interface TenantDocumentRecord {
+  id: number;
+  tenant_id: number;
+  name: string;
+  category: string;
+  disk: string;
+  path: string;
+  mime_type: string | null;
+  size_kb: number;
+  uploaded_by: number | null;
+  url: string;
+  extension: string;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Seed documents, one row per tenant, so the Documents tab is never empty. */
+export const MOCK_TENANT_DOCUMENTS: TenantDocumentRecord[] = MOCK_TENANTS.flatMap((tenant, ti) => {
+  const defs = [
+    { name: 'Signed lease agreement.pdf', category: 'lease_agreement', size_kb: 412, days: -300 },
+    { name: 'Emirates ID (both sides).pdf', category: 'id_document', size_kb: 180, days: -290 },
+    { name: 'Proof of insurance.pdf', category: 'insurance', size_kb: 96, days: -120 },
+    // Give roughly half the tenants a fourth document so filtering has signal.
+    ...(ti % 2 === 0 ? [{ name: 'Tax residency certificate.pdf', category: 'tax_form', size_kb: 64, days: -45 }] : [])
+  ];
+
+  return defs.map((d, di) => ({
+    id: tenant.id * 100 + di + 1,
+    tenant_id: tenant.id,
+    name: d.name,
+    category: d.category,
+    disk: 'documents',
+    path: `tenants/${tenant.id}/${d.name}`,
+    mime_type: 'application/pdf',
+    size_kb: d.size_kb,
+    uploaded_by: 1,
+    url: '',
+    extension: 'pdf',
+    created_at: iso(d.days),
+    updated_at: iso(d.days)
+  }));
+});
 
 /* ------------------------------------------------------------------ */
 /* Users                                                               */

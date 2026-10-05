@@ -15,6 +15,7 @@ import {
   LeaseRecord,
   PaymentRecord,
   PropertyRecord,
+  TenantDocumentRecord,
   TenantRecord,
   UnitRecord
 } from './mock-seed';
@@ -188,6 +189,7 @@ export class MockDb {
   buildings: BuildingRecord[] = structuredClone(MOCK_BUILDINGS);
   units: UnitRecord[] = structuredClone(MOCK_UNITS);
   tenants: TenantRecord[] = structuredClone(MOCK_TENANTS);
+  tenantDocuments: TenantDocumentRecord[] = structuredClone(MOCK_TENANT_DOCUMENTS);
   leases: LeaseRecord[] = structuredClone(MOCK_LEASES);
   invoices: InvoiceRecord[] = structuredClone(MOCK_INVOICES);
   payments: PaymentRecord[] = structuredClone(MOCK_PAYMENTS);
@@ -332,11 +334,44 @@ export class MockDb {
     }
     if (path.startsWith('tenants/')) {
       const rest = path.slice('tenants/'.length);
-      const id = Number(rest.split('/')[0]);
+      const [idPart, ...tail] = rest.split('/');
+      const id = Number(idPart);
       const record = this.tenants.find(t => t.id === id);
       if (!record) return notFound();
+
+      /* Documents live under /tenants/{id}/documents[/{docId}][/download]. */
+      if (tail[0] === 'documents') {
+        if (method === 'POST' && tail.length === 1) return this.addTenantDocument(id, req.body);
+        if (method === 'GET' && tail.length === 1) {
+          let rows = this.tenantDocuments.filter(d => d.tenant_id === id);
+          const category = req.params.get('filter[category]');
+          if (category) rows = rows.filter(d => d.category === category);
+          const term = req.params.get('search')?.toLowerCase();
+          if (term) rows = rows.filter(d => d.name.toLowerCase().includes(term));
+          // Newest first unless a sort is requested, matching the backend.
+          const sorted = req.params.get('sort')
+            ? this.applySort(rows, req)
+            : [...rows].sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+          return send(this.paginate(sorted, req));
+        }
+        const docId = Number(tail[1]);
+        const doc = this.tenantDocuments.find(d => d.id === docId && d.tenant_id === id);
+        if (!doc) return notFound();
+        if (method === 'GET' && tail[2] === 'download') {
+          // Returned unwrapped: `send()` would wrap the Blob in a second response.
+          return of(new HttpResponse({
+            status: 200,
+            body: new Blob([`Mock content for ${doc.name}`], { type: doc.mime_type ?? 'application/octet-stream' })
+          }) as HttpEvent<Any>);
+        }
+        if (method === 'DELETE') {
+          this.tenantDocuments = this.tenantDocuments.filter(d => d.id !== docId);
+          return noContent();
+        }
+        return notFound();
+      }
+
       if (rest.endsWith('/leases')) return send(this.paginate(this.leases.filter(l => l.tenant_id === id), req));
-      if (rest.endsWith('/documents')) return send(this.paginate(MOCK_TENANT_DOCUMENTS(id), req));
       if (method === 'GET') return send({ ...record, leases: this.leases.filter(l => l.tenant_id === id), units: this.units.filter(u => u.current_tenant_id === id) });
       if (method === 'PUT' || method === 'PATCH') return send(this.store('tenants', body, () => ({ ...record, ...body, id, updated_at: new Date().toISOString() })));
       if (method === 'DELETE') {
@@ -527,6 +562,46 @@ export class MockDb {
   /* ------------------------------------------------------------------ */
   /* Stores & helpers                                                    */
   /* ------------------------------------------------------------------ */
+
+  /**
+   * Record an uploaded tenant document. Mirrors the backend's
+   * POST /tenants/{id}/documents, including the multipart payload: the file
+   * itself is not kept, only the metadata the API returns.
+   */
+  private addTenantDocument(tenantId: number, body: Any): Observable<HttpEvent<Any>> {
+    const form = body instanceof FormData ? body : null;
+    const file = form?.get('file');
+
+    if (!(file instanceof Blob)) {
+      return throwError(() => ({
+        status: 422,
+        error: { message: 'The file field is required.', errors: { file: ['The file field is required.'] } }
+      }));
+    }
+
+    const originalName = (file as File).name || 'upload';
+    const extension = originalName.split('.').pop()?.toLowerCase() ?? '';
+    const stamp = new Date().toISOString();
+
+    const record = this.store('tenantDocuments', {}, (r, id) => ({
+      ...r,
+      id,
+      tenant_id: tenantId,
+      name: (form?.get('name') as string) || originalName,
+      category: (form?.get('category') as string) || 'other',
+      disk: 'documents',
+      path: `tenants/${tenantId}/${stamp.replace(/[:.]/g, '-')}-${originalName}`,
+      mime_type: file.type || 'application/octet-stream',
+      size_kb: Math.max(1, Math.round(file.size / 1024)),
+      uploaded_by: 1,
+      url: '',
+      extension,
+      created_at: stamp,
+      updated_at: stamp
+    }));
+
+    return of(new HttpResponse({ status: 201, body: record }) as HttpEvent<Any>);
+  }
 
   private store(entity: string, payload: Any, build: (record: Any, id: number) => Any): Any {
     const id = this.seq(entity);

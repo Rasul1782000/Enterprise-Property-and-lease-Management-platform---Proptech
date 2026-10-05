@@ -6,9 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StorePropertyRequest;
 use App\Http\Resources\PropertyResource;
 use App\Models\Property;
+use App\Support\Storage\S3ClientFactory;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
+use Throwable;
 
 class PropertyController extends Controller
 {
@@ -49,8 +52,47 @@ class PropertyController extends Controller
         return new PropertyResource($property->fresh(['buildings', 'manager']));
     }
 
+    /**
+     * Upload a property photo to object storage (Floci in dev/CI, S3 in prod).
+     */
+    public function uploadImage(Request $request, Property $property)
+    {
+        $request->validate([
+            'image' => ['required', 'file', 'image', 'max:5120'],
+        ]);
+
+        $path = $request->file('image')->store(
+            'properties/'.$property->id,
+            'documents',
+        );
+
+        if ($path === false) {
+            return response()->json([
+                'message' => 'Could not store the image; the property was left unchanged.',
+                'storage_endpoint' => S3ClientFactory::endpoint(),
+            ], 500);
+        }
+
+        // Replace the previous object rather than leaking it in the bucket.
+        if ($property->image_path) {
+            Storage::disk('documents')->delete($property->image_path);
+        }
+
+        $property->update(['image_path' => $path]);
+
+        return response()->json(new PropertyResource($property->fresh()), 201);
+    }
+
     public function destroy(Property $property)
     {
+        if ($property->image_path) {
+            try {
+                Storage::disk('documents')->delete($property->image_path);
+            } catch (Throwable) {
+                // Deleting the row must succeed even if storage is unreachable.
+            }
+        }
+
         $property->delete();
 
         return response()->json(null, 204);

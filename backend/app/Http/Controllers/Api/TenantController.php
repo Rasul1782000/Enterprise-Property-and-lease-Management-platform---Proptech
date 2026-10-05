@@ -4,9 +4,14 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Tenant;
+use App\Models\TenantDocument;
+use App\Support\Storage\S3ClientFactory;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
+use Throwable;
 
 class TenantController extends Controller
 {
@@ -84,14 +89,102 @@ class TenantController extends Controller
         return response()->json($leases);
     }
 
-    public function documents(Tenant $tenant)
+    public function documents(Request $request, Tenant $tenant)
     {
-        $documents = [
-            ['id' => 1, 'type' => 'id_document', 'name' => 'ID Document', 'tenant_id' => $tenant->id],
-            ['id' => 2, 'type' => 'lease_agreement', 'name' => 'Lease Agreement', 'tenant_id' => $tenant->id],
-            ['id' => 3, 'type' => 'payment_receipt', 'name' => 'Payment Receipt', 'tenant_id' => $tenant->id],
-        ];
+        $query = $tenant->documents()->getQuery();
+
+        // Newest first unless the caller asks for something else, so the
+        // relation itself stays ordering-agnostic.
+        if (! $request->has('sort')) {
+            $query->orderByDesc('created_at');
+        }
+
+        $documents = QueryBuilder::for($query)
+            ->allowedFilters([
+                AllowedFilter::exact('category'),
+                AllowedFilter::partial('name'),
+            ])
+            ->allowedSorts(['name', 'size_kb', 'created_at', 'category'])
+            ->paginate($request->get('per_page', 15))
+            ->appends($request->query());
 
         return response()->json($documents);
+    }
+
+    /**
+     * Upload a tenant document to object storage (Floci in dev/CI, S3 in prod).
+     */
+    public function storeDocument(Request $request, Tenant $tenant)
+    {
+        $data = $request->validate([
+            'file' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png,webp,doc,docx,xls,xlsx,csv,txt,zip', 'max:10240'],
+            'name' => ['nullable', 'string', 'max:255'],
+            'category' => ['nullable', 'string', Rule::in(TenantDocument::CATEGORIES)],
+        ]);
+
+        $file = $request->file('file');
+
+        // Guarantee the bucket exists so a first upload never fails on a fresh
+        // environment. Idempotent, and a no-op against real AWS.
+        try {
+            S3ClientFactory::ensureBucket();
+        } catch (Throwable) {
+            // Storage unreachable; the write below reports the real outcome.
+        }
+
+        $path = $file->store('tenants/'.$tenant->id, 'documents');
+
+        if ($path === false) {
+            return response()->json([
+                'message' => 'Could not store the document; nothing was attached to the tenant.',
+                'storage_endpoint' => S3ClientFactory::endpoint(),
+            ], 500);
+        }
+
+        $document = $tenant->documents()->create([
+            'name' => $data['name'] ?? $file->getClientOriginalName(),
+            'category' => $data['category'] ?? 'other',
+            'disk' => 'documents',
+            'path' => $path,
+            'mime_type' => $file->getClientMimeType(),
+            'size_kb' => max(1, (int) round($file->getSize() / 1024)),
+            'uploaded_by' => $request->user()?->id,
+        ]);
+
+        return response()->json($document, 201);
+    }
+
+    /**
+     * Stream an object back through the API. Used when the disk cannot presign
+     * a URL; see TenantDocument::getUrlAttribute().
+     */
+    public function downloadDocument(Tenant $tenant, TenantDocument $document)
+    {
+        abort_unless($document->tenant_id === $tenant->id, 404);
+
+        if (! Storage::disk($document->disk)->exists($document->path)) {
+            return response()->json([
+                'message' => 'The stored file is no longer available in object storage.',
+            ], 404);
+        }
+
+        return Storage::disk($document->disk)->download($document->path, $document->name);
+    }
+
+    public function destroyDocument(Tenant $tenant, TenantDocument $document)
+    {
+        abort_unless($document->tenant_id === $tenant->id, 404);
+
+        // Remove the row first: a leaked object is recoverable, an orphaned row
+        // pointing at a missing object is not.
+        $document->delete();
+
+        try {
+            Storage::disk($document->disk)->delete($document->path);
+        } catch (Throwable) {
+            // Storage unreachable — the metadata row is already gone.
+        }
+
+        return response()->json(null, 204);
     }
 }

@@ -15,5 +15,30 @@ services:
       JENKINS_OPTS: "--httpPort=8080"
     restart: unless-stopped
 
+  # Local AWS emulator used for development and by the Jenkins pipeline.
+  #
+  # The container is named `floci` and lives on the same compose network as
+  # Jenkins, so the Jenkinsfile can reach it at http://floci:4566. Deliberately
+  # no host port mapping: publishing 4566 would collide with any Floci the
+  # developer already runs, and nothing outside the network needs it.
+  #
+  # The Docker socket is required for the services Floci emulates with real
+  # containers (RDS, Lambda, ElastiCache, OpenSearch). S3, SQS, DynamoDB, SNS
+  # and SES are served in-process and work without it.
+  #
+  # When Jenkins builds, it reuses this container if it is already running and
+  # only starts its own when none exists. The web console is on http://localhost:4500.
+  floci:
+    image: floci/floci:latest
+    container_name: floci
+    volumes:
+      - //var/run/docker.sock:/var/run/docker.sock
+      - floci_data:/app/data
+    ports:
+      # Web console only. The AWS API on 4566 is reachable in-network.
+      - "4500:4500"
+    restart: unless-stopped
+
 volumes:
   jenkins_home:
+  floci_data:

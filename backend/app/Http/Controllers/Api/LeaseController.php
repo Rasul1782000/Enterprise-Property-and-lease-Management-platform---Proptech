@@ -5,8 +5,11 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreLeaseRequest;
 use App\Models\Lease;
+use App\Support\Storage\S3ClientFactory;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Throwable;
 
 class LeaseController extends Controller
 {
@@ -101,9 +104,41 @@ class LeaseController extends Controller
 
     public function sign(Request $request, Lease $lease)
     {
+        $lease->load(['unit.building.property', 'tenant']);
+
+        // The path is deterministic so re-signing replaces the document rather
+        // than accumulating timestamped copies in the bucket.
+        $path = 'signed/lease_'.$lease->lease_number.'.pdf';
+
+        // Guarantee the bucket exists so signing never fails on a fresh
+        // environment. Idempotent, and a no-op against real AWS.
+        try {
+            S3ClientFactory::ensureBucket();
+        } catch (Throwable) {
+            // Storage unreachable: keep the status transition, report below.
+        }
+
+        $pdf = Pdf::loadView('pdfs.lease-agreement', compact('lease'))
+            ->setPaper('a4', 'portrait');
+
+        try {
+            $stored = Storage::disk('documents')->put($path, $pdf->output());
+        } catch (Throwable $e) {
+            $stored = false;
+        }
+
+        // Do not activate the lease unless the signed document is durably stored,
+        // otherwise the lease would point at a document that does not exist.
+        if (! $stored) {
+            return response()->json([
+                'message' => 'Could not store the signed document; the lease was left unchanged.',
+                'storage_endpoint' => S3ClientFactory::endpoint(),
+            ], 500);
+        }
+
         $lease->update([
             'status' => 'active',
-            'document_path' => 'signed/lease_'.$lease->id.'_'.time().'.pdf',
+            'document_path' => $path,
         ]);
 
         return response()->json($lease->fresh());

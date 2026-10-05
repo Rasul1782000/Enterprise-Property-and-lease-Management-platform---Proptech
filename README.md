@@ -70,6 +70,82 @@ Environment: `frontend/src/environments/environment.ts` -> `apiUrl: http://local
 Linux: `* * * * * cd /path/backend && php artisan schedule:run >> /dev/null 2>&1`
 Windows Task Scheduler: trigger `php.exe artisan schedule:run` every minute.
 
+## Jenkins + Floci integration
+
+### What runs where
+
+| Component | Where | Notes |
+|---|---|---|
+| Jenkins | `docker compose` in `jenkins/` | Web UI on http://localhost:8888 |
+| Floci | `floci/floci:latest` | Local AWS emulator, port 4566 |
+| Frontend | Angular 22 + PrimeNG | Vitest via `@angular/build:unit-test` |
+| Backend | Laravel 12 + MySQL | S3 access via `aws/aws-sdk-php` + Flysystem |
+
+```bash
+docker compose -f jenkins/docker-compose.yml up -d
+```
+
+Jenkins is on http://localhost:8888 (`admin` / `admin123`).
+The Floci web console is on http://localhost:4500.
+
+### Object storage: Floci in dev/CI, real S3 in production
+
+Lease documents, tenant documents and property photos are stored on the
+`documents` filesystem disk. The same code path serves both environments; only
+`AWS_ENDPOINT_URL` differs.
+
+| | `AWS_ENDPOINT_URL` | Result |
+|---|---|---|
+| Host machine, dev | `http://localhost:4566` | Floci container |
+| Jenkins container | `http://floci:4566` | Floci on the shared Docker network |
+| Production | *unset* | Real AWS endpoint from `AWS_DEFAULT_REGION` |
+
+**Why `http://floci:4566` and not `localhost`:** inside the Jenkins container,
+`localhost` is the Jenkins container itself, not the Docker host. Floci and
+Jenkins share a user-defined Docker network, so Docker's embedded DNS resolves
+the container name `floci`.
+
+**Why path-style URLs are required:** Floci only answers path-style requests
+(`/{bucket}/{key}`). The SDK defaults to virtual-hosted style
+(`{bucket}.{endpoint}`), which Floci does not serve, so `config/filesystems.php`
+sets `use_path_style_endpoint => true`. Real AWS accepts path-style too.
+
+**Credentials:** Floci accepts any dummy credentials; the project standardises
+on `test`/`test`. No real AWS key is needed to run the suite.
+
+```bash
+# Create the bucket if it does not exist (idempotent)
+cd backend && php artisan storage:ensure-bucket
+
+# Run the backend suite; S3 tests skip automatically when no endpoint is reachable
+cd backend && php artisan test
+```
+
+### Adding a service the pipeline needs
+
+1. Add the plugin ID to `jenkins/Dockerfile` `jenkins-plugin-cli --plugins`.
+2. Verify it still resolves — withdrawn plugins fail the image build.
+3. Rebuild: `docker compose -f jenkins/docker-compose.yml build`.
+
+### Jenkinsfile defects this setup avoids
+
+Each of these was a real bug, worth remembering when editing the pipeline:
+
+- **`params` vs `environment`.** `when { environment name: 'PUSH_IMAGE' }` never
+  matches, because `PUSH_IMAGE` is a build *parameter*. Use
+  `when { expression { params.PUSH_IMAGE == true } }`.
+- **Hardcoded network names.** `docker network inspect jenkins_default` breaks
+  when the compose directory or project name changes. The pipeline now reads the
+  Jenkins container's own network via `docker inspect -f ... "$(hostname)"`.
+- **Port collisions.** Publishing `-p 4566:4566` collides with a Floci already
+  running on the host. The pipeline reuses an existing `floci` container and
+  starts one only if none exists, with no host port mapping.
+- **`|| true` on tests.** `php artisan test || true` can never fail the build, so
+  a broken storage integration would go unnoticed. The backend suite now runs
+  unconditionally.
+- **Tearing down a shared container.** The `post` block only removes a Floci
+  container the build itself created, so a long-running one survives.
+
 ## Next Steps
 - Add payment gateway (Stripe) in `PaymentController@store`
 - AG-Grid Enterprise for row grouping by Property/Building

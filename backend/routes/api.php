@@ -27,6 +27,7 @@ Route::middleware('hardcoded.token')->group(function () {
 
     Route::apiResource('properties', PropertyController::class);
     Route::get('/properties/{property}/occupancy', [PropertyController::class, 'occupancy']);
+    Route::post('/properties/{property}/image', [PropertyController::class, 'uploadImage']);
     Route::get('/properties/export', [PropertyController::class, 'export']);
 
     Route::apiResource('buildings', BuildingController::class);
@@ -37,6 +38,10 @@ Route::middleware('hardcoded.token')->group(function () {
     Route::apiResource('tenants', TenantController::class);
     Route::get('/tenants/{tenant}/leases', [TenantController::class, 'leases']);
     Route::get('/tenants/{tenant}/documents', [TenantController::class, 'documents']);
+    Route::post('/tenants/{tenant}/documents', [TenantController::class, 'storeDocument']);
+    Route::get('/tenants/{tenant}/documents/{document}/download', [TenantController::class, 'downloadDocument'])
+        ->name('tenants.documents.download');
+    Route::delete('/tenants/{tenant}/documents/{document}', [TenantController::class, 'destroyDocument']);
 
     Route::apiResource('leases', LeaseController::class);
     Route::get('/leases/{lease}/pdf', [LeaseController::class, 'pdf'])->name('leases.pdf');

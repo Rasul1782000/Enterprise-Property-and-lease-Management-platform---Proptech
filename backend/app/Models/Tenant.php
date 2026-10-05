@@ -46,6 +46,12 @@ class Tenant extends Model
         return $this->hasMany(Invoice::class);
     }
 
+    public function documents()
+    {
+        // Ordering is left to the caller so QueryBuilder can apply its own.
+        return $this->hasMany(TenantDocument::class);
+    }
+
     public function scopeSearch($q, $term)
     {
         return $q->where(fn ($qq) => $qq->where('first_name', 'like', "%{$term}%")->orWhere('last_name', 'like', "%{$term}%")->orWhere('email', 'like', "%{$term}%"));

@@ -44,6 +44,7 @@
         <p-tablist>
           <p-tab value="0">Leases</p-tab>
           <p-tab value="1">Details</p-tab>
+          <p-tab value="2">Documents ({{ documentsTotal() }})</p-tab>
         </p-tablist>
         <p-tabpanels>
           <p-tabpanel value="0">
@@ -113,7 +114,107 @@
               </div>
             </div>
           </p-tabpanel>
+          <p-tabpanel value="2">
+            <div class="pt-4 space-y-4">
+              <div class="flex items-center justify-between gap-3 flex-wrap">
+                <div>
+                  <h3 class="mb-1">Documents ({{ documentsTotal() }})</h3>
+                  <p class="text-sm text-zinc-500">
+                    Scans, receipts and agreements kept against this tenant.
+                  </p>
+                </div>
+                <div class="flex items-center gap-2">
+                  <p-select
+                    [options]="categoryFilterOptions"
+                    optionLabel="label"
+                    optionValue="value"
+                    [ngModel]="categoryFilter()"
+                    (ngModelChange)="onCategoryFilter($event)"
+                    appendTo="body"
+                    placeholder="All categories" />
+                  <p-button
+                    label="Upload Document"
+                    icon="pi pi-cloud-upload"
+                    (onClick)="openUpload()" />
+                </div>
+              </div>
+
+              <p-table
+                [value]="documents()"
+                [loading]="documentsLoading()"
+                [rowHover]="true"
+                [tableStyle]="{ 'min-width': '48rem' }">
+                <ng-template #header>
+                  <tr>
+                    <th>Document</th>
+                    <th>Category</th>
+                    <th>Size</th>
+                    <th>Uploaded</th>
+                    <th class="col-actions"></th>
+                  </tr>
+                </ng-template>
+                <ng-template #body let-row>
+                  <tr>
+                    <td>
+                      <div class="flex items-center gap-2">
+                        <i [class]="row.extension === 'pdf' ? 'pi pi-file-pdf doc-icon-pdf' : 'pi pi-file doc-icon'"></i>
+                        <div>
+                          <p class="doc-name">{{ row.name }}</p>
+                          <p class="doc-sub">{{ row.extension?.toUpperCase() || 'FILE' }}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td><p-tag [value]="categoryLabel(row.category)" severity="info" /></td>
+                    <td>{{ row.size_kb }} KB</td>
+                    <td>{{ dateOnly(row.created_at) }}</td>
+                    <td>
+                      <div class="flex gap-1 justify-end">
+                        <p-button
+                          icon="pi pi-download"
+                          [text]="true"
+                          [rounded]="true"
+                          pTooltip="Download"
+                          showDelay="400"
+                          (onClick)="downloadDocument(row)" />
+                        <p-button
+                          icon="pi pi-trash"
+                          [text]="true"
+                          [rounded]="true"
+                          severity="danger"
+                          pTooltip="Delete"
+                          showDelay="400"
+                          (onClick)="deleteDocument(row)" />
+                      </div>
+                    </td>
+                  </tr>
+                </ng-template>
+                <ng-template #emptymessage>
+                  <div class="empty-state">
+                    <i class="pi pi-cloud-upload"></i>
+                    <p>No documents yet</p>
+                    <p-button
+                      label="Upload the first document"
+                      icon="pi pi-cloud-upload"
+                      [outlined]="true"
+                      (onClick)="openUpload()" />
+                  </div>
+                </ng-template>
+              </p-table>
+            </div>
+          </p-tabpanel>
         </p-tabpanels>
       </p-tabs>
+
+      @if (uploadVisible()) {
+        <app-document-upload-dialog
+          header="Upload Document"
+          submitLabel="Upload"
+          [busy]="uploading()"
+          [categories]="documentCategories"
+          [allowedExtensions]="allowedExtensions"
+          [maxKb]="maxKb"
+          (picked)="onUploadPicked($event)"
+          (cancelled)="onUploadCancelled()" />
+      }
     </div>
   }

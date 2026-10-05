@@ -1,0 +1,81 @@
+<p-dialog
+  [header]="header"
+  [modal]="true"
+  [visible]="true"
+  [closable]="!busy"
+  [dismissableMask]="false"
+  [draggable]="false"
+  [style]="{ width: '32rem' }">
+  <div class="space-y-4">
+    <!-- Drop zone doubles as the file picker; the input stays visually hidden. -->
+    <label
+      class="drop-zone"
+      [class.drop-zone-active]="dragging()"
+      [class.drop-zone-staged]="selection()"
+      (drop)="onDrop($event)"
+      (dragover)="onDragOver($event)"
+      (dragleave)="onDragLeave()">
+      @if (selection(); as picked) {
+        <i [class]="iconFor(selectedExtension)" class="drop-icon"></i>
+        <p class="drop-title">{{ picked.file.name }}</p>
+        <p class="drop-hint">{{ selectedSize }} · ready to upload</p>
+        <p class="drop-link">Choose a different file</p>
+      } @else {
+        <i class="pi pi-cloud-upload drop-icon"></i>
+        <p class="drop-title">Drag a file here, or click to browse</p>
+        <p class="drop-hint">{{ allowedExtensions.join(', ').toUpperCase() }} · up to {{ maxMb }} MB</p>
+      }
+      <input
+        type="file"
+        class="sr-only"
+        [accept]="acceptAttribute"
+        [disabled]="busy"
+        (change)="onFileInputChange($event)" />
+    </label>
+
+    @if (rejection(); as reason) {
+      <p-message severity="warn">{{ reason }}</p-message>
+    }
+
+    @if (selection()) {
+      <form class="space-y-4" [formGroup]="form">
+        <div class="field">
+          <label class="field-label" for="doc-name">Display name</label>
+          <input
+            pInputText
+            id="doc-name"
+            type="text"
+            formControlName="name"
+            maxlength="255"
+            placeholder="Defaults to the file name" />
+        </div>
+
+        @if (categories.length) {
+          <div class="field">
+            <label class="field-label" for="doc-category">Category</label>
+            <p-select
+              inputId="doc-category"
+              [options]="categories"
+              optionLabel="label"
+              optionValue="value"
+              formControlName="category"
+              appendTo="body" />
+          </div>
+        }
+      </form>
+    }
+
+    <!-- Host-supplied extras, e.g. a list of the tenant's most recent documents. -->
+    <ng-content select="[dialogExtra]" />
+  </div>
+
+  <ng-template #footer>
+    <p-button label="Cancel" [text]="true" [disabled]="busy" (onClick)="onCancel()" />
+    <p-button
+      [label]="submitLabel"
+      icon="pi pi-cloud-upload"
+      [loading]="busy"
+      [disabled]="!selection() || form.invalid"
+      (onClick)="submit()" />
+  </ng-template>
+</p-dialog>

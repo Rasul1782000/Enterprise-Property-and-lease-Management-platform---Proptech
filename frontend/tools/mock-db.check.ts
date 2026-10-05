@@ -159,5 +159,40 @@ console.log('\n== create / update / delete ==');
   check('list is back to the seeded count', after === 28, String(after));
 }
 
+console.log('\n== tenant documents ==');
+{
+  const seeded = call('GET', 'tenants/1/documents', null, { per_page: '500' });
+  const rows = seeded.body?.data;
+  check('documents list returns rows', Array.isArray(rows) && rows.length > 0, JSON.stringify(seeded.body)?.slice(0, 120));
+  check('documents are scoped to the tenant', rows?.every((d: any) => d.tenant_id === 1), JSON.stringify(rows?.map((d: any) => d.tenant_id)));
+  check('documents expose extension', rows?.every((d: any) => d.extension === 'pdf'), JSON.stringify(rows?.map((d: any) => d.extension)));
+
+  const filtered = call('GET', 'tenants/1/documents', null, { 'filter[category]': 'id_document' });
+  check('category filter applies', filtered.body.data.length > 0 && filtered.body.data.every((d: any) => d.category === 'id_document'), JSON.stringify(filtered.body.data.map((d: any) => d.category)));
+
+  const form = new FormData();
+  form.append('file', new Blob([new Uint8Array(2048)], { type: 'application/pdf' }), 'Passport scan.pdf');
+  form.append('category', 'id_document');
+  const uploaded = call('POST', 'tenants/1/documents', form);
+  const doc = uploaded.body;
+  check('upload returns 201 with the new document', Number.isInteger(doc?.id) && doc.name === 'Passport scan.pdf', JSON.stringify(uploaded.body)?.slice(0, 160));
+  check('upload records the category', doc?.category === 'id_document', String(doc?.category));
+  check('upload derives the extension', doc?.extension === 'pdf', String(doc?.extension));
+  check('upload records a plausible size', doc?.size_kb === 2, String(doc?.size_kb));
+
+  const afterUpload = call('GET', 'tenants/1/documents', null, { per_page: '500' }).body.data;
+  check('uploaded document appears in the list', afterUpload.length === rows.length + 1, `${rows.length} -> ${afterUpload.length}`);
+
+  const download = call('GET', `tenants/1/documents/${doc.id}/download`);
+  check('download returns the file bytes', download.body instanceof Blob, String(typeof download.body));
+
+  const removed = call('DELETE', `tenants/1/documents/${doc.id}`);
+  check('delete removes the document', removed.body === null || removed.body === undefined, JSON.stringify(removed.body)?.slice(0, 80));
+  check('deleted document is gone from the list', call('GET', 'tenants/1/documents', null, { per_page: '500' }).body.data.length === rows.length);
+
+  check('cross-tenant document access is a 404', call('DELETE', `tenants/2/documents/${doc.id}`).error?.status === 404);
+  check('upload without a file is a 422', call('POST', 'tenants/1/documents', new FormData()).error?.status === 422);
+}
+
 console.log(`\n${failures === 0 ? 'ALL CHECKS PASSED' : `${failures} CHECK(S) FAILED`}\n`);
 process.exit(failures === 0 ? 0 : 1);
