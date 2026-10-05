@@ -6,12 +6,14 @@
     "license": "proprietary",
     "require": {
         "php": "^8.2",
+        "aws/aws-sdk-php": "3.322",
+        "barryvdh/laravel-dompdf": "^3.0",
+        "intervention/image": "^3.0",
         "laravel/framework": "^12.0",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.9",
-        "barryvdh/laravel-dompdf": "^3.0",
-        "spatie/laravel-query-builder": "^6.0",
-        "intervention/image": "^3.0"
+        "league/flysystem-aws-s3-v3": "3.29",
+        "spatie/laravel-query-builder": "^6.0"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

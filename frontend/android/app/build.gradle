@@ -34,25 +34,20 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
     
-    kotlinOptions {
-        jvmTarget '17'
-    }
     
     // Capacitor integration
-    sourceSets {
-        main {
-            manifest.srcFile 'src/capacitor/AndroidManifest.xml'
-            java.srcDirs = ['src/capacitor/src/main/java']
-            res.srcDirs = ['src/capacitor/src/main/res']
-            assets.srcDirs = ['src/capacitor/src/main/assets']
-        }
-    }
+    // sourceSets {
+    //     main {
+    //         manifest.srcFile 'src/capacitor/AndroidManifest.xml'
+    //         java.srcDirs = ['src/capacitor/src/main/java']
+    //         res.srcDirs = ['src/capacitor/src/main/res']
+    //         assets.srcDirs = ['src/capacitor/src/main/assets']
+    //     }
+    // }
     
     dependencies {
         implementation project(':capacitor-android')
         implementation project(':capacitor-cordova-android-plugins')
-        implementation 'com.coruscus:capacitor-android-cordova-compat:1.0.1'
-        
         implementation "androidx.appcompat:appcompat:1.7.0"
         implementation "androidx.core:core-splashscreen:1.0.0"
     }

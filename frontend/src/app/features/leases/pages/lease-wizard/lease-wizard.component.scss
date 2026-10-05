@@ -1,3 +1,6 @@
+/* Tailwind v4: @apply needs an explicit theme reference in component styles. */
+@reference "../../../../../tailwind.css";
+
 .lease-wizard {
   max-width: 56rem;
   margin: 0 auto;

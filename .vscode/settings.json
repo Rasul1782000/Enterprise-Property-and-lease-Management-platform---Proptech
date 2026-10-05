@@ -8,6 +8,8 @@
         "primeng",
         "propertylease",
         "proptech",
-        "rollouts"
+        "rollouts",
+        "xcarchive",
+        "xcodeproj"
     ]
 }

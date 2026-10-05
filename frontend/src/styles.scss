@@ -1,6 +1,8 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Tailwind v4 CSS-first setup: the Tailwind entrypoint and @theme tokens live
+   in tailwind.css, which Angular feeds to @tailwindcss/postcss. This file pulls
+   those tokens in for the @apply calls below without re-emitting Tailwind.
+   The old `@tailwind base/components/utilities` directives no longer exist in v4. */
+@reference "./tailwind.css";
 
 /* ==========================================================================
    BounceBox design tokens
