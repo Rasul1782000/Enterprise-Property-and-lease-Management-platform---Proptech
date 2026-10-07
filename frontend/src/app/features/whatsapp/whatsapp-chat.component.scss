@@ -1,0 +1,25 @@
+.whatsapp-container {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+// WhatsApp-style message bubbles
+:host ::ng-deep {
+  .bg-emerald-500 {
+    border-radius: 12px 12px 0 12px;
+  }
+
+  .bg-white {
+    border-radius: 12px 12px 12px 0;
+  }
+
+  // Input styling
+  .p-inputtext {
+    border-radius: 20px;
+    padding: 0.5rem 1rem;
+  }
+
+  // Avatar styling
+  .p-avatar {
+    font-weight: 600;
+  }
+}

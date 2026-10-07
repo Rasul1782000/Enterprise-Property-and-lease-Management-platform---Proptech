@@ -39,6 +39,45 @@ services:
       - "4500:4500"
     restart: unless-stopped
 
+  # OpenWA WhatsApp API Gateway
+  #
+  # Runs alongside Floci on the same Docker network. Uses Baileys engine
+  # (lightweight, no Chromium) and stores media in Floci S3.
+  # Dashboard: http://localhost:2785
+  # API:      http://localhost:2785/api
+  openwa:
+    image: rmyndharis/openwa:latest
+    container_name: openwa
+    restart: unless-stopped
+    ports:
+      - "2785:2785"
+    volumes:
+      - openwa_data:/app/data
+    environment:
+      # Local development only. OpenWA refuses to boot with NODE_ENV=production
+      # when S3 credentials are weak values or ALLOW_DEV_API_KEY is set, and
+      # `test`/`dev-admin-key` are both on its forbidden-secrets list. Floci
+      # accepts any credentials, so development mode is the honest setting
+      # here. Production deployments must set NODE_ENV=production together
+      # with strong, unique S3_SECRET_ACCESS_KEY and API_MASTER_KEY values.
+      NODE_ENV: development
+      DATABASE_TYPE: sqlite
+      STORAGE_TYPE: s3
+      S3_ENDPOINT: http://floci:4566
+      S3_BUCKET: openwa-media
+      S3_ACCESS_KEY_ID: local-floci-access-key
+      S3_SECRET_ACCESS_KEY: local-floci-secret-key-not-for-production
+      S3_REGION: us-east-1
+      ENGINE_TYPE: baileys
+    networks:
+      - default
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:2785/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
 volumes:
   jenkins_home:
   floci_data:
+  openwa_data:

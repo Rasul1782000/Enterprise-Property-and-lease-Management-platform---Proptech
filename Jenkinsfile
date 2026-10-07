@@ -225,6 +225,45 @@ pipeline {
             }
         }
 
+        stage('WhatsApp Gateway Check') {
+            // Advisory: never fails the build. See the step body.
+            steps {
+                /*
+                 * The WhatsApp suite mocks the OpenWA API, so a green test run
+                 * proves nothing about the gateway itself. This stage asserts
+                 * the container answers on the network the build uses.
+                 *
+                 * It deliberately does NOT require a linked WhatsApp session:
+                 * pairing needs a QR scan and cannot happen unattended. Only
+                 * reachability is asserted, so the stage is deterministic.
+                 */
+                script {
+                    sh """
+                        # Advisory only: this does NOT fail the build. The
+                        # pipeline provisions Floci on demand but never starts
+                        # OpenWA, so a clean CI agent legitimately has no
+                        # gateway here. Failing would make this stage a
+                        # permanent red build for anyone who has not run
+                        # `docker compose up -d` locally.
+                        #
+                        # Promote to `exit 1` once OpenWA is deployed as part
+                        # of the pipeline's own infrastructure.
+                        if ! docker inspect openwa >/dev/null 2>&1; then
+                            echo 'SKIP: no openwa container on this agent (expected on clean CI).'
+                            exit 0
+                        fi
+
+                        if curl -fsS --max-time 10 http://openwa:2785/api/health >/dev/null 2>&1; then
+                            echo 'OpenWA gateway reachable at http://openwa:2785'
+                        else
+                            echo 'WARN: openwa container exists but /api/health did not answer:'
+                            docker logs --tail 30 openwa || true
+                        fi
+                    """
+                }
+            }
+        }
+
         stage('Frontend Tests') {
             steps {
                 echo 'Running frontend tests (Vitest via the Angular unit-test builder)...'
