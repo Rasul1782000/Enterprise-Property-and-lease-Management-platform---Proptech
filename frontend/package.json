@@ -45,6 +45,9 @@
     "tslib": "^2.3.0",
     "zone.js": "~0.16.3"
   },
+  "overrides": {
+    "uuid": "^11.1.1"
+  },
   "devDependencies": {
     "@angular-eslint/builder": "^22.5.0",
     "@angular/build": "^22.2.0",

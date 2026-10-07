@@ -26,10 +26,24 @@ pipeline {
         IMAGE_NAME            = 'proptech-frontend'
         CREDENTIALS_ID        = 'docker-registry-credentials'
     }
-    docker {
-        image 'composer:latest'
-        args '-u root'
-    }
+
+    /*
+     * No pipeline-wide agent on purpose.
+     *
+     * This pipeline needs three different toolchains, and a single top-level
+     * `docker`/`agent` directive forces one of them onto every stage:
+     *
+     *   - Node 22   -> npm ci, lint, vitest
+     *   - PHP 8.2+ -> composer install, artisan test, storage:ensure-bucket
+     *   - Docker    -> floci run, image build, smoke test, registry push
+     *
+     * `composer:latest` has PHP but neither Node nor the Docker CLI, so a
+     * pipeline-wide agent breaks the frontend and Docker stages. Each stage
+     * below therefore declares the agent it actually needs. Stages that talk
+     * to the Docker daemon stay on `agent any`, which is the Jenkins container
+     * itself and is the only context with the socket mounted.
+     */
+    agent none
 
     options {
         buildDiscarder(logRotator(numToKeepStr: '10'))
@@ -47,18 +61,37 @@ pipeline {
 
     stages {
         stage('Checkout Code') {
+            agent any
             steps {
                 echo 'Checking out source code from SCM...'
                 checkout scm
             }
         }
 
-        stage('Install Dependencies') {
+        stage('Install Frontend Dependencies') {
+            agent {
+                docker {
+                    image 'node:22.22-alpine'
+                    args '-u root -v $HOME/.npm:/root/.npm'
+                }
+            }
             steps {
-                echo 'Installing application dependencies...'
+                echo 'Installing frontend dependencies (npm ci)...'
                 dir('frontend') {
                     sh 'npm ci --no-audit --fund=false'
                 }
+            }
+        }
+
+        stage('Install Backend Dependencies') {
+            agent {
+                docker {
+                    image 'composer:latest'
+                    args '-u root -v $HOME/.composer:/root/.composer'
+                }
+            }
+            steps {
+                echo 'Installing backend dependencies (composer)...'
                 dir('backend') {
                     sh 'composer install --no-interaction --prefer-dist --no-progress'
 
@@ -79,8 +112,16 @@ pipeline {
         }
 
         stage('Parallel Quality & Linting') {
+            // Container stage itself: each branch below declares its own agent.
+            agent none
             parallel {
                 stage('Code Linting') {
+                    agent {
+                        docker {
+                            image 'node:22.22-alpine'
+                            args '-u root -v $HOME/.npm:/root/.npm'
+                        }
+                    }
                     steps {
                         echo 'Running code linter...'
                         dir('frontend') {
@@ -88,12 +129,33 @@ pipeline {
                         }
                     }
                 }
-                stage('Security Audit') {
+                /*
+                 * npm and composer are different toolchains, so these are
+                 * split into sibling stages to keep one agent per stage.
+                 */
+                stage('Frontend Security Audit') {
+                    agent {
+                        docker {
+                            image 'node:22.22-alpine'
+                            args '-u root -v $HOME/.npm:/root/.npm'
+                        }
+                    }
                     steps {
-                        echo 'Running dependency vulnerability audit...'
+                        echo 'Auditing frontend dependencies...'
                         dir('frontend') {
                             sh 'npm audit --omit=dev || true'
                         }
+                    }
+                }
+                stage('Backend Security Audit') {
+                    agent {
+                        docker {
+                            image 'composer:latest'
+                            args '-u root -v $HOME/.composer:/root/.composer'
+                        }
+                    }
+                    steps {
+                        echo 'Auditing backend dependencies...'
                         dir('backend') {
                             sh 'composer audit || true'
                         }
@@ -103,6 +165,9 @@ pipeline {
         }
 
         stage('Start Floci') {
+            // Runs `docker run` / `docker inspect`, so it must stay on the
+            // Jenkins container, which is the only context with the socket.
+            agent any
             steps {
                 /*
                  * Reuse the developer's long-running `floci` container when one
@@ -210,6 +275,12 @@ pipeline {
         }
 
         stage('Bootstrap Storage') {
+            agent {
+                docker {
+                    image 'composer:latest'
+                    args '-u root -v $HOME/.composer:/root/.composer'
+                }
+            }
             steps {
                 echo "Ensuring the '${AWS_STORAGE_BUCKET}' bucket exists on the Floci endpoint..."
                 dir('backend') {
@@ -219,6 +290,12 @@ pipeline {
         }
 
         stage('Backend Tests') {
+            agent {
+                docker {
+                    image 'composer:latest'
+                    args '-u root -v $HOME/.composer:/root/.composer'
+                }
+            }
             steps {
                 echo 'Running backend tests (Laravel + S3 integration against Floci)...'
                 dir('backend') {
@@ -231,6 +308,8 @@ pipeline {
 
         stage('WhatsApp Gateway Check') {
             // Advisory: never fails the build. See the step body.
+            // Needs the Docker CLI to inspect the openwa container.
+            agent any
             steps {
                 /*
                  * The WhatsApp suite mocks the OpenWA API, so a green test run
@@ -269,6 +348,12 @@ pipeline {
         }
 
         stage('Frontend Tests') {
+            agent {
+                docker {
+                    image 'node:22.22-alpine'
+                    args '-u root -v $HOME/.npm:/root/.npm'
+                }
+            }
             steps {
                 echo 'Running frontend tests (Vitest via the Angular unit-test builder)...'
                 dir('frontend') {
@@ -278,6 +363,8 @@ pipeline {
         }
 
         stage('Build Production Docker Image') {
+            // `docker build` / `docker run`: needs the Jenkins socket.
+            agent any
             steps {
                 echo 'Building production container image...'
                 script {
@@ -316,6 +403,8 @@ pipeline {
             // params, not environment: PUSH_IMAGE is a build parameter, so an
             // `environment name` check would never match.
             when { expression { params.PUSH_IMAGE == true } }
+            // `docker login` / `docker push`: needs the Jenkins socket.
+            agent any
             steps {
                 echo "Pushing ${env.IMAGE_TAG} to ${env.DOCKER_REGISTRY}..."
                 withCredentials([usernamePassword(
@@ -337,6 +426,7 @@ pipeline {
             when {
                 branch 'main'
             }
+            agent any
             steps {
                 echo 'Triggering production deployment sequence...'
                 // Add your deployment commands here (e.g., SSH trigger or Kubernetes rollouts)
