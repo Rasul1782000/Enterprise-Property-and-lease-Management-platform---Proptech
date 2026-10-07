@@ -35,6 +35,25 @@ jobs:
           }
         }
         triggers {
-          scm('H/5 * * * *')
+          /*
+           * Periodic poll cadence.
+           *
+           * IMPORTANT: Jenkins cron has a one-minute floor. There is no
+           * second-level granularity in the syntax, so a 12-second trigger
+           * cannot be expressed here. `* * * * *` is the fastest this can
+           * possibly poll: once per minute.
+           *
+           * A trigger that fires while a build is already running is dropped,
+           * not queued (the pipeline sets `disableConcurrentBuilds()`), so a
+           * one-minute cadence against multi-minute builds means Jenkins
+           * simply keeps one build in flight and re-polls right after it
+           * finishes. That is the closest useful behaviour to what was asked.
+           *
+           * `H/5` would spread the poll across the five minutes instead of
+           * firing on the minute boundary, which matters once several agents
+           * share the controller. That trade-off is not worth it while
+           * shaking the pipeline down, so the exact `* * * * *` is used here.
+           */
+          scm('* * * * *')
         }
       }
