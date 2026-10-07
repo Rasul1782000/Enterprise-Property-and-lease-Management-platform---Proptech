@@ -1,81 +1,454 @@
-.stat-card { transition: box-shadow .15s ease, border-color .15s ease; }
-.stat-card:hover { box-shadow: var(--shadow-md); border-color: var(--teal-500); }
+/* ==========================================================================
+   Dashboard layout
+   One vertical rhythm (`gap`) drives the whole page: header, KPI row, chart
+   panels, activity. Everything else is a two-column grid that collapses to a
+   single column on narrow screens.
+   ========================================================================== */
 
-/* Activity type chips sit inside a p-tag, so flatten the PrimeNG chrome. */
-:host ::ng-deep .p-tag.activity-tag {
-  background: transparent;
-  border: 0;
-  padding: 0;
-  font-size: 0.875rem;
-  line-height: 1.4;
+:host { display: block; }
+
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
-/* Mixed Chart Bubble Styles */
-.section-card {
-  transition: all 0.3s ease;
+/* ---------------------------------------------------------------- header */
+/* `.page-header` is a flex row; without this the title block collapses to the
+   width of its longest word and the subtitle wraps one word per line. */
+.page-header { margin-bottom: 0; }
+.page-header > :first-child { flex: 1 1 auto; min-width: 0; }
+
+.updated-stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: var(--text-xs);
+  color: var(--ink-500);
+  white-space: nowrap;
+}
+.updated-stamp .pi { font-size: 0.875rem; color: var(--ink-400); }
+
+/* ---------------------------------------------------------------- KPI row */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+/* Tiles sit on a shared baseline in a grid row, so stretch them and pin the
+   breakdown line to the bottom — otherwise the taller tile leaves the shorter
+   ones with a ragged gap under their figures. */
+.metric-tile {
   position: relative;
+  align-items: stretch;
+  padding: 1.25rem 1.25rem 1.125rem;
+  overflow: hidden;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+.metric-tile:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+/* A tone-coloured cap along the top edge lets the row be scanned by colour
+   before any number is read. */
+.metric-tile::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 5px;
+  background: var(--tile-accent, var(--coral-500));
+}
+
+.metric-tile > :last-child {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.metric-tile .metric-split { margin-top: auto; padding-top: 0.625rem; }
+
+/* Tinted icon chips so the four tiles read as distinct at a glance. */
+.metric-tile--coral { --tile-accent: var(--coral-500); }
+.metric-tile--teal  { --tile-accent: var(--teal-500); }
+.metric-tile--sunny { --tile-accent: var(--sunny-400); }
+
+.metric-tile--coral .metric-icon {
+  background: var(--coral-100);
+  color: var(--coral-800);
+  border-color: var(--coral-200);
+}
+.metric-tile--teal .metric-icon {
+  background: var(--teal-100);
+  color: var(--teal-800);
+  border-color: var(--teal-200);
+}
+.metric-tile--sunny .metric-icon {
+  background: var(--sunny-100);
+  color: var(--sunny-800);
+  border-color: var(--sunny-200);
+}
+.metric-icon .skeleton-icon { opacity: 0.35; }
+
+/* Eyebrow label above the figure, so the number is the loudest thing here. */
+.metric-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-500);
+}
+/* Deliberately NOT the display font: Titan One ships a single weight, so asking
+   for weight 700 makes the browser synthesise a doubled, embossed overlay that
+   reads as garbled digits at this size. Poppins at 700 stays crisp and the
+   global tabular-nums rule keeps columns aligned. */
+.metric-value {
+  font-family: var(--font-body);
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  margin-top: 0.375rem;
+  color: var(--ink-900);
+}
+
+.metric-split {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.875rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-xs);
+  color: var(--ink-500);
+}
+.metric-split li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  white-space: nowrap;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  flex: 0 0 auto;
+}
+.dot--coral  { background: var(--coral-500); }
+.dot--teal   { background: var(--teal-500); }
+.dot--sunny  { background: var(--sunny-400); }
+.dot--muted  { background: var(--ink-300); }
+
+.metric-foot {
+  margin: 0.375rem 0 0;
+  font-size: var(--text-xs);
+  color: var(--ink-500);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Occupancy meter inside the units tile. */
+.mini-meter {
+  margin-top: 0.75rem;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--ink-100);
   overflow: hidden;
 }
-
-.section-card.expanded {
-  border-color: var(--coral-400);
-  box-shadow: var(--shadow-coral);
+.mini-meter-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--teal-500);
+  transition: width 0.4s ease;
 }
 
-.chart-container-expanded {
-  height: 400px;
-  position: relative;
-  margin-top: 1rem;
-  background: white;
-  border-radius: var(--radius-md);
-  padding: 1rem;
+/* ---------------------------------------------------------------- panels */
+.panel-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+.panel-grid--halves { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
 }
 
-.chart-container-compressed {
-  height: 120px;
-  border: 2px dashed var(--border-subtle);
-  border-radius: var(--radius-md);
-  background: var(--surface-page);
-  transition: all 0.2s ease;
-  cursor: pointer;
+/* Paired panels are stretched to a common row height; let the chart soak up the
+   slack instead of leaving a block of dead space beneath it. */
+.panel-grid { align-items: stretch; }
+.panel-grid .chart-frame--grow { flex: 1 1 auto; min-height: 240px; }
+
+/* Quiet panels: a headline panel stays interactive, the rest sit flat so the
+   eye lands on the chart rather than on five competing card edges. */
+.panel { padding: 1.25rem 1.5rem 1.5rem; }
+.panel--quiet {
+  transition: none;
+  border-color: var(--border-subtle);
+  box-shadow: none;
+}
+.panel--quiet:hover {
+  border-color: var(--border-subtle);
+  box-shadow: none;
+}
+
+/* Never wrap: paired panels must keep identical header heights or their charts
+   start at different y positions. The title truncates instead. */
+.panel-head {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: nowrap;
+  min-height: 2.75rem;
+}
+.panel-head > :first-child { min-width: 0; flex: 1 1 auto; }
+
+/* Icon sits in a tinted chip that echoes the tile accents. */
+.panel-title {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 400;
+  line-height: 1.25;
+  color: var(--ink-900);
+}
+.panel-title .pi {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex: 0 0 auto;
+  font-size: 0.9375rem;
+  border-radius: var(--radius-md);
+  background: var(--panel-accent-bg, var(--coral-100));
+  color: var(--panel-accent-fg, var(--coral-800));
+}
+.panel-title-text { display: flex; flex-direction: column; min-width: 0; }
+/* Long subtitles truncate on one line instead of pushing the header taller. */
+.panel-title-text > .panel-title-label,
+.panel-title-text > .panel-sub {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.chart-container-compressed:hover {
-  border-color: var(--coral-400);
-  background: #fff5f5;
-}
-
-.chart-container-compressed .pi {
-  font-size: 2rem;
-  color: var(--ink-400);
-  margin-bottom: 0.5rem;
-}
-
-.chart-container-compressed p {
-  font-size: 0.875rem;
+/* `.panel-sub` sits inside the display-font title, so it must opt back out. */
+.panel-sub {
+  margin: 0.125rem 0 0;
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  font-weight: 400;
+  letter-spacing: 0;
   color: var(--ink-500);
 }
 
-canvas {
-  max-height: 100%;
-  max-width: 100%;
+.panel--teal  { --panel-accent-bg: var(--teal-100);  --panel-accent-fg: var(--teal-800); }
+.panel--sunny { --panel-accent-bg: var(--sunny-100); --panel-accent-fg: var(--sunny-800); }
+.panel--coral { --panel-accent-bg: var(--coral-100); --panel-accent-fg: var(--coral-800); }
+
+.trend-pill,
+.count-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  padding: 0.375rem 0.875rem;
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+  flex: 0 0 auto;
+  background: #d1fae5;
+  color: #166534;
+}
+.trend-pill--down { background: #fee2e2; color: #991b1b; }
+.count-chip { background: var(--ink-100); color: var(--ink-600); }
+
+/* Chart.js needs an explicitly sized parent, otherwise the canvas collapses. */
+.chart-frame {
+  position: relative;
+  width: 100%;
+  background: var(--surface-sunken);
+  border-radius: var(--radius-md);
+}
+.chart-frame--tall   { height: 320px; }
+.chart-frame--short { height: 240px; }
+/* Chart.js owns the canvas box itself; overriding it here fights the
+   library's responsive resize and squashes the bars. Leave it alone. */
+
+.chart-frame .empty-state { height: 100%; }
+
+/* ---------------------------------------------------------------- brief */
+/* Two-up stat cells rather than full-width rows: the brief reads as a small
+   table instead of a long list of dashed rules. */
+.detail-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.detail-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1875rem;
+  min-width: 0;
+  padding: 0.875rem 1rem;
+  background: var(--surface-sunken);
+  border: 2px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+.detail-list li > span {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-500);
+}
+.detail-list li > strong {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--ink-900);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+.detail-list .list-note {
+  display: block;
+  font-style: normal;
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--ink-400);
+}
+.detail-list .value-danger { color: var(--coral-700); }
+
+/* ---------------------------------------------------------------- activity */
+/* Two columns of events so the feed occupies roughly half the vertical space a
+   single column of ten rows would need. */
+.activity-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.625rem;
 }
 
-/* Animation for expanding */
-@keyframes expandIn {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
+.activity-item {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 0.875rem 1rem;
+  background: var(--surface-sunken);
+  border: 2px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+.activity-item:hover {
+  background: var(--coral-50);
+  border-color: var(--coral-200);
+}
+
+.activity-icon {
+  flex: 0 0 auto;
+  width: 2.5rem;
+  height: 2.5rem;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-md);
+  border: 2px solid transparent;
+  font-size: 0.9375rem;
+}
+.activity-icon--coral { background: var(--coral-100); border-color: var(--coral-200); color: var(--coral-800); }
+.activity-icon--teal  { background: var(--teal-100);  border-color: var(--teal-200);  color: var(--teal-800); }
+.activity-icon--sunny { background: var(--sunny-100); border-color: var(--sunny-200); color: var(--sunny-800); }
+
+.activity-body { flex: 1 1 auto; min-width: 0; }
+
+.activity-top {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+.activity-top strong {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink-800);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.activity-time {
+  flex: 0 0 auto;
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: var(--ink-400);
+  white-space: nowrap;
+}
+.activity-desc {
+  margin: 0.1875rem 0 0;
+  font-size: var(--text-xs);
+  color: var(--ink-500);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chip--coral { background: rgba(255, 107, 107, 0.18); color: var(--coral-800); }
+.chip--teal  { background: var(--teal-100);                 color: var(--teal-800); }
+.chip--sunny { background: var(--sunny-200);                color: var(--sunny-800); }
+
+/* ---------------------------------------------------------------- responsive */
+@media (max-width: 1180px) {
+  .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* Two event columns get cramped once each card is half the page width. */
+  .activity-list { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 900px) {
+  .panel-grid,
+  .panel-grid--halves { grid-template-columns: minmax(0, 1fr); }
+  .chart-frame--tall { height: 280px; }
+  .panel-grid .chart-frame--grow { min-height: 280px; }
+}
+
+/* Once panels stack, a title no longer competes with a chip on the same line, so
+   let both breathe again — truncated headings read as breakage, not brevity. */
+@media (max-width: 760px) {
+  .panel-head {
+    flex-wrap: wrap;
+    min-height: 0;
   }
-  to {
-    opacity: 1;
-    transform: scale(1);
+  .panel-title-text > .panel-title-label,
+  .panel-title-text > .panel-sub {
+    white-space: normal;
+    overflow: visible;
   }
 }
 
-.section-card.expanded .chart-container-expanded {
-  animation: expandIn 0.3s ease-out;
+@media (max-width: 760px) {
+  /* Two brief cells side by side stop fitting once the panel is full width. */
+  .detail-list { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 640px) {
+  .kpi-grid { grid-template-columns: minmax(0, 1fr); }
+  
+  .chart-frame--tall { height: 240px; }
+  .chart-frame--short { height: 200px; }
+  /* The two-column feed is far too cramped at this width. */
+  .activity-list { grid-template-columns: minmax(0, 1fr); }
+  /* Type chip drops under the description rather than squeezing it. */
+  .activity-item { flex-wrap: wrap; }
+  .activity-item .chip { margin-left: 3.375rem; }
+  .activity-desc { white-space: normal; }
 }

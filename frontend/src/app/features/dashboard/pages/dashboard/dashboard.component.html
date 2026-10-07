@@ -1,150 +1,282 @@
-<div class="space-y-5">
-  <div class="page-header">
+<div class="dashboard">
+
+  <!-- ───────────────────────────── page header ───────────────────────────── -->
+  <header class="page-header">
     <div>
       <h1 class="page-title">Dashboard</h1>
       <p class="page-subtitle">Portfolio, occupancy, lease and receivables position at a glance.</p>
     </div>
     <div class="page-actions">
-      <p-button label="Refresh" icon="pi pi-refresh" severity="secondary" [outlined]="true" (onClick)="loadData()" />
-    </div>
-  </div>
-
-  @if (loading()) {
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-      @for (i of [0, 1, 2, 3]; track i) {
-        <div class="stat-card">
-          <div class="skeleton-block h-3 w-24 mb-3"></div>
-          <div class="skeleton-block h-7 w-16"></div>
-        </div>
+      @if (lastUpdated(); as stamp) {
+        <span class="updated-stamp">
+          <i class="pi pi-clock"></i>
+          Updated {{ stamp | date: 'h:mm a' }}
+        </span>
       }
+      <p-button
+        label="Refresh"
+        icon="pi pi-refresh"
+        severity="secondary"
+        [outlined]="true"
+        [loading]="loading()"
+        (onClick)="loadData()" />
     </div>
-    <div class="section-card p-5">
-      <div class="skeleton-block h-4 w-40 mb-4"></div>
-      <div class="skeleton-block h-10 w-full"></div>
-    </div>
-  } @else {
-    <!-- Summary metrics -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-      <div class="metric-tile">
-        <span class="metric-icon"><i class="pi pi-building"></i></span>
-        <div class="min-w-0">
-          <p class="metric-label">Total Properties</p>
-          <p class="metric-value">{{ stats().properties.total }}</p>
-          <p class="mt-1 flex gap-3 text-xs">
-            <span class="text-primary-700 font-medium">{{ stats().properties.active }} Active</span>
-            <span class="text-zinc-400">{{ stats().properties.inactive }} Inactive</span>
-          </p>
-        </div>
-      </div>
+  </header>
 
-      <div class="metric-tile">
-        <span class="metric-icon"><i class="pi pi-home"></i></span>
-        <div class="min-w-0">
-          <p class="metric-label">Units</p>
-          <p class="metric-value">{{ stats().units.total }}</p>
-          <p class="mt-1 flex gap-3 text-xs">
-            <span class="text-primary-700 font-medium">{{ stats().units.occupied }} Occupied</span>
-            <span class="text-zinc-500">{{ stats().units.vacant }} Vacant</span>
-          </p>
-        </div>
-      </div>
-
-      <div class="metric-tile">
-        <span class="metric-icon"><i class="pi pi-file"></i></span>
-        <div class="min-w-0">
-          <p class="metric-label">Active Leases</p>
-          <p class="metric-value">{{ stats().leases.active }}</p>
-          <p class="mt-1 flex gap-3 text-xs">
-            <span class="text-primary-900 font-medium">{{ stats().leases.expiring_30 }} Expiring 30d</span>
-            <span class="text-zinc-500">{{ stats().leases.expiring_90 }} Expiring 90d</span>
-          </p>
-        </div>
-      </div>
-
-      <div class="metric-tile">
-        <span class="metric-icon"><i class="pi pi-dollar"></i></span>
-        <div class="min-w-0">
-          <p class="metric-label">Outstanding</p>
-          <p class="metric-value">${{ stats().invoices.total_outstanding.toLocaleString() }}</p>
-          <p class="mt-1 flex gap-3 text-xs">
-            <span class="text-primary-900 font-medium">{{ stats().invoices.overdue }} Overdue</span>
-            <span class="text-zinc-500">{{ stats().invoices.pending }} Pending</span>
-          </p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Mixed Chart Bubble - Expandable on Double Click -->
-    <div class="section-card p-6 transition-all duration-300" [class.expanded]="isChartExpanded()">
-      <div class="flex items-center justify-between mb-4 cursor-pointer" (click)="toggleBubble()" (keyup.enter)="toggleBubble()" tabindex="0" role="button">
-        <h2 class="text-lg font-semibold flex items-center gap-2">
-          <i class="pi pi-chart-bar"></i>
-          Performance Metrics Comparison
-          <i class="pi pi-chevron-{{ isChartExpanded() ? 'up' : 'down' }} text-sm"></i>
-        </h2>
-        <div class="text-sm text-zinc-500">
-          Double-click to expand
-        </div>
-      </div>
-      
-      @if (isChartExpanded()) {
-        <div class="chart-container-expanded">
-          <canvas id="bubbleChartCanvas"></canvas>
-        </div>
-      } @else {
-        <div class="chart-container-compressed">
-          <div class="flex items-center justify-center h-32">
-            <div class="text-center">
-              <i class="pi pi-chart-bar text-3xl text-zinc-400 mb-2"></i>
-              <p class="text-sm text-zinc-500">Click to expand metrics chart</p>
-            </div>
+  <!-- ───────────────────────────── loading ──────────────────────────────── -->
+  @if (loading()) {
+    <div class="kpi-grid">
+      @for (i of [0, 1, 2, 3]; track i) {
+        <div class="metric-tile">
+          <span class="metric-icon"><i class="pi pi-circle-fill skeleton-icon"></i></span>
+          <div class="min-w-0 flex-1">
+            <div class="skeleton-block h-3 w-24 mb-3"></div>
+            <div class="skeleton-block h-7 w-16 mb-3"></div>
+            <div class="skeleton-block h-3 w-32"></div>
           </div>
         </div>
       }
     </div>
+    <div class="panel-grid">
+      <section class="section-card">
+        <div class="skeleton-block h-4 w-40 mb-4"></div>
+        <div class="skeleton-block h-64 w-full"></div>
+      </section>
+      <section class="section-card">
+        <div class="skeleton-block h-4 w-40 mb-4"></div>
+        <div class="skeleton-block h-64 w-full"></div>
+      </section>
+    </div>
+  } @else {
+    <!-- ─────────────────────────── headline metrics ──────────────────────── -->
+    <div class="kpi-grid">
+      <article class="metric-tile metric-tile--coral">
+        <span class="metric-icon"><i class="pi pi-building"></i></span>
+        <div class="min-w-0">
+          <p class="metric-label">Total Properties</p>
+          <p class="metric-value">{{ stats().properties.total }}</p>
+          <ul class="metric-split">
+            <li><span class="dot dot--coral"></span>{{ stats().properties.active }} Active</li>
+            <li><span class="dot dot--muted"></span>{{ stats().properties.inactive }} Inactive</li>
+          </ul>
+        </div>
+      </article>
 
-    <!-- Recent activity -->
-    <p-card>
-      <ng-template #header>
-        <ng-template #title>
-          <span class="inline-flex items-center gap-2"><i class="pi pi-history"></i> Recent Activity</span>
-        </ng-template>
-      </ng-template>
-      <ng-template #content>
-        <p-table
-            [value]="recentActivity()"
-            [paginator]="true"
-            [rows]="5"
-            [rowsPerPageOptions]="[5, 10, 20]"
-            [showCurrentPageReport]="true"
-            [tableStyle]="{ 'min-width': '50rem' }">
-            <ng-template pTemplate="header">
-              <tr>
-                <th>Time</th>
-                <th>Type</th>
-                <th>Title</th>
-                <th>Details</th>
-              </tr>
-            </ng-template>
-            <ng-template pTemplate="body" let-a>
-              <tr>
-                <td class="whitespace-nowrap text-zinc-500">{{ formatTime(a.timestamp) }}</td>
-                <td>
-                  <p-tag [value]="formatActivityType(a.type)" [styleClass]="'activity-tag ' + getActivityChipClass(a.type)" />
-                </td>
-                <td class="font-medium text-zinc-800">{{ a.title }}</td>
-                <td class="text-zinc-500">{{ a.description }}</td>
-              </tr>
-            </ng-template>
-            <ng-template pTemplate="emptymessage">
-              <div class="empty-state">
-                <i class="pi pi-inbox"></i>
-                <p>No activity recorded yet</p>
+      <article class="metric-tile metric-tile--teal">
+        <span class="metric-icon"><i class="pi pi-home"></i></span>
+        <div class="min-w-0">
+          <p class="metric-label">Units &amp; Occupancy</p>
+          <p class="metric-value">{{ stats().units.total }}</p>
+          <ul class="metric-split">
+            <li><span class="dot dot--teal"></span>{{ stats().units.occupied }} Occupied</li>
+            <li><span class="dot dot--sunny"></span>{{ stats().units.vacant }} Vacant</li>
+          </ul>
+          <div class="mini-meter" role="presentation">
+            <span class="mini-meter-fill" [style.width.%]="occupancyRate()"></span>
+          </div>
+          <p class="metric-foot">{{ formatPercent(occupancyRate()) }} occupied</p>
+        </div>
+      </article>
+
+      <article class="metric-tile metric-tile--sunny">
+        <span class="metric-icon"><i class="pi pi-file"></i></span>
+        <div class="min-w-0">
+          <p class="metric-label">Active Leases</p>
+          <p class="metric-value">{{ stats().leases.active }}</p>
+          <ul class="metric-split">
+            <li><span class="dot dot--sunny"></span>{{ stats().leases.expiring_30 }} Expiring 30d</li>
+            <li><span class="dot dot--muted"></span>{{ stats().leases.expired }} Expired</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="metric-tile metric-tile--coral">
+        <span class="metric-icon"><i class="pi pi-dollar"></i></span>
+        <div class="min-w-0">
+          <p class="metric-label">Outstanding</p>
+          <p class="metric-value">{{ formatCurrency(stats().invoices.total_outstanding) }}</p>
+          <ul class="metric-split">
+            <li><span class="dot dot--coral"></span>{{ stats().invoices.overdue }} Overdue</li>
+            <li><span class="dot dot--muted"></span>{{ stats().invoices.pending }} Pending</li>
+          </ul>
+        </div>
+      </article>
+    </div>
+
+    <!-- ─────────────────────────── trend panels ────────────────────────── -->
+    <div class="panel-grid">
+      <section class="section-card panel panel--quiet panel--teal">
+        <header class="panel-head">
+          <div>
+            <h2 class="panel-title">
+              <i class="pi pi-chart-bar"></i>
+              <span class="panel-title-text">
+                <span class="panel-title-label">Occupancy Trend</span>
+                <span class="panel-sub">Occupied vs vacant units, last 12 months</span>
+              </span>
+            </h2>
+          </div>
+          <span class="count-chip">{{ stats().units.vacant }} vacant now</span>
+        </header>
+        <div class="chart-frame chart-frame--tall">
+          @if (occupancySeries(); as series) {
+            <canvas #occupancyCanvas aria-label="Occupancy trend over the last twelve months"></canvas>
+          } @else {
+            <div class="empty-state">
+              <i class="pi pi-chart-bar"></i>
+              <p>No occupancy history yet</p>
+            </div>
+          }
+        </div>
+      </section>
+
+      <section class="section-card panel panel--quiet panel--coral">
+        <header class="panel-head">
+          <div>
+            <h2 class="panel-title">
+              <i class="pi pi-wallet"></i>
+              <span class="panel-title-text">
+                <span class="panel-title-label">Revenue &amp; Receivables</span>
+                <span class="panel-sub">Collected against outstanding, last 12 months</span>
+              </span>
+            </h2>
+          </div>
+          @if (revenueTrend(); as trend) {
+            <span class="trend-pill" [class.trend-pill--down]="!trend.up">
+              <i class="pi" [class.pi-arrow-up-right]="trend.up" [class.pi-arrow-down-right]="!trend.up"></i>
+              {{ formatPercent(trend.delta, 0) }} vs last month
+            </span>
+          }
+        </header>
+        <div class="chart-frame chart-frame--tall">
+          @if (revenueSeries(); as series) {
+            <canvas #revenueCanvas aria-label="Revenue collected versus outstanding"></canvas>
+          } @else {
+            <div class="empty-state">
+              <i class="pi pi-chart-line"></i>
+              <p>No revenue data yet</p>
+            </div>
+          }
+        </div>
+      </section>
+    </div>
+
+    <!-- ────────────────────────── lease risk + brief ───────────────────── -->
+    <div class="panel-grid panel-grid--halves">
+      <section class="section-card panel panel--quiet panel--sunny">
+        <header class="panel-head">
+          <div>
+            <h2 class="panel-title">
+              <i class="pi pi-clock"></i>
+              <span class="panel-title-text">
+                <span class="panel-title-label">Lease Expiry Outlook</span>
+                <span class="panel-sub">Leases reaching end of term, next 6 months</span>
+              </span>
+            </h2>
+          </div>
+        </header>
+        <div class="chart-frame chart-frame--grow">
+          @if (expiringSeries(); as series) {
+            <canvas #expiringCanvas aria-label="Leases expiring in the next six months"></canvas>
+          } @else {
+            <div class="empty-state">
+              <i class="pi pi-calendar"></i>
+              <p>No lease expiries in view</p>
+            </div>
+          }
+        </div>
+      </section>
+
+      <section class="section-card panel panel--quiet panel--teal">
+        <header class="panel-head">
+          <div>
+            <h2 class="panel-title">
+              <i class="pi pi-compass"></i>
+              <span class="panel-title-text">
+                <span class="panel-title-label">Portfolio Brief</span>
+                <span class="panel-sub">Where attention is needed right now</span>
+              </span>
+            </h2>
+          </div>
+        </header>
+        <ul class="detail-list">
+          <li>
+            <span>Buildings</span>
+            <strong>{{ stats().buildings.total }}</strong>
+          </li>
+          <li>
+            <span>Tenants</span>
+            <strong>{{ stats().tenants.total }} <em class="list-note">{{ stats().tenants.active }} active</em></strong>
+          </li>
+          <li>
+            <span>Units reserved</span>
+            <strong>{{ stats().units.reserved }}</strong>
+          </li>
+          <li>
+            <span>Collection rate</span>
+            <strong>{{ formatPercent(collectionRate(), 0) }}</strong>
+          </li>
+          <li>
+            <span>Revenue this month</span>
+            <strong>{{ formatCurrency(stats().revenue.this_month) }}</strong>
+          </li>
+          <li>
+            <span>Revenue YTD</span>
+            <strong>{{ formatCurrency(stats().revenue.ytd) }}</strong>
+          </li>
+          <li>
+            <span>Expiring in 30d</span>
+            <strong>{{ stats().leases.expiring_30 }}</strong>
+          </li>
+          <li>
+            <span>Leases needing action</span>
+            <strong [class.value-danger]="leasesAtRisk() > 0">{{ leasesAtRisk() }}</strong>
+          </li>
+        </ul>
+      </section>
+    </div>
+
+    <!-- ───────────────────────────── recent activity ────────────────────── -->
+    <section class="section-card panel panel--quiet">
+      <header class="panel-head">
+        <div>
+          <h2 class="panel-title">
+            <i class="pi pi-history"></i>
+            <span class="panel-title-text">
+              <span class="panel-title-label">Recent Activity</span>
+              <span class="panel-sub">The last 10 events across leases, invoices and tenants</span>
+            </span>
+          </h2>
+        </div>
+        <span class="count-chip">{{ recentActivity().length }} events</span>
+      </header>
+
+      @if (recentActivity().length) {
+        <ul class="activity-list">
+          @for (item of recentActivity(); track item.id) {
+            <li class="activity-item">
+              <span class="activity-icon" [ngClass]="'activity-icon--' + activityStyle(item.type).tone">
+                <i [class]="activityStyle(item.type).icon"></i>
+              </span>
+              <div class="activity-body">
+                <div class="activity-top">
+                  <strong>{{ item.title }}</strong>
+                  <span class="activity-time">{{ formatTime(item.timestamp) }}</span>
+                </div>
+                <p class="activity-desc">{{ item.description }}</p>
               </div>
-            </ng-template>
-          </p-table>
-      </ng-template>
-    </p-card>
+              <span class="chip" [ngClass]="'chip--' + activityStyle(item.type).tone">
+                {{ activityStyle(item.type).label }}
+              </span>
+            </li>
+          }
+        </ul>
+      } @else {
+        <div class="empty-state">
+          <i class="pi pi-inbox"></i>
+          <p>No activity recorded yet</p>
+        </div>
+      }
+    </section>
   }
 </div>
-

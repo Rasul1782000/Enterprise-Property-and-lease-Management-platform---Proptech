@@ -192,8 +192,12 @@ summary:focus-visible,
   font-weight: 400;
   line-height: 1.2;
 }
+/* `max-w-2xl` resolves against the custom --spacing-2xl (48px) in tailwind.css
+   rather than the container scale, which squeezed this line to one word wide.
+   Spell the width out so it stays 42rem. */
 .page-subtitle {
-  @apply text-sm text-zinc-500 mt-2 max-w-2xl;
+  @apply text-sm text-zinc-500 mt-2;
+  max-width: 42rem;
 }
 .page-actions { @apply flex items-center gap-2 flex-wrap; }
 

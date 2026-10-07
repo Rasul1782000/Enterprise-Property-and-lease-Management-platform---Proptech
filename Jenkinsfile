@@ -26,6 +26,10 @@ pipeline {
         IMAGE_NAME            = 'proptech-frontend'
         CREDENTIALS_ID        = 'docker-registry-credentials'
     }
+    docker {
+        image 'composer:latest'
+        args '-u root'
+    }
 
     options {
         buildDiscarder(logRotator(numToKeepStr: '10'))

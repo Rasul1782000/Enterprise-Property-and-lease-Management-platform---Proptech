@@ -37,20 +37,20 @@
     "@capacitor/android": "^8.5.2",
     "@capacitor/core": "^8.5.2",
     "@capacitor/ios": "^8.5.2",
-    "@primeuix/themes": "^2.0.3",
+    "@primeuix/themes": "^3.0.1",
     "chart.js": "^4.4.0",
     "primeicons": "^8.0.2",
     "primeng": "^22.1.2",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
-    "zone.js": "~0.15.0"
+    "zone.js": "~0.16.3"
   },
   "devDependencies": {
     "@angular-eslint/builder": "^22.5.0",
     "@angular/build": "^22.2.0",
     "@angular/cli": "^22.2.0",
     "@angular/compiler-cli": "^22.2.0",
-    "@capacitor/cli": "^8.4.3",
+    "@capacitor/cli": "^8.5.2",
     "@eslint/js": "^10.0.1",
     "@tailwindcss/postcss": "^4.3.3",
     "angular-eslint": "^22.5.0",
