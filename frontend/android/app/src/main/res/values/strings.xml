@@ -1,7 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-<resources>
-    <string name="app_name">Property Lease Portal</string>
-    <string name="title_activity_main">Property Lease Portal</string>
-    <string name="package_name">com.propertylease.portal</string>
-    <string name="custom_url_scheme">com.propertylease.portal</string>
-</resources>

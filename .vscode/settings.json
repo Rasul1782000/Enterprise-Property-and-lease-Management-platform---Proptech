@@ -5,7 +5,6 @@
         "Discarder",
         "Djenkins",
         "Floci",
-        "gradlew",
         "healthcheck",
         "inputtext",
         "Manaement",
@@ -17,7 +16,6 @@
         "proptech",
         "rmyndharis",
         "rollouts",
-        "xcarchive",
-        "xcodeproj"
+        "webp"
     ]
 }

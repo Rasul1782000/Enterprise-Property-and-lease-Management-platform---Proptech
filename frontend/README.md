@@ -27,7 +27,6 @@ npm run build:prod  # production config (environment.prod.ts, hashed assets, bud
 - **Forms**: reactive forms + multi-step lease wizard with custom validators
 - **Charts**: chart.js (dashboard)
 - **Interceptors**: Sanctum bearer token, error toast, optional in-memory mock data source
-- **Mobile**: Capacitor 8 (Android/iOS)
 
 ## Environments
 | File | Used by | apiUrl | Mock data |

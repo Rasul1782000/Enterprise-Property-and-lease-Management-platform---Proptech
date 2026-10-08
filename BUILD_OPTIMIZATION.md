@@ -2,34 +2,14 @@
 
 ## Overview
 
-This project is a **multi-platform enterprise application** containing three independent components:
+This project is an enterprise application containing two independent components:
 
 1. **backend/** - Laravel PHP application
 2. **frontend/** - Angular web application
-3. **frontend/android/** - Android mobile application (with Capacitor integration)
 
 ## Issues Fixed
 
-### 1. ✅ Gradle Java Version Compatibility
-**Problem:** Gradle 8.14.3 cannot parse Java 25 class files (major version 69) due to outdated embedded ASM library.
-
-**Solution:** Configured Android project to use Java 17 compatibility.
-
-**File Modified:** `frontend/android/app/build.gradle`
-```gradle
-compileOptions {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
-}
-
-kotlinOptions {
-    jvmTarget = "17"
-}
-```
-
-**Impact:** Resolves Java 25 class file parsing error while maintaining modern development capabilities.
-
-### 2. ✅ Batch Processing Optimization
+### 1. ✅ Batch Processing Optimization
 **Problem:** Manual setup process was time-consuming and error-prone.
 
 **Solution:** Created automated batch scripts for streamlined setup.
@@ -38,7 +18,6 @@ kotlinOptions {
 - `setup-all.bat` - Complete automated setup
 - `backend/build.bat` - Laravel backend setup
 - `frontend/build.bat` - Angular frontend setup
-- `frontend/android/build.bat` - Android development setup
 - `verify-setup.bat` - Setup verification script
 
 **Features:**
@@ -88,7 +67,6 @@ echo ✅ Angular frontend configuration complete!
    ```batch
    backend/build.bat
    frontend/build.bat
-   frontend/android/build.bat
    ```
    - Skips already configured steps
    - Provides status updates
@@ -130,10 +108,6 @@ build.bat
 # Angular Frontend
 cd frontend
 build.bat
-
-# Android Development
-cd frontend\android
-build.bat
 ```
 
 ### Verification
@@ -151,14 +125,10 @@ Enterprise Property and lease Manaement Portal/
 │   ├── .env.example           # Environment template
 │   ├── app/                   # Application code
 │   └── public/                # Public assets
-├── frontend/                   # Angular Web Application
-│   ├── package.json          # Node.js dependencies
-│   ├── proxy.conf.json       # API proxy configuration
-│   └── src/                  # Angular application code
-└── frontend/android/          # Android Mobile Application
-    ├── gradle-wrapper.properties  # Gradle configuration
-    ├── app/                     # Android application
-    └── capacitor-cordova-android-plugins/  # Capacitor plugins
+└── frontend/                   # Angular Web Application
+    ├── package.json          # Node.js dependencies
+    ├── proxy.conf.json       # API proxy configuration
+    └── src/                  # Angular application code
 ```
 
 ## Configuration Details
@@ -175,35 +145,14 @@ Enterprise Property and lease Manaement Portal/
 - **Styling:** Angular Material
 - **Grid:** AG-Grid Community
 
-### Android (Mobile)
-- **Platform:** Android
-- **Build System:** Gradle 8.14.3
-- **Compatibility:** Java 17
-- **Integration:** Capacitor for hybrid features
-
 ## Technical Specifications
 
-### Java Compatibility
-```gradle
-// frontend/android/app/build.gradle
-compileOptions {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
-}
+### Runtime Requirements
+- **Node.js** 20+ with npm
+- **PHP** 8.2+ with Composer
 
-kotlinOptions {
-    jvmTarget = "17"
-}
-```
-
-### Gradle Configuration
-```properties
-# frontend/android/gradle/wrapper/gradle-wrapper.properties
-distributionUrl=https://services.gradle.org/distributions/gradle-8.14.3-all.zip
-```
-
-### Cross-Platform Integration
-- **Laravel API** → **Angular Frontend** → **Android App**
+### Integration
+- **Laravel API** → **Angular Frontend**
 - **API Gateway:** http://localhost:8000/api
 - **WebSocket Support:** Real-time updates
 - **File Upload:** Secure storage integration
@@ -219,10 +168,6 @@ php artisan test
 # Frontend tests
 cd frontend
 npm run test
-
-# Android tests
-cd frontend/android
-./gradlew test
 ```
 
 ### Manual Testing
@@ -241,27 +186,18 @@ curl http://localhost:8000/api/health
 
 ### Common Issues
 
-#### 1. Gradle Java 25 Error
-**Symptom:** `Class file major version 69: Class file major version 69 corresponds to Java 25`
-**Solution:** The Android project is now configured for Java 17 compatibility.
-
-#### 2. Node Modules Not Found
+#### 1. Node Modules Not Found
 **Symptom:** `npm install` fails or hangs
 **Solution:** Clear `node_modules` and `package-lock.json`, then rerun.
 
-#### 3. PHP Extensions Missing
+#### 2. PHP Extensions Missing
 **Symptom:** `composer install` fails
 **Solution:** Install required PHP extensions and extensions.
-
-#### 4. Android Build Failures
-**Symptom:** `./gradlew build` fails
-**Solution:** Ensure Android SDK/NDK are properly configured.
 
 ### Debugging Commands
 ```cmd
 # Check system compatibility
 ver
-where java
 where node
 where npm
 where php
@@ -277,8 +213,7 @@ dir /s backend
 1. **Setup Phase:** Run `setup-all.bat` once
 2. **Backend Development:** Work in `backend/` directory
 3. **Frontend Development:** Work in `frontend/` directory
-4. **Android Development:** Work in `frontend/android/` directory
-5. **Cross-Component Testing:** Test APIs between components
+4. **Cross-Component Testing:** Test APIs between components
 
 ### Version Management
 - Keep `setup-all.bat` in version control
@@ -308,10 +243,9 @@ dir /s backend
 
 ## Conclusion
 
-This project setup optimization transforms a complex multi-platform development environment into a streamlined, automated process. The batch processing scripts significantly reduce setup time, improve reliability, and provide a consistent development experience across all components.
+This project setup optimization transforms a complex development environment into a streamlined, automated process. The batch processing scripts significantly reduce setup time, improve reliability, and provide a consistent development experience across all components.
 
 **Key Achievements:**
-- ✅ Resolved Java 25 compatibility issues
 - ✅ Implemented intelligent dependency management
 - ✅ Created comprehensive automation scripts
 - ✅ Provided clear documentation and troubleshooting

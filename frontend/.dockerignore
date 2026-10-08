@@ -2,8 +2,6 @@ node_modules
 dist
 .angular
 coverage
-android
-ios
 .git
 .gitignore
 *.log
