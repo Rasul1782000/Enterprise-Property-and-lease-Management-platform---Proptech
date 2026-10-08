@@ -18,6 +18,12 @@
             "polyfills": [
               "zone.js"
             ],
+            "assets": [
+              {
+                "glob": "**/*",
+                "input": "public"
+              }
+            ],
             "tsConfig": "tsconfig.json",
             "styles": [
               "node_modules/primeicons/primeicons.css",
