@@ -1,9 +1,3 @@
-/**
- * Deterministic-ish seed data for the demo/offline experience.
- * Every page in the portal renders real-looking content from these records,
- * so the UI is never empty even when the backend is unavailable.
- */
-
 export interface PropertyRecord {
   id: number; code: string; name: string; type: string; address: string; city: string;
   state: string; zip: string; country: string; occupancy_rate: number;
@@ -75,23 +69,17 @@ export interface InvoiceRecord {
 
 const DAY = 86400000;
 
-/** ISO date string offset from today by `days` (negative = past). */
 function iso(days: number, hour = 9): string {
   const d = new Date(Date.now() + days * DAY);
   d.setHours(hour, 0, 0, 0);
   return d.toISOString();
 }
 
-/** Date-only string (YYYY-MM-DD) offset from today. */
 function isoDate(days: number): string {
   return iso(days).slice(0, 10);
 }
 
 const NOW = new Date().toISOString();
-
-/* ------------------------------------------------------------------ */
-/* Properties                                                          */
-/* ------------------------------------------------------------------ */
 
 export const MOCK_PROPERTIES: PropertyRecord[] = [
   { id: 1, code: 'PRP-1001', name: 'Harbor Point Residences', type: 'multifamily', address: '1200 Harbor View Blvd', city: 'Seattle', state: 'WA', zip: '98101', country: 'USA', occupancy_rate: 94.5, status: 'active', buildings_count: 3, units_count: 48, created_at: iso(-720), updated_at: iso(-6) },
@@ -103,12 +91,7 @@ export const MOCK_PROPERTIES: PropertyRecord[] = [
   { id: 7, code: 'PRP-1007', name: 'Summit Plaza Offices', type: 'office', address: '310 Summit Plaza', city: 'Spokane', state: 'WA', zip: '99201', country: 'USA', occupancy_rate: 82.0, status: 'active', buildings_count: 1, units_count: 16, created_at: iso(-260), updated_at: iso(-14) }
 ];
 
-/* ------------------------------------------------------------------ */
-/* Buildings                                                           */
-/* ------------------------------------------------------------------ */
-
 const BUILDING_DEFS: [number, number, string, string, number, BuildingRecord['status']][] = [
-  // propertyId, floors, name, code, unitsCount, status
   [1, 12, 'Harbor Tower A', 'HB-A', 20, 'active'],
   [1, 8, 'Harbor Tower B', 'HB-B', 16, 'active'],
   [1, 4, 'Harbor Annex', 'HB-C', 12, 'under_maintenance'],
@@ -142,10 +125,6 @@ export const MOCK_BUILDINGS: BuildingRecord[] = BUILDING_DEFS.map((def, i) => {
     updated_at: property.updated_at
   };
 });
-
-/* ------------------------------------------------------------------ */
-/* Units                                                               */
-/* ------------------------------------------------------------------ */
 
 const UNIT_TYPES: UnitRecord['type'][] = ['residential', 'residential', 'residential', 'office', 'retail', 'commercial', 'warehouse'];
 const UNIT_STATUSES: UnitRecord['status'][] = ['occupied', 'occupied', 'occupied', 'vacant', 'reserved', 'occupied', 'under_maintenance'];
@@ -186,10 +165,6 @@ export const MOCK_UNITS: UnitRecord[] = (() => {
   }
   return out;
 })();
-
-/* ------------------------------------------------------------------ */
-/* Tenants                                                             */
-/* ------------------------------------------------------------------ */
 
 const TENANT_DEFS: [string, string, string, TenantRecord['status'], number][] = [
   ['Amelia', 'Hartley', 'Hartley Legal Group', 'active', 1],
@@ -239,14 +214,9 @@ export const MOCK_TENANTS: TenantRecord[] = TENANT_DEFS.map((def, i) => {
   };
 });
 
-/* ------------------------------------------------------------------ */
-/* Leases                                                              */
-/* ------------------------------------------------------------------ */
-
 const LEASE_TYPES: LeaseRecord['type'][] = ['fixed', 'fixed', 'residential', 'commercial', 'fixed', 'periodic'];
 const FREQUENCIES: LeaseRecord['payment_frequency'][] = ['monthly', 'monthly', 'monthly', 'quarterly', 'annually'];
 
-/** Distribute lease end dates so 30/90-day expiry buckets and past-due invoices are populated. */
 const END_OFFSETS = [12, 21, 28, 45, 62, 78, 88, 120, 155, 200, 240, 300, 360, 420, -20, -60, -110, 640];
 
 export const MOCK_LEASES: LeaseRecord[] = (() => {
@@ -303,11 +273,6 @@ MOCK_LEASES.forEach(l => {
   }
 });
 
-/* ------------------------------------------------------------------ */
-/* Invoices                                                            */
-/* ------------------------------------------------------------------ */
-
-/** Months back from the current month, as YYYY-MM. */
 function monthKey(offset: number): string {
   const d = new Date();
   d.setDate(1);
@@ -320,14 +285,12 @@ export const MOCK_INVOICES: InvoiceRecord[] = (() => {
   let id = 0;
   const activeLeases = MOCK_LEASES.filter(l => l.status === 'active' || l.status === 'expired');
 
-  // Historical months
   for (let back = 7; back >= 1; back--) {
     activeLeases.forEach((lease, idx) => {
       id++;
       out.push(buildInvoice(id, lease, monthKey(-back), true, (idx + back) % 5));
     });
   }
-  // Current month: mix of paid / sent / partial / overdue
   activeLeases.forEach((lease, idx) => {
     id++;
     out.push(buildInvoice(id, lease, monthKey(0), false, idx % 6));
@@ -411,10 +374,6 @@ function buildInvoice(
 
 export const MOCK_PAYMENTS: PaymentRecord[] = MOCK_INVOICES.flatMap(i => i.payments ?? []);
 
-/* ------------------------------------------------------------------ */
-/* Tenant documents                                                    */
-/* ------------------------------------------------------------------ */
-
 export interface TenantDocumentRecord {
   id: number;
   tenant_id: number;
@@ -431,13 +390,11 @@ export interface TenantDocumentRecord {
   updated_at: string;
 }
 
-/** Seed documents, one row per tenant, so the Documents tab is never empty. */
 export const MOCK_TENANT_DOCUMENTS: TenantDocumentRecord[] = MOCK_TENANTS.flatMap((tenant, ti) => {
   const defs = [
     { name: 'Signed lease agreement.pdf', category: 'lease_agreement', size_kb: 412, days: -300 },
     { name: 'Emirates ID (both sides).pdf', category: 'id_document', size_kb: 180, days: -290 },
     { name: 'Proof of insurance.pdf', category: 'insurance', size_kb: 96, days: -120 },
-    // Give roughly half the tenants a fourth document so filtering has signal.
     ...(ti % 2 === 0 ? [{ name: 'Tax residency certificate.pdf', category: 'tax_form', size_kb: 64, days: -45 }] : [])
   ];
 
@@ -457,10 +414,6 @@ export const MOCK_TENANT_DOCUMENTS: TenantDocumentRecord[] = MOCK_TENANTS.flatMa
     updated_at: iso(d.days)
   }));
 });
-
-/* ------------------------------------------------------------------ */
-/* Users                                                               */
-/* ------------------------------------------------------------------ */
 
 export const MOCK_USERS = [
   { id: 1, name: 'John Smith', email: 'admin@lottly.com', role: 'admin', tenant_id: undefined },

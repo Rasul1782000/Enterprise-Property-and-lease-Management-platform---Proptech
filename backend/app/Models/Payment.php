@@ -41,7 +41,7 @@ class Payment extends Model
             }
         });
         static::created(function ($pay) {
-            // auto update invoice status
+
             $invoice = $pay->invoice;
             $totalPaid = $invoice->payments()->sum('amount');
             if ($totalPaid >= $invoice->total_amount) {

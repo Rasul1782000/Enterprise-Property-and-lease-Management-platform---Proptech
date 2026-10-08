@@ -17,10 +17,7 @@ class WhatsAppController extends Controller
         $this->whatsapp = $whatsapp;
     }
 
-    /**
-     * GET /api/whatsapp/status
-     * Check if the WhatsApp session is connected and ready.
-     */
+
     public function status()
     {
         try {
@@ -40,10 +37,7 @@ class WhatsAppController extends Controller
         }
     }
 
-    /**
-     * POST /api/whatsapp/send
-     * Send a text message to a tenant.
-     */
+
     public function send(Request $request)
     {
         $validated = $request->validate([
@@ -74,10 +68,7 @@ class WhatsAppController extends Controller
         }
     }
 
-    /**
-     * GET /api/whatsapp/history
-     * Get chat history for a tenant.
-     */
+
     public function history(Request $request)
     {
         $validated = $request->validate([
@@ -108,10 +99,7 @@ class WhatsAppController extends Controller
         }
     }
 
-    /**
-     * GET /api/whatsapp/qr
-     * Get the QR code for linking a WhatsApp account.
-     */
+
     public function qr()
     {
         try {
@@ -130,10 +118,7 @@ class WhatsAppController extends Controller
         }
     }
 
-    /**
-     * POST /api/whatsapp/session/start
-     * Start the WhatsApp session.
-     */
+
     public function startSession()
     {
         try {
@@ -151,10 +136,7 @@ class WhatsAppController extends Controller
         }
     }
 
-    /**
-     * POST /api/whatsapp/session/create
-     * Create a new WhatsApp session.
-     */
+
     public function createSession(Request $request)
     {
         $validated = $request->validate([

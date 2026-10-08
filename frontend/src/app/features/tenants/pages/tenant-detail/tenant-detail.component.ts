@@ -33,7 +33,6 @@ export class TenantDetailComponent implements OnInit {
   leasesLoading = signal(false);
   leaseCols = ['code', 'property', 'unit', 'type', 'start_date', 'end_date', 'status', 'rent', 'actions'];
 
-  /* Documents */
   readonly documents = signal<TenantDocument[]>([]);
   readonly documentsLoading = signal(false);
   readonly documentsTotal = signal(0);
@@ -41,7 +40,7 @@ export class TenantDetailComponent implements OnInit {
   readonly uploadVisible = signal(false);
   readonly categoryFilter = signal<string | null>(null);
   readonly documentCategories = TENANT_DOCUMENT_CATEGORIES;
-  /** "All categories" sentinel prepended to the filter dropdown. */
+  
   readonly categoryFilterOptions = [{ label: 'All categories', value: null }, ...TENANT_DOCUMENT_CATEGORIES];
   readonly allowedExtensions = TENANT_DOCUMENT_EXTENSIONS;
   readonly maxKb = TENANT_DOCUMENT_MAX_KB;
@@ -77,10 +76,6 @@ export class TenantDetailComponent implements OnInit {
     if (id) this.loadDocuments(id);
   }
 
-  /* ------------------------------------------------------------------ */
-  /* Document upload                                                     */
-  /* ------------------------------------------------------------------ */
-
   openUpload(): void {
     this.uploadVisible.set(true);
   }
@@ -109,8 +104,6 @@ export class TenantDetailComponent implements OnInit {
     const tenant = this.tenant();
     if (!tenant) return;
 
-    // Prefer the presigned object-storage link the backend hands back; fall
-    // back to proxying the bytes through the API when it is a local path.
     if (doc.url && /^https?:/i.test(doc.url)) {
       window.open(doc.url, '_blank', 'noopener');
       return;
@@ -144,8 +137,6 @@ export class TenantDetailComponent implements OnInit {
     });
   }
 
-  /* ------------------------------------------------------------------ */
-
   editTenant() { const t = this.tenant(); if (t) this.router.navigate(['/tenants', t.id, 'edit']); }
   viewLease(l: Lease) { this.router.navigate(['/leases', l.id]); }
   getLeaseStatusClass(s: string) { const c: Record<string,string> = {'active':'bg-primary-100 text-primary-800','draft':'bg-zinc-100','expired':'bg-primary-600 text-white','terminated':'bg-zinc-100','renewed':'bg-zinc-200 text-zinc-800'}; return c[s] || 'bg-zinc-100'; }
@@ -160,7 +151,6 @@ export class TenantDetailComponent implements OnInit {
     return map[status] ?? 'info';
   }
 
-  /** Human label for a stored category key. */
   categoryLabel(value: string): string {
     return this.documentCategories.find(c => c.value === value)?.label ?? value;
   }

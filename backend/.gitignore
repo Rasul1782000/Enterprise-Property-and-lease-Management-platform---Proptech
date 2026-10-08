@@ -22,3 +22,13 @@ yarn-error.log
 # committed.
 /storage/framework/views/*
 !/storage/framework/views/.gitignore
+
+# Session files, the local SQLite database and the Prometheus metrics store are
+# all runtime state rebuilt on every deploy.
+/storage/framework/sessions/*
+!/storage/framework/sessions/.gitignore
+/database/*.sqlite
+/database/*.sqlite-journal
+/database/*.sqlite-wal
+/database/*.sqlite-shm
+/storage/prometheus

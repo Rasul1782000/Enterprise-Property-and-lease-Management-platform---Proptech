@@ -29,7 +29,6 @@ export class EjariTawtheeqManagementConsole extends ModulePage<EjariContract> {
   typeFilter = 'All types';
   selected = signal<EjariContract | null>(null);
 
-  /** Cases the gateway has thrown back at us, with the reason to work from. */
   failures = computed(() => this.rows().filter(r => r.status === 'rejected' || (r.status === 'submitted' && r.last_error)));
 
   cards = computed<StatCard[]>(() => {

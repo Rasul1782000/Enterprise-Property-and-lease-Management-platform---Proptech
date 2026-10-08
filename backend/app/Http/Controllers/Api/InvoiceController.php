@@ -3,49 +3,74 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\InvoiceResource;
 use App\Mail\RentInvoiceMail;
 use App\Models\Invoice;
+use App\Models\InvoiceLineItem;
 use App\Models\Lease;
 use App\Models\Payment;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
+use Spatie\QueryBuilder\AllowedFilter;
+use Spatie\QueryBuilder\QueryBuilder;
 
 class InvoiceController extends Controller
 {
     public function index(Request $request)
     {
-        $invoices = Invoice::with(['lease', 'tenant', 'unit.building'])
-            ->when($request->status, fn ($q, $s) => $q->where('status', $s))
-            ->when($request->lease_id, fn ($q, $id) => $q->where('lease_id', $id))
-            ->when($request->tenant_id, fn ($q, $id) => $q->where('tenant_id', $id))
-            ->orderBy($request->get('sort', 'due_date'), $request->get('direction', 'desc'))
-            ->paginate($request->get('per_page', 15));
+        $invoices = QueryBuilder::for(Invoice::class)
+            ->with(['lease.building', 'tenant', 'unit.building', 'payments'])
+            ->withSum('payments as payments_sum_amount', 'amount')
+            ->allowedFilters([
+                AllowedFilter::exact('status'),
+                AllowedFilter::exact('lease_id'),
+                AllowedFilter::exact('tenant_id'),
+                AllowedFilter::exact('unit_id'),
+                AllowedFilter::exact('type'),
+                AllowedFilter::partial('invoice_number'),
+                AllowedFilter::partial('code', 'invoice_number'),
+                AllowedFilter::callback('property_id', function ($query, $value) {
+                    $query->whereHas('unit.building', fn ($qq) => $qq->where('property_id', $value));
+                }),
+            ])
+            ->allowedSorts(['invoice_number', 'due_date', 'issue_date', 'amount', 'created_at'])
+            ->paginate($request->get('per_page', 15))
+            ->appends($request->query());
 
-        return response()->json($invoices);
+        return InvoiceResource::collection($invoices);
     }
 
     public function show(Invoice $invoice)
     {
-        return response()->json($invoice->load(['lease.unit', 'tenant', 'unit', 'payments']));
+        return new InvoiceResource(
+            $invoice->load(['lease.building', 'tenant', 'unit.building', 'payments', 'lineItems'])
+        );
     }
 
     public function update(Request $request, Invoice $invoice)
     {
         $invoice->update($request->validate([
-            'status' => 'sometimes|in:pending,paid,overdue,cancelled,partial',
+            'status' => 'sometimes|in:draft,sent,paid,partial,overdue,cancelled',
+            'due_date' => 'sometimes|date',
             'notes' => 'nullable|string',
         ]));
 
-        return response()->json($invoice->fresh());
+        return new InvoiceResource($invoice->fresh(['lease.building', 'tenant', 'payments']));
     }
 
     public function send(Invoice $invoice)
     {
         Mail::to($invoice->tenant->email)->send(new RentInvoiceMail($invoice));
-        $invoice->update(['sent_at' => now()]);
+        $invoice->update([
+            'sent_at' => now(),
+            'status' => 'sent',
+        ]);
 
-        return response()->json(['message' => 'Invoice sent', 'invoice' => $invoice->fresh()]);
+        return response()->json([
+            'message' => 'Invoice sent',
+            'invoice' => new InvoiceResource($invoice->fresh(['lease.building', 'tenant', 'payments'])),
+        ]);
     }
 
     public function receiptPdf(Invoice $invoice)
@@ -60,24 +85,51 @@ class InvoiceController extends Controller
     {
         $data = $request->validate([
             'lease_id' => 'required|exists:leases,id',
-            'tenant_id' => 'required|exists:tenants,id',
-            'unit_id' => 'required|exists:units,id',
-            'period_start' => 'required|date',
-            'period_end' => 'required|date|after:period_start',
+            'type' => 'required|in:rent,deposit,late_fee,utility,maintenance,other',
+            'issue_date' => 'required|date',
             'due_date' => 'required|date',
             'amount' => 'required|numeric|min:0',
-            'late_fee' => 'nullable|numeric|min:0',
-            'status' => 'sometimes|in:pending,paid,overdue,cancelled,partial,draft,sent',
-            'notes' => 'nullable|string',
+            'currency' => 'nullable|string|size:3',
+            'description' => 'nullable|string',
+            'status' => 'sometimes|in:draft,sent,paid,partial,overdue,cancelled',
+            'line_items' => 'nullable|array',
+            'line_items.*.description' => 'required|string',
+            'line_items.*.quantity' => 'required|numeric|min:0',
+            'line_items.*.unit_price' => 'required|numeric|min:0',
         ]);
-        $data['total_amount'] = $data['amount'] + ($data['late_fee'] ?? 0);
-        $data['status'] = $data['status'] ?? 'pending';
-        if ($data['status'] === 'draft' || $data['status'] === 'sent') {
-            $data['status'] = 'pending';
-        }
-        $invoice = Invoice::create($data);
 
-        return response()->json($invoice->load(['lease', 'tenant', 'unit']), 201);
+        $lease = Lease::findOrFail($data['lease_id']);
+
+        $invoice = Invoice::create([
+            'lease_id' => $lease->id,
+            'tenant_id' => $lease->tenant_id,
+            'unit_id' => $lease->unit_id,
+            'type' => $data['type'],
+            'issue_date' => $data['issue_date'],
+            'period_start' => $data['issue_date'],
+            'period_end' => $data['due_date'],
+            'due_date' => $data['due_date'],
+            'amount' => $data['amount'],
+            'late_fee' => 0,
+            'total_amount' => $data['amount'],
+            'currency' => $data['currency'] ?? 'USD',
+            'notes' => $data['description'] ?? null,
+            'status' => $data['status'] ?? 'draft',
+        ]);
+
+        foreach ($data['line_items'] ?? [] as $line) {
+            InvoiceLineItem::create([
+                'invoice_id' => $invoice->id,
+                'description' => $line['description'],
+                'quantity' => $line['quantity'],
+                'unit_price' => $line['unit_price'],
+                'amount' => $line['quantity'] * $line['unit_price'],
+            ]);
+        }
+
+        return new InvoiceResource(
+            $invoice->load(['lease.building', 'tenant', 'unit.building', 'lineItems'])
+        );
     }
 
     public function destroy(Invoice $invoice)
@@ -99,25 +151,31 @@ class InvoiceController extends Controller
     {
         $data = $request->validate([
             'amount' => 'required|numeric|min:0.01',
-            'method' => 'required|in:cash,bank_transfer,check,card,online',
+            'payment_method' => 'required|in:cash,bank_transfer,check,card,online',
             'reference' => 'nullable|string|max:255',
-            'paid_at' => 'nullable|date',
+            'payment_date' => 'nullable|date',
             'notes' => 'nullable|string',
         ]);
-        $data['invoice_id'] = $invoice->id;
-        $data['tenant_id'] = $invoice->tenant_id;
-        $data['recorded_by'] = $request->user()->id;
-        $data['paid_at'] = $data['paid_at'] ?? now();
-        $payment = Payment::create($data);
 
-        return response()->json($payment->load('invoice'), 201);
+        $payment = Payment::create([
+            'invoice_id' => $invoice->id,
+            'tenant_id' => $invoice->tenant_id,
+            'amount' => $data['amount'],
+            'method' => $data['payment_method'],
+            'reference' => $data['reference'] ?? null,
+            'notes' => $data['notes'] ?? null,
+            'paid_at' => $data['payment_date'] ?? now(),
+            'recorded_by' => $request->user()?->id,
+        ]);
+
+        return (new PaymentResource($payment->load('invoice')))->response()->setStatusCode(201);
     }
 
     public function payments(Invoice $invoice)
     {
         $payments = $invoice->payments()->with(['tenant', 'recorder'])->get();
 
-        return response()->json($payments);
+        return PaymentResource::collection($payments);
     }
 
     public function bulkGenerate(Request $request)
@@ -125,9 +183,9 @@ class InvoiceController extends Controller
         $data = $request->validate([
             'lease_ids' => 'required|array',
             'lease_ids.*' => 'exists:leases,id',
-            'period_start' => 'required|date',
-            'period_end' => 'required|date|after:period_start',
+            'issue_date' => 'required|date',
             'due_date' => 'required|date',
+            'type' => 'nullable|in:rent,deposit,late_fee,utility,maintenance,other',
         ]);
 
         $leases = Lease::whereIn('id', $data['lease_ids'])->get();
@@ -135,8 +193,7 @@ class InvoiceController extends Controller
 
         foreach ($leases as $lease) {
             $existing = Invoice::where('lease_id', $lease->id)
-                ->where('period_start', $data['period_start'])
-                ->where('period_end', $data['period_end'])
+                ->where('period_start', $data['issue_date'])
                 ->first();
 
             if (! $existing) {
@@ -144,21 +201,20 @@ class InvoiceController extends Controller
                     'lease_id' => $lease->id,
                     'tenant_id' => $lease->tenant_id,
                     'unit_id' => $lease->unit_id,
-                    'period_start' => $data['period_start'],
-                    'period_end' => $data['period_end'],
+                    'type' => $data['type'] ?? 'rent',
+                    'issue_date' => $data['issue_date'],
+                    'period_start' => $data['issue_date'],
+                    'period_end' => $data['due_date'],
                     'due_date' => $data['due_date'],
                     'amount' => $lease->rent_amount,
                     'late_fee' => 0,
                     'total_amount' => $lease->rent_amount,
-                    'status' => 'pending',
+                    'status' => 'draft',
                 ]);
                 $created[] = $invoice;
             }
         }
 
-        return response()->json([
-            'message' => count($created).' invoices generated',
-            'invoices' => $created,
-        ], 201);
+        return InvoiceResource::collection(collect($created)->load('lease.building'));
     }
 }

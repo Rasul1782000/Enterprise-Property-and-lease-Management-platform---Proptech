@@ -25,7 +25,6 @@ export class LeaseAgreement extends ModulePage<LeaseAgreementRow> {
   statuses = STATUSES;
   selected = signal<LeaseAgreementRow | null>(null);
 
-  /** Signature register rows for the progress bar and the detail drawer. */
   signatureSlots(row: LeaseAgreementRow): { role: string; signed: boolean; detail: string }[] {
     return [
       { role: 'Landlord', signed: !!row.landlord_signed_on, detail: row.landlord_signed_on ? this.dateOnly(row.landlord_signed_on) : '' },
@@ -34,7 +33,6 @@ export class LeaseAgreement extends ModulePage<LeaseAgreementRow> {
     ];
   }
 
-  /** Signature progress 0-100 across the landlord / witness / tenant slots. */
   signatureProgress(row: LeaseAgreementRow): number {
     return Math.round((this.signatureSlots(row).filter(s => s.signed).length / 3) * 100);
   }

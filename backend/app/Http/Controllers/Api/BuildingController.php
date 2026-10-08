@@ -3,18 +3,31 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\BuildingResource;
 use App\Models\Building;
 use Illuminate\Http\Request;
+use Spatie\QueryBuilder\AllowedFilter;
+use Spatie\QueryBuilder\QueryBuilder;
 
 class BuildingController extends Controller
 {
     public function index(Request $request)
     {
-        $q = Building::with(['property', 'units'])
-            ->when($request->property_id, fn ($qq) => $qq->where('property_id', $request->property_id))
-            ->when($request->search, fn ($qq, $s) => $qq->where('name', 'like', "%{$s}%"));
+        $buildings = QueryBuilder::for(Building::class)
+            ->with('property')
+            ->withCount('units')
+            ->allowedFilters([
+                AllowedFilter::exact('property_id'),
+                AllowedFilter::exact('status'),
+                AllowedFilter::partial('name'),
+                AllowedFilter::partial('code'),
+                AllowedFilter::partial('city'),
+            ])
+            ->allowedSorts(['name', 'code', 'floors', 'created_at'])
+            ->paginate($request->get('per_page', 15))
+            ->appends($request->query());
 
-        return response()->json($q->paginate($request->get('per_page', 15)));
+        return BuildingResource::collection($buildings);
     }
 
     public function store(Request $request)
@@ -23,18 +36,27 @@ class BuildingController extends Controller
             'property_id' => 'required|exists:properties,id',
             'name' => 'required|string|max:255',
             'code' => 'required|string|unique:buildings,code',
+            'address' => 'nullable|string|max:255',
+            'city' => 'nullable|string|max:120',
+            'state' => 'nullable|string|max:120',
+            'zip' => 'nullable|string|max:20',
             'floors' => 'required|integer|min:1',
             'year_built' => 'nullable|integer',
             'construction_type' => 'nullable|string',
+            'status' => 'sometimes|in:active,inactive,under_maintenance',
             'description' => 'nullable|string',
         ]);
 
-        return response()->json(Building::create($data), 201);
+        $building = Building::create($data);
+
+        return new BuildingResource($building->load('property')->loadCount('units'));
     }
 
     public function show(Building $building)
     {
-        return response()->json($building->load(['property', 'units']));
+        return new BuildingResource(
+            $building->load(['property', 'units'])->loadCount('units')
+        );
     }
 
     public function update(Request $request, Building $building)
@@ -42,11 +64,20 @@ class BuildingController extends Controller
         $building->update($request->validate([
             'name' => 'sometimes|string|max:255',
             'code' => 'sometimes|string|unique:buildings,code,'.$building->id,
+            'address' => 'nullable|string|max:255',
+            'city' => 'nullable|string|max:120',
+            'state' => 'nullable|string|max:120',
+            'zip' => 'nullable|string|max:20',
             'floors' => 'sometimes|integer|min:1',
+            'year_built' => 'nullable|integer',
+            'construction_type' => 'nullable|string',
+            'status' => 'sometimes|in:active,inactive,under_maintenance',
             'description' => 'nullable|string',
         ]));
 
-        return response()->json($building->fresh());
+        return new BuildingResource(
+            $building->fresh(['property', 'units'])->loadCount('units')
+        );
     }
 
     public function destroy(Building $building)

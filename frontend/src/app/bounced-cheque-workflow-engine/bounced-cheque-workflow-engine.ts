@@ -25,7 +25,6 @@ const REASONS: { value: string; label: string }[] = [
   { value: 'other', label: 'Other' }
 ];
 
-/** The recovery pipeline, in the order a case moves through it. */
 const PIPELINE: BouncedCheque['stage'][] = [
   'new', 'notified', 'promise_to_pay', 'partially_recovered', 'recovered', 'escalated', 'legal_action', 'written_off'
 ];
@@ -62,7 +61,6 @@ export class BouncedChequeWorkflowEngine extends ModulePage<BouncedCheque> {
     }
   }
 
-  /** Open cases ordered by urgency: critical first, then oldest. */
   urgent = computed(() =>
     this.rows()
       .filter(r => r.stage !== 'recovered' && r.stage !== 'written_off')

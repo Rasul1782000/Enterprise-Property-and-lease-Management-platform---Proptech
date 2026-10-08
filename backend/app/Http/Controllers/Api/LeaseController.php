@@ -4,27 +4,47 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreLeaseRequest;
+use App\Http\Resources\LeaseResource;
 use App\Models\Lease;
 use App\Support\Storage\S3ClientFactory;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Spatie\QueryBuilder\AllowedFilter;
+use Spatie\QueryBuilder\QueryBuilder;
 use Throwable;
 
 class LeaseController extends Controller
 {
     public function index(Request $request)
     {
-        $leases = Lease::with(['unit.building.property', 'tenant', 'invoices'])
-            ->when($request->status, fn ($q, $s) => $q->where('status', $s))
-            ->when($request->tenant_id, fn ($q, $id) => $q->where('tenant_id', $id))
-            ->when($request->property_id, fn ($q, $pid) => $q->whereHas('unit.building', fn ($qq) => $qq->where('property_id', $pid)))
-            ->when($request->search, fn ($q, $s) => $q->where('lease_number', 'like', "%{$s}%")
-                ->orWhereHas('tenant', fn ($qq) => $qq->where('first_name', 'like', "%{$s}%")->orWhere('last_name', 'like', "%{$s}%")))
-            ->orderBy($request->get('sort', 'created_at'), $request->get('direction', 'desc'))
-            ->paginate($request->get('per_page', 15));
+        $leases = QueryBuilder::for(Lease::class)
+            ->with(['unit.building.property', 'tenant', 'invoices'])
+            ->allowedFilters([
+                AllowedFilter::exact('status'),
+                AllowedFilter::exact('tenant_id'),
+                AllowedFilter::exact('unit_id'),
+                AllowedFilter::exact('type'),
+                AllowedFilter::partial('lease_number'),
+                AllowedFilter::partial('code', 'lease_number'),
+                AllowedFilter::callback('expiring_within', function ($query, $value) {
+                    $query->active()->expiringSoon((int) $value);
+                }),
+                AllowedFilter::callback('property_id', function ($query, $value) {
+                    $query->whereHas('unit.building', fn ($qq) => $qq->where('property_id', $value));
+                }),
+                AllowedFilter::callback('search', function ($query, $value) {
+                    $query->where(fn ($qq) => $qq->where('lease_number', 'like', "%{$value}%")
+                        ->orWhereHas('tenant', fn ($tt) => $tt
+                            ->where('first_name', 'like', "%{$value}%")
+                            ->orWhere('last_name', 'like', "%{$value}%")));
+                }),
+            ])
+            ->allowedSorts(['lease_number', 'start_date', 'end_date', 'rent_amount', 'created_at'])
+            ->paginate($request->get('per_page', 15))
+            ->appends($request->query());
 
-        return response()->json($leases);
+        return LeaseResource::collection($leases);
     }
 
     public function store(StoreLeaseRequest $request)
@@ -32,16 +52,21 @@ class LeaseController extends Controller
         $data = $request->validated();
         $data['created_by'] = $request->user()->id;
         $data['status'] = $data['status'] ?? 'active';
-        $data['payment_frequency'] = $data['payment_frequency'] ?? 'monthly';
-        $data['payment_frequency'] = str_replace('annually', 'yearly', $data['payment_frequency']);
+        $data['payment_frequency'] = str_replace(
+            'annually',
+            'yearly',
+            $data['payment_frequency'] ?? 'monthly'
+        );
         $lease = Lease::create($data);
 
-        return response()->json($lease->load(['unit', 'tenant']), 201);
+        return new LeaseResource($lease->load(['unit.building.property', 'tenant']));
     }
 
     public function show(Lease $lease)
     {
-        return response()->json($lease->load(['unit.building.property', 'tenant', 'invoices.payments']));
+        return new LeaseResource(
+            $lease->load(['unit.building.property', 'tenant', 'invoices.payments'])
+        );
     }
 
     public function update(Request $request, Lease $lease)
@@ -50,10 +75,12 @@ class LeaseController extends Controller
             'end_date' => 'sometimes|date|after:start_date',
             'rent_amount' => 'sometimes|numeric|min:0',
             'status' => 'sometimes|in:draft,active,expired,terminated,renewed',
+            'escalation_clause' => 'nullable|string',
+            'renewal_options' => 'sometimes|integer|min:0',
             'notes' => 'nullable|string',
         ]));
 
-        return response()->json($lease->fresh());
+        return new LeaseResource($lease->fresh(['unit.building.property', 'tenant']));
     }
 
     public function destroy(Lease $lease)
@@ -74,10 +101,13 @@ class LeaseController extends Controller
 
     public function terminate(Request $request, Lease $lease)
     {
-        $lease->update(['status' => 'terminated']);
+        $lease->update([
+            'status' => 'terminated',
+            'terminated_at' => now(),
+        ]);
         $lease->unit()->update(['status' => 'vacant']);
 
-        return response()->json($lease->fresh());
+        return new LeaseResource($lease->fresh(['unit.building.property', 'tenant']));
     }
 
     public function renew(Request $request, Lease $lease)
@@ -90,32 +120,28 @@ class LeaseController extends Controller
         $newLease = Lease::create([
             'unit_id' => $lease->unit_id,
             'tenant_id' => $lease->tenant_id,
+            'type' => $lease->type,
             'start_date' => $data['start_date'],
             'end_date' => $data['end_date'],
             'rent_amount' => $data['rent_amount'],
             'deposit_amount' => $lease->deposit_amount,
             'status' => 'active',
-            'created_by' => $request->user()->id,
+            'created_by' => $request->user()?->id,
         ]);
         $lease->update(['status' => 'renewed']);
 
-        return response()->json($newLease, 201);
+        return new LeaseResource($newLease->load(['unit.building.property', 'tenant']));
     }
 
     public function sign(Request $request, Lease $lease)
     {
         $lease->load(['unit.building.property', 'tenant']);
 
-        // The path is deterministic so re-signing replaces the document rather
-        // than accumulating timestamped copies in the bucket.
         $path = 'signed/lease_'.$lease->lease_number.'.pdf';
 
-        // Guarantee the bucket exists so signing never fails on a fresh
-        // environment. Idempotent, and a no-op against real AWS.
         try {
             S3ClientFactory::ensureBucket();
         } catch (Throwable) {
-            // Storage unreachable: keep the status transition, report below.
         }
 
         $pdf = Pdf::loadView('pdfs.lease-agreement', compact('lease'))
@@ -123,12 +149,10 @@ class LeaseController extends Controller
 
         try {
             $stored = Storage::disk('documents')->put($path, $pdf->output());
-        } catch (Throwable $e) {
+        } catch (Throwable) {
             $stored = false;
         }
 
-        // Do not activate the lease unless the signed document is durably stored,
-        // otherwise the lease would point at a document that does not exist.
         if (! $stored) {
             return response()->json([
                 'message' => 'Could not store the signed document; the lease was left unchanged.',
@@ -138,15 +162,15 @@ class LeaseController extends Controller
 
         $lease->update([
             'status' => 'active',
+            'signed_at' => now(),
             'document_path' => $path,
         ]);
 
-        return response()->json($lease->fresh());
+        return new LeaseResource($lease->fresh(['unit.building.property', 'tenant']));
     }
 
     public function document(Request $request, Lease $lease)
     {
-        $template = $request->get('template', 'default');
         $lease->load(['unit.building.property', 'tenant']);
         $pdf = Pdf::loadView('pdfs.lease-agreement', compact('lease'))
             ->setPaper('a4', 'portrait');

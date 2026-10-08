@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\LeaseResource;
+use App\Http\Resources\TenantResource;
 use App\Models\Tenant;
 use App\Models\TenantDocument;
 use App\Support\Storage\S3ClientFactory;
@@ -18,61 +20,106 @@ class TenantController extends Controller
     public function index(Request $request)
     {
         $tenants = QueryBuilder::for(Tenant::class)
+            ->withCount('leases')
             ->allowedFilters([
                 AllowedFilter::partial('first_name'),
                 AllowedFilter::partial('last_name'),
                 AllowedFilter::partial('email'),
                 AllowedFilter::exact('status'),
+                AllowedFilter::callback('search', function ($query, $value) {
+                    $query->search($value);
+                }),
             ])
-            ->allowedSorts(['first_name', 'created_at', 'email'])
+            ->allowedSorts(['first_name', 'last_name', 'created_at', 'email'])
             ->allowedIncludes(['leases', 'leases.unit', 'user'])
-            ->paginate($request->get('per_page', 15));
+            ->paginate($request->get('per_page', 15))
+            ->appends($request->query());
 
-        return response()->json($tenants);
+        return TenantResource::collection($tenants);
     }
 
     public function store(Request $request)
     {
         $data = $request->validate([
+            'code' => 'nullable|string|unique:tenants,code',
             'first_name' => 'required|string|max:100',
             'last_name' => 'required|string|max:100',
             'email' => 'required|email|unique:tenants,email',
             'phone' => 'nullable|string|max:30',
-            'company_name' => 'nullable|string|max:255',
-            'id_number' => 'nullable|string|max:50',
+            'company' => 'nullable|string|max:255',
+            'tax_id' => 'nullable|string|max:50',
             'date_of_birth' => 'nullable|date',
             'address' => 'nullable|string',
-            'status' => 'sometimes|in:active,inactive,blacklisted,prospect,former',
+            'emergency_contact_name' => 'nullable|string|max:150',
+            'emergency_contact_phone' => 'nullable|string|max:30',
+            'status' => 'sometimes|in:active,inactive,prospect,former',
             'notes' => 'nullable|string',
         ]);
-        $data['company_name'] = $data['company_name'] ?? $data['company'] ?? null;
-        $data['id_number'] = $data['id_number'] ?? $data['tax_id'] ?? null;
-        $data['status'] = $data['status'] ?? 'active';
-        if ($data['status'] === 'prospect' || $data['status'] === 'former') {
-            $data['status'] = 'inactive';
-        }
-        $tenant = Tenant::create($data);
 
-        return response()->json($tenant, 201);
+        $tenant = Tenant::create([
+            'code' => $data['code'] ?? null,
+            'first_name' => $data['first_name'],
+            'last_name' => $data['last_name'],
+            'email' => $data['email'],
+            'phone' => $data['phone'] ?? null,
+            'company_name' => $data['company'] ?? null,
+            'tax_id' => $data['tax_id'] ?? null,
+            'date_of_birth' => $data['date_of_birth'] ?? null,
+            'address' => $data['address'] ?? null,
+            'emergency_contact_name' => $data['emergency_contact_name'] ?? null,
+            'emergency_contact_phone' => $data['emergency_contact_phone'] ?? null,
+            'status' => $data['status'] ?? 'active',
+            'notes' => $data['notes'] ?? null,
+        ]);
+
+        return new TenantResource($tenant->loadCount('leases'));
     }
 
     public function show(Tenant $tenant)
     {
-        return response()->json($tenant->load(['leases.unit.building', 'leases.invoices', 'user']));
+        return new TenantResource(
+            $tenant->load(['leases.unit.building', 'leases.invoices', 'user'])->loadCount('leases')
+        );
     }
 
     public function update(Request $request, Tenant $tenant)
     {
-        $tenant->update($request->validate([
+        $data = $request->validate([
+            'code' => 'sometimes|string|unique:tenants,code,'.$tenant->id,
             'first_name' => 'sometimes|string|max:100',
             'last_name' => 'sometimes|string|max:100',
             'email' => 'sometimes|email|unique:tenants,email,'.$tenant->id,
             'phone' => 'nullable|string',
-            'status' => 'sometimes|in:active,inactive,blacklisted',
+            'company' => 'nullable|string|max:255',
+            'tax_id' => 'nullable|string|max:50',
+            'address' => 'nullable|string',
+            'emergency_contact_name' => 'nullable|string|max:150',
+            'emergency_contact_phone' => 'nullable|string|max:30',
+            'status' => 'sometimes|in:active,inactive,prospect,former',
             'notes' => 'nullable|string',
-        ]));
+        ]);
 
-        return response()->json($tenant->fresh());
+        $columns = [
+            'code' => 'code',
+            'first_name' => 'first_name',
+            'last_name' => 'last_name',
+            'email' => 'email',
+            'phone' => 'phone',
+            'company' => 'company_name',
+            'tax_id' => 'tax_id',
+            'address' => 'address',
+            'emergency_contact_name' => 'emergency_contact_name',
+            'emergency_contact_phone' => 'emergency_contact_phone',
+            'status' => 'status',
+            'notes' => 'notes',
+        ];
+
+        $tenant->fill(array_combine(
+            array_map(fn ($key) => $columns[$key], array_keys($data)),
+            array_values($data)
+        ))->save();
+
+        return new TenantResource($tenant->fresh()->loadCount('leases'));
     }
 
     public function destroy(Tenant $tenant)
@@ -86,15 +133,15 @@ class TenantController extends Controller
     {
         $leases = $tenant->leases()->with(['unit.building.property', 'invoices'])->get();
 
-        return response()->json($leases);
+        return LeaseResource::collection($leases);
     }
 
     public function documents(Request $request, Tenant $tenant)
     {
         $query = $tenant->documents()->getQuery();
 
-        // Newest first unless the caller asks for something else, so the
-        // relation itself stays ordering-agnostic.
+
+
         if (! $request->has('sort')) {
             $query->orderByDesc('created_at');
         }
@@ -111,9 +158,7 @@ class TenantController extends Controller
         return response()->json($documents);
     }
 
-    /**
-     * Upload a tenant document to object storage (Floci in dev/CI, S3 in prod).
-     */
+
     public function storeDocument(Request $request, Tenant $tenant)
     {
         $data = $request->validate([
@@ -124,12 +169,12 @@ class TenantController extends Controller
 
         $file = $request->file('file');
 
-        // Guarantee the bucket exists so a first upload never fails on a fresh
-        // environment. Idempotent, and a no-op against real AWS.
+
+
         try {
             S3ClientFactory::ensureBucket();
         } catch (Throwable) {
-            // Storage unreachable; the write below reports the real outcome.
+
         }
 
         $path = $file->store('tenants/'.$tenant->id, 'documents');
@@ -154,10 +199,7 @@ class TenantController extends Controller
         return response()->json($document, 201);
     }
 
-    /**
-     * Stream an object back through the API. Used when the disk cannot presign
-     * a URL; see TenantDocument::getUrlAttribute().
-     */
+
     public function downloadDocument(Tenant $tenant, TenantDocument $document)
     {
         abort_unless($document->tenant_id === $tenant->id, 404);
@@ -175,14 +217,14 @@ class TenantController extends Controller
     {
         abort_unless($document->tenant_id === $tenant->id, 404);
 
-        // Remove the row first: a leaked object is recoverable, an orphaned row
-        // pointing at a missing object is not.
+
+
         $document->delete();
 
         try {
             Storage::disk($document->disk)->delete($document->path);
         } catch (Throwable) {
-            // Storage unreachable — the metadata row is already gone.
+
         }
 
         return response()->json(null, 204);

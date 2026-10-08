@@ -17,14 +17,13 @@ const routes: Routes = [
       { path: 'leases', loadChildren: () => import('@features/leases/leases.module').then(m => m.LeasesModule) },
       { path: 'invoices', loadChildren: () => import('@features/invoices/invoices.module').then(m => m.InvoicesModule) },
       { path: 'lease-agreement', loadComponent: () => import('../../lease-agreement/lease-agreement').then(m => m.LeaseAgreement) },
-      { path: 'admin', canActivate: [roleGuard], data: { roles: ['admin', 'manager'] }, loadChildren: () => import('@features/dashboard/dashboard.module').then(m => m.DashboardModule) },
-      { path: 'vault-management', loadComponent: () => import('../../vault-management/vault-management').then(m => m.VaultManagement) },
-      { path: 'post-date-cheque-vault', loadComponent: () => import('../../post-date-cheque-vault/post-date-cheque-vault').then(m => m.PostDateChequeVault) },
+      { path: 'vault-management', canActivate: [roleGuard], data: { roles: ['admin', 'manager'] }, loadComponent: () => import('../../vault-management/vault-management').then(m => m.VaultManagement) },
+      { path: 'post-date-cheque-vault', canActivate: [roleGuard], data: { roles: ['admin', 'manager'] }, loadComponent: () => import('../../post-date-cheque-vault/post-date-cheque-vault').then(m => m.PostDateChequeVault) },
       { path: 'lease-renewal-engine', loadComponent: () => import('../../lease-renewal-engine/lease-renewal-engine').then(m => m.LeaseRenewalEngine) },
-      { path: 'service-charge-and-escrow', loadComponent: () => import('../../service-charge-and-escrow-management/service-charge-and-escrow-management').then(m => m.ServiceChargeAndEscrowManagement) },
-      { path: 'ejari-tawtheeq-console', loadComponent: () => import('../../ejari-tawtheeq-management-console/ejari-tawtheeq-management-console').then(m => m.EjariTawtheeqManagementConsole) },
+      { path: 'service-charge-and-escrow', canActivate: [roleGuard], data: { roles: ['admin', 'manager'] }, loadComponent: () => import('../../service-charge-and-escrow-management/service-charge-and-escrow-management').then(m => m.ServiceChargeAndEscrowManagement) },
+      { path: 'ejari-tawtheeq-console', canActivate: [roleGuard], data: { roles: ['admin', 'manager'] }, loadComponent: () => import('../../ejari-tawtheeq-management-console/ejari-tawtheeq-management-console').then(m => m.EjariTawtheeqManagementConsole) },
       { path: 'fit-out-alterations-board', loadComponent: () => import('../../fit-out-alterations-board-queue/fit-out-alterations-board-queue').then(m => m.FitOutAlterationsBoardQueue) },
-      { path: 'bounced-cheque-workflow', loadComponent: () => import('../../bounced-cheque-workflow-engine/bounced-cheque-workflow-engine').then(m => m.BouncedChequeWorkflowEngine) }
+      { path: 'bounced-cheque-workflow', canActivate: [roleGuard], data: { roles: ['admin', 'manager'] }, loadComponent: () => import('../../bounced-cheque-workflow-engine/bounced-cheque-workflow-engine').then(m => m.BouncedChequeWorkflowEngine) }
     ]
   }
 ];

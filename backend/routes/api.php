@@ -14,7 +14,6 @@ use App\Http\Controllers\Api\WhatsAppStreamController;
 use App\Http\Controllers\Api\WhatsAppWebhookController;
 use Illuminate\Support\Facades\Route;
 
-// Public
 Route::post('/auth/login', [AuthController::class, 'login']);
 Route::post('/auth/register', [AuthController::class, 'register']);
 Route::prefix('auth')->group(function () {
@@ -63,7 +62,7 @@ Route::middleware('hardcoded.token')->group(function () {
 
     Route::apiResource('payments', PaymentController::class)->only(['index', 'store', 'show']);
 
-    // WhatsApp routes
+
     Route::prefix('whatsapp')->group(function () {
         Route::get('/status', [WhatsAppController::class, 'status']);
         Route::post('/send', [WhatsAppController::class, 'send']);
@@ -74,14 +73,9 @@ Route::middleware('hardcoded.token')->group(function () {
     });
 });
 
-/*
- * The SSE stream authenticates itself via `?token=` because EventSource cannot
- * send an Authorization header, so it sits outside the hardcoded.token group
- * and performs its own credential check in the controller.
- */
 Route::get('/whatsapp/stream', [WhatsAppStreamController::class, 'stream']);
 
-Route::middleware(['auth:sanctum', 'throttle:api'])
+Route::middleware('hardcoded.token')
     ->prefix('dashboard')
     ->group(function () {
         Route::get('/stats', [DashboardController::class, 'stats']);
@@ -94,5 +88,4 @@ Route::middleware(['auth:sanctum', 'throttle:api'])
         Route::get('/property-performance/{property}', [DashboardController::class, 'propertyPerformance']);
     });
 
-// Public webhook (no auth middleware — OpenWA calls this)
 Route::post('/whatsapp/webhook', [WhatsAppWebhookController::class, 'handle']);

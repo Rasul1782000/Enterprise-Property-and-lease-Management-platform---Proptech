@@ -27,6 +27,7 @@ class PropertyController extends Controller
             ])
             ->allowedSorts(['name', 'city', 'created_at', 'total_area_sqft'])
             ->allowedIncludes(['buildings', 'buildings.units', 'manager', 'units'])
+            ->withCount('buildings')
             ->paginate($request->get('per_page', 15))
             ->appends($request->query());
 
@@ -52,9 +53,7 @@ class PropertyController extends Controller
         return new PropertyResource($property->fresh(['buildings', 'manager']));
     }
 
-    /**
-     * Upload a property photo to object storage (Floci in dev/CI, S3 in prod).
-     */
+
     public function uploadImage(Request $request, Property $property)
     {
         $request->validate([
@@ -73,7 +72,7 @@ class PropertyController extends Controller
             ], 500);
         }
 
-        // Replace the previous object rather than leaking it in the bucket.
+
         if ($property->image_path) {
             Storage::disk('documents')->delete($property->image_path);
         }
@@ -89,7 +88,7 @@ class PropertyController extends Controller
             try {
                 Storage::disk('documents')->delete($property->image_path);
             } catch (Throwable) {
-                // Deleting the row must succeed even if storage is unreachable.
+
             }
         }
 
@@ -101,9 +100,9 @@ class PropertyController extends Controller
     public function occupancy(Property $property)
     {
         $totalUnits = $property->units()->count();
-        $occupiedUnits = $property->units()->where('status', 'occupied')->count();
-        $vacantUnits = $property->units()->where('status', 'vacant')->count();
-        $maintenanceUnits = $property->units()->where('status', 'maintenance')->count();
+        $occupiedUnits = $property->units()->where('units.status', 'occupied')->count();
+        $vacantUnits = $property->units()->where('units.status', 'vacant')->count();
+        $maintenanceUnits = $property->units()->where('units.status', 'under_maintenance')->count();
         $occupancyRate = $totalUnits > 0 ? round($occupiedUnits / $totalUnits * 100, 2) : 0;
 
         return response()->json([

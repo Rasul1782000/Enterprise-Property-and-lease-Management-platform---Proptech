@@ -17,14 +17,9 @@ export class WhatsAppSseService {
   private eventSource: EventSource | null = null;
 
   newMessages = signal<InboundMessage[]>([]);
-  /**
-   * Transport-level state of the EventSource, which is NOT the same thing as
-   * whether the WhatsApp session is linked. Callers should read
-   * `sessionStatus` for the latter.
-   */
+  
   connectionStatus = signal<'connected' | 'disconnected' | 'connecting'>('disconnected');
 
-  /** Session lifecycle reported by the backend heartbeat ('ready', 'created', ...). */
   sessionStatus = signal<string>('unknown');
 
   connect(): void {
@@ -34,8 +29,6 @@ export class WhatsAppSseService {
 
     this.connectionStatus.set('connecting');
 
-    // EventSource cannot set an Authorization header, so the backend expects
-    // the token as a query parameter and authenticates the request itself.
     const token = this.readToken();
     const url = token
       ? `/api/whatsapp/stream?token=${encodeURIComponent(token)}`
@@ -48,7 +41,6 @@ export class WhatsAppSseService {
         const messages: InboundMessage[] = JSON.parse(event.data);
         this.newMessages.update((msgs) => [...msgs, ...messages]);
       } catch {
-        // A malformed frame must not kill the stream.
       }
     });
 
@@ -57,13 +49,11 @@ export class WhatsAppSseService {
         const data: HeartbeatData = JSON.parse(event.data);
         this.sessionStatus.set(data.status);
       } catch {
-        // Ignore an unreadable heartbeat.
       }
     });
 
     this.eventSource.onerror = () => {
       this.connectionStatus.set('disconnected');
-      // EventSource auto-reconnects by default
     };
 
     this.eventSource.onopen = () => {
@@ -82,11 +72,6 @@ export class WhatsAppSseService {
     this.newMessages.set([]);
   }
 
-  /**
-   * Mirrors AuthService's token lookup. Kept local rather than injecting
-   * AuthService to avoid a circular dependency (AuthService is not otherwise
-   * needed here).
-   */
   private readToken(): string | null {
     return (
       localStorage.getItem('token') || sessionStorage.getItem('token') || null

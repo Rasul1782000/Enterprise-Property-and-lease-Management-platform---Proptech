@@ -101,8 +101,6 @@ describe('WhatsAppChatComponent', () => {
   it('should distinguish an unreachable gateway from an unlinked account', () => {
     component.isConnected.set(false);
 
-    // "unknown" means the gateway never answered, which needs a different fix
-    // than "no account paired yet".
     expect(component.getConnectionTooltip()).toContain('unreachable');
 
     component['sse'].sessionStatus.set('qr_ready');
@@ -131,7 +129,6 @@ describe('WhatsAppChatComponent', () => {
       },
     ];
 
-    // Exercises the same private merge path the SSE effect calls.
     (component as unknown as { mergeInbound: (m: unknown[]) => void }).mergeInbound(inbound);
 
     expect(component.messages().length).toBe(1);

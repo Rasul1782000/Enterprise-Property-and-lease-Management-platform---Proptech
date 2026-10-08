@@ -34,10 +34,6 @@ export class ApiService {
     return this.http.post<T>(`${this.base}/${path}`, body);
   }
 
-  /**
-   * Multipart POST for file uploads. `body` must be a FormData; no
-   * Content-Type is set so the browser can add the multipart boundary.
-   */
   postForm<T>(path: string, body: FormData): Observable<T> {
     return this.http.post<T>(`${this.base}/${path}`, body);
   }

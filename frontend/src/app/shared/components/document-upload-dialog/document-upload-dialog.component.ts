@@ -10,27 +10,17 @@ import {
   formatFileSize
 } from '../../../core/constants/document-upload';
 
-/** A category a document can be filed under. */
 export interface DocumentCategoryOption {
   label: string;
   value: string;
 }
 
-/** A file the user has picked but not yet handed to the uploader. */
 export interface PickedDocument {
   file: File;
   name: string;
   category?: string;
 }
 
-/**
- * Collects one file plus an optional display name and category. Deliberately
- * knows nothing about where the file is sent: it emits the picked document and
- * lets the host own the API call, so it is reusable beyond tenants.
- *
- * Validation mirrors the backend's upload rule so obvious mistakes are caught
- * before a round trip; the backend remains the authority.
- */
 @Component({
   selector: 'app-document-upload-dialog',
   standalone: false,
@@ -43,9 +33,9 @@ export class DocumentUploadDialogComponent {
 
   @Input() header = 'Upload Document';
   @Input() submitLabel = 'Upload';
-  /** True while the host is sending the file; locks the dialog against dismissal. */
+  
   @Input() busy = false;
-  /** Empty hides the category field, and the emitted document carries no category. */
+  
   @Input() categories: DocumentCategoryOption[] = [];
   @Input() allowedExtensions: string[] = DOCUMENT_EXTENSIONS;
   @Input() maxKb = DOCUMENT_MAX_KB;
@@ -53,10 +43,9 @@ export class DocumentUploadDialogComponent {
   @Output() picked = new EventEmitter<PickedDocument>();
   @Output() cancelled = new EventEmitter<void>();
 
-  /** Set once a valid file is chosen; drives the disabled state of the submit button. */
   readonly selection = signal<PickedDocument | null>(null);
   readonly dragging = signal(false);
-  /** Message describing why the last chosen file was rejected, or null when it was accepted. */
+  
   readonly rejection = signal<string | null>(null);
 
   form: FormGroup = this.fb.group({
@@ -104,11 +93,9 @@ export class DocumentUploadDialogComponent {
   onFileInputChange(event: Event): void {
     const input = event.target as HTMLInputElement;
     this.onFilesSelected(input.files);
-    // Reset so re-picking the same file still fires a change event.
     input.value = '';
   }
 
-  /** Validates a file client-side and, when it passes, stages it for upload. */
   private stage(file: File): void {
     const extension = documentExtension(file.name);
 
@@ -140,8 +127,6 @@ export class DocumentUploadDialogComponent {
     const selected = this.selection();
     if (!selected || this.form.invalid) return;
 
-    // The name and category chosen after picking the file win over the
-    // defaults captured at selection time.
     this.picked.emit({
       file: selected.file,
       name: String(this.form.value.name ?? '').trim() || selected.file.name,

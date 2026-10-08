@@ -2,7 +2,6 @@
 
 .portal-shell { min-height: 100vh; background: var(--surface-page); }
 
-/* Keyboard users jump straight past the header. */
 .skip-link {
   position: absolute;
   top: 0;
@@ -23,7 +22,6 @@
   box-shadow: var(--shadow-lg);
 }
 
-/* ---------------------------------------------------------------- header */
 .portal-header {
   height: 72px;
   display: flex;
@@ -89,7 +87,6 @@
 
 .brand-mark i { font-size: 1rem; }
 
-/* ---------------------------------------------------------- top bar groups */
 .primary-nav {
   display: flex;
   align-items: center;
@@ -129,7 +126,6 @@
   color: var(--coral-800);
 }
 
-/* A group holding the current route stays tinted, like an active link would. */
 .group-trigger.is-active {
   color: var(--coral-700);
   font-weight: 600;
@@ -204,7 +200,6 @@
   text-overflow: ellipsis;
 }
 
-/* --------------------------------------------------------------- actions */
 .header-actions {
   display: flex;
   align-items: center;
@@ -213,7 +208,6 @@
   flex: 0 0 auto;
 }
 
-/* Compact inline promo — sized to sit inside the 72px bar. */
 .protection-card {
   display: flex;
   align-items: center;
@@ -343,7 +337,6 @@
   letter-spacing: 0.04em;
 }
 
-/* ---------------------------------------------------------------- main content */
 .portal-main {
   width: 100%;
   max-width: 1280px;
@@ -356,7 +349,6 @@
   outline: none;
 }
 
-/* ---------------------------------------------------------------- mobile drawer */
 .nav-drawer { display: none; }
 
 .scrim {
@@ -367,9 +359,8 @@
   z-index: 45;
 }
 
-/* ---------------------------------------------------------------- responsive */
 @media (max-width: 1180px) {
-  /* Promo text gives way before the nav groups do. */
+  
   .protection-text { display: none; }
 }
 
@@ -382,8 +373,6 @@
     display: inline-flex;
   }
 
-  /* The top-bar dropdowns can't be aimed with a finger, so below this
-     breakpoint the same sections render as a full-height drawer. */
   .primary-nav { display: none; }
 
   .nav-drawer {

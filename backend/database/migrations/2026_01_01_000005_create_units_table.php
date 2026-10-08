@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('units', function (Blueprint $table) {
             $table->id();
             $table->foreignId('building_id')->constrained()->cascadeOnDelete();
-            $table->string('unit_number'); // 101, A-12
+            $table->string('unit_number');
             $table->integer('floor')->default(1);
             $table->decimal('sqft', 10, 2);
             $table->integer('bedrooms')->nullable();
@@ -19,7 +19,7 @@ return new class extends Migration
             $table->decimal('rent_amount', 10, 2);
             $table->enum('unit_type', ['office', 'retail', 'apartment', 'studio', 'warehouse'])->default('office');
             $table->enum('status', ['vacant', 'occupied', 'maintenance', 'reserved'])->default('vacant');
-            $table->text('amenities')->nullable(); // json string
+            $table->text('amenities')->nullable();
             $table->text('description')->nullable();
             $table->timestamps();
             $table->softDeletes();

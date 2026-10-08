@@ -67,7 +67,7 @@ class GenerateMonthlyInvoices extends Command
                 'status' => 'pending',
             ]);
 
-            // queue email
+
             try {
                 Mail::to($lease->tenant->email)->send(new RentInvoiceMail($invoice));
                 $invoice->update(['sent_at' => now()]);

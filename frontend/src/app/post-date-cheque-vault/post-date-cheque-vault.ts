@@ -25,7 +25,6 @@ export class PostDateChequeVault extends ModulePage<PostDatedCheque> {
   statuses = STATUSES;
   onlyOverdue = signal(false);
 
-  /** Cheques whose due date has passed but which have not been cleared or replaced. */
   overdue = computed(() => this.rows().filter(c => this.isOverdue(c.due_on) && c.status !== 'cleared' && c.status !== 'replaced'));
 
   cards = computed<StatCard[]>(() => {

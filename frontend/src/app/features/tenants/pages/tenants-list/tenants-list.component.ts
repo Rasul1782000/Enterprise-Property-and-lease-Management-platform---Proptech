@@ -37,8 +37,6 @@ export class TenantsListComponent implements OnInit {
   formData = signal<TenantFormDialogData>({ mode: 'create' });
   private menuCache = new Map<number, MenuItem[]>();
 
-  /* Document upload straight from the list, so filing a document never needs
-     a detour through the tenant's detail page. */
   readonly documentCategories = TENANT_DOCUMENT_CATEGORIES;
   readonly allowedExtensions = TENANT_DOCUMENT_EXTENSIONS;
   readonly maxKb = TENANT_DOCUMENT_MAX_KB;
@@ -109,10 +107,6 @@ export class TenantsListComponent implements OnInit {
   openEditDialog(t: Tenant) { this.formData.set({ mode: 'edit', tenant: t }); this.formVisible.set(true); }
   onFormClosed(result: boolean) { this.formVisible.set(false); if (result) this.load(); }
 
-  /* ------------------------------------------------------------------ */
-  /* Document upload                                                     */
-  /* ------------------------------------------------------------------ */
-
   openUpload(t: Tenant) {
     this.uploadTarget.set(t);
     this.recentDocuments.set([]);
@@ -142,7 +136,6 @@ export class TenantsListComponent implements OnInit {
     this.router.navigate(['/tenants', t.id]);
   }
 
-  /** Label for a stored category key. */
   categoryLabel(value: string): string {
     return this.documentCategories.find(c => c.value === value)?.label ?? value;
   }

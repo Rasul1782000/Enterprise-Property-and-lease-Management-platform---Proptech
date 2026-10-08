@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('payments', function (Blueprint $table) {
             $table->id();
-            $table->string('payment_number')->unique(); // PAY-2026-00001
+            $table->string('payment_number')->unique();
             $table->foreignId('invoice_id')->constrained()->cascadeOnDelete();
             $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
             $table->decimal('amount', 10, 2);
@@ -23,7 +23,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        // queue jobs table for scheduler/queuing
+
         Schema::create('jobs', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->string('queue')->index();

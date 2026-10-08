@@ -1,39 +1,19 @@
-/**
- * Seed data for the operational modules that sit alongside the core
- * Property -> Building -> Unit -> Lease -> Invoice model:
- *
- *   - Deed / document vault
- *   - Post-dated cheque vault
- *   - Lease agreements
- *   - Lease renewal offers
- *   - Service charges & escrow
- *   - Ejari Tawtheeq (lease registration)
- *   - Fit-out & alterations board
- *   - Bounced cheque recovery workflow
- *
- * Records cross-reference the core entities by id so the module pages line up
- * with the properties / buildings / units / tenants / leases lists.
- */
-
 import { MOCK_LEASES, MOCK_PROPERTIES, MOCK_TENANTS, MOCK_UNITS } from './mock-seed';
 
 const DAY = 86400000;
 
-/** ISO timestamp offset from today by `days` (negative = past). */
 function iso(days: number, hour = 9): string {
   const d = new Date(Date.now() + days * DAY);
   d.setHours(hour, 0, 0, 0);
   return d.toISOString();
 }
 
-/** Date-only string (YYYY-MM-DD) offset from today. */
 function isoDate(days: number): string {
   return iso(days).slice(0, 10);
 }
 
 const pad = (n: number, len = 5) => String(n).padStart(len, '0');
 
-/** Core leases that are still running — the modules mostly operate on these. */
 const LIVE_LEASES = MOCK_LEASES.filter(l => l.status === 'active' || l.status === 'expired');
 const ACTIVE_PROPERTIES = MOCK_PROPERTIES.filter(p => p.status === 'active');
 const LEASABLE_UNITS = MOCK_UNITS.filter(u => u.status !== 'under_maintenance');
@@ -46,10 +26,6 @@ const tenantName = (id: number): string => {
 const tenantCompany = (id: number): string => MOCK_TENANTS.find(x => x.id === id)?.company ?? '';
 
 const propertyName = (id: number): string => MOCK_PROPERTIES.find(p => p.id === id)?.name ?? 'Unknown property';
-
-/* ================================================================== */
-/* Deed / document vault                                               */
-/* ================================================================== */
 
 export type VaultAssetType =
   | 'title_deed' | 'noc' | 'ejari_certificate' | 'lease_original'
@@ -138,10 +114,6 @@ export const MOCK_VAULT_ASSETS: VaultAssetRecord[] = (() => {
   return out;
 })();
 
-/* ================================================================== */
-/* Post-dated cheque vault                                             */
-/* ================================================================== */
-
 export type PdcStatus = 'pending' | 'deposited' | 'cleared' | 'returned' | 'replaced';
 
 export interface PostDatedChequeRecord {
@@ -204,10 +176,6 @@ export const MOCK_POST_DATED_CHEQUES: PostDatedChequeRecord[] = (() => {
   }
   return out;
 })();
-
-/* ================================================================== */
-/* Lease agreements                                                   */
-/* ================================================================== */
 
 export type AgreementStatus = 'draft' | 'sent' | 'partially_signed' | 'executed' | 'expired';
 
@@ -281,10 +249,6 @@ export const MOCK_LEASE_AGREEMENTS: LeaseAgreementRecord[] = (() => {
   }
   return out;
 })();
-
-/* ================================================================== */
-/* Lease renewal engine                                                */
-/* ================================================================== */
 
 export type RenewalStatus = 'draft' | 'sent' | 'under_negotiation' | 'accepted' | 'declined' | 'expired';
 
@@ -360,10 +324,6 @@ export const MOCK_LEASE_RENEWALS: LeaseRenewalRecord[] = (() => {
   }
   return out;
 })();
-
-/* ================================================================== */
-/* Service charges & escrow                                            */
-/* ================================================================== */
 
 export type ServiceChargeStatus = 'draft' | 'issued' | 'partially_paid' | 'paid' | 'closed';
 
@@ -491,10 +451,6 @@ export const MOCK_ESCROW_ACCOUNTS: EscrowAccountRecord[] = ACTIVE_PROPERTIES.map
   };
 });
 
-/* ================================================================== */
-/* Ejari Tawtheeq registration console                                */
-/* ================================================================== */
-
 export type EjariStatus = 'draft' | 'submitted' | 'registered' | 'rejected' | 'cancelled';
 export type EjariType = 'new' | 'renewal' | 'amendment' | 'termination';
 
@@ -564,10 +520,6 @@ export const MOCK_EJARI_CONTRACTS: EjariRecord[] = (() => {
   }
   return out;
 })();
-
-/* ================================================================== */
-/* Fit-out & alterations board                                         */
-/* ================================================================== */
 
 export type PermitStatus = 'not_submitted' | 'under_review' | 'approved' | 'rejected' | 'expired';
 export type NocStatus = 'pending' | 'inspection_scheduled' | 'noc_issued' | 'noc_rejected';
@@ -652,10 +604,6 @@ export const MOCK_FIT_OUT_REQUESTS: FitOutRequestRecord[] = (() => {
   }
   return out;
 })();
-
-/* ================================================================== */
-/* Bounced cheque workflow engine                                      */
-/* ================================================================== */
 
 export type BounceReason =
   | 'insufficient_funds' | 'account_closed' | 'signature_mismatch'

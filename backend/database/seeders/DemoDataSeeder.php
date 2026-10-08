@@ -17,12 +17,12 @@ class DemoDataSeeder extends Seeder
 {
     public function run(): void
     {
-        // Users
+
         $admin = User::create(['name' => 'Admin', 'email' => 'admin@propertylease.test', 'password' => Hash::make('password'), 'role' => 'admin']);
         $manager = User::create(['name' => 'Sarah Manager', 'email' => 'manager@propertylease.test', 'password' => Hash::make('password'), 'role' => 'manager']);
         $accountant = User::create(['name' => 'Alex Accountant', 'email' => 'accountant@propertylease.test', 'password' => Hash::make('password'), 'role' => 'accountant']);
 
-        // Tenants + tenant users
+
         $tenants = collect();
         foreach (range(1, 12) as $i) {
             $t = Tenant::create([
@@ -34,12 +34,12 @@ class DemoDataSeeder extends Seeder
                 'id_number' => 'ID'.str_pad($i, 6, '0', STR_PAD_LEFT),
                 'status' => 'active',
             ]);
-            // tenant portal user
+
             User::create(['name' => $t->full_name, 'email' => $t->email, 'password' => Hash::make('password'), 'role' => 'tenant', 'tenant_id' => $t->id]);
             $tenants->push($t);
         }
 
-        // Properties
+
         $properties = collect();
         $cities = ['New York', 'Austin', 'San Francisco', 'Chicago'];
         foreach (range(1, 4) as $i) {
@@ -59,7 +59,7 @@ class DemoDataSeeder extends Seeder
             ]);
             $properties->push($prop);
 
-            // Buildings per property
+
             $buildingCount = rand(1, 3);
             foreach (range(1, $buildingCount) as $b) {
                 $building = Building::create([
@@ -71,7 +71,7 @@ class DemoDataSeeder extends Seeder
                     'description' => fake()->sentence(),
                 ]);
 
-                // Units per building
+
                 $unitCount = rand(6, 12);
                 foreach (range(1, $unitCount) as $u) {
                     Unit::create([
@@ -89,7 +89,7 @@ class DemoDataSeeder extends Seeder
             }
         }
 
-        // Leases + Invoices + Payments
+
         $units = Unit::inRandomOrder()->take(10)->get();
         foreach ($units as $idx => $unit) {
             $tenant = $tenants[$idx];
@@ -108,7 +108,7 @@ class DemoDataSeeder extends Seeder
             ]);
             $unit->update(['status' => 'occupied']);
 
-            // Generate 3 months invoices backward
+
             foreach (range(0, 2) as $m) {
                 $periodStart = now()->subMonths($m)->startOfMonth();
                 $periodEnd = now()->subMonths($m)->endOfMonth();

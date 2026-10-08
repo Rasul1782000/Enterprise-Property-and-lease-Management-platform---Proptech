@@ -8,15 +8,15 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // Metadata rows for the objects themselves, which live on the
-        // "documents" disk (Floci in dev/CI, S3 in production).
+
+
         Schema::create('tenant_documents', function (Blueprint $table) {
             $table->id();
             $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
-            $table->string('name');                  // display name, defaults to the file name
+            $table->string('name');
             $table->string('category')->default('other');
             $table->string('disk')->default('documents');
-            $table->string('path');                  // object key on the disk
+            $table->string('path');
             $table->string('mime_type')->nullable();
             $table->unsignedBigInteger('size_kb')->default(0);
             $table->foreignId('uploaded_by')->nullable()->constrained('users')->nullOnDelete();

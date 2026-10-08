@@ -16,11 +16,6 @@ import { mockApiInterceptor } from './core/mock/mock-api.interceptor';
 import { SharedModule } from './shared/shared.module';
 import { AppComponent } from './app.component';
 
-/**
- * BounceBox preset: coral drives primary action, teal supports and confirms,
- * sunshine yellow is reserved for rewards. Everything else is re-pointed in
- * styles.scss, which loads after PrimeNG injects its theme stylesheet.
- */
 const PortalPreset = definePreset(Aura, {
   semantic: {
     primary: {
@@ -39,10 +34,6 @@ const PortalPreset = definePreset(Aura, {
   }
 });
 
-/*
- * The remaining severity scales (success / info / warn / danger / secondary) are
- * re-pointed in styles.scss, which loads after PrimeNG injects the theme stylesheet.
- */
 @NgModule({
   declarations: [AppComponent],
   imports: [BrowserModule, SharedModule],

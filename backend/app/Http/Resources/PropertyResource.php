@@ -18,15 +18,19 @@ class PropertyResource extends JsonResource
             'city' => $this->city,
             'state' => $this->state,
             'zip' => $this->zip,
+            'country' => $this->country,
             'status' => $this->status,
-            'total_area_sqft' => $this->total_area_sqft,
+            'total_area_sqft' => (float) $this->total_area_sqft,
             'year_built' => $this->year_built,
             'occupancy_rate' => $this->when(! is_null($this->occupancy_rate), $this->occupancy_rate),
             'manager' => $this->whenLoaded('manager'),
             'buildings' => $this->whenLoaded('buildings'),
             'buildings_count' => $this->whenCounted('buildings'),
             'units_count' => $this->when(isset($this->units_count), $this->units_count),
+            'image_path' => $this->image_path,
+            'description' => $this->description,
             'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
         ];
     }
 }

@@ -19,12 +19,7 @@ class WhatsAppService
         $this->sessionId = config('services.openwa.session_id', '');
     }
 
-    /**
-     * Send a text message to a phone number.
-     *
-     * @return array{messageId: string, status: string}
-     * @throws \Exception
-     */
+
     public function sendText(string $phone, string $message): array
     {
         $response = $this->request('POST', "/api/sessions/{$this->sessionId}/messages/send-text", [
@@ -35,12 +30,7 @@ class WhatsAppService
         return $response;
     }
 
-    /**
-     * Send a document (PDF, image, etc.) to a phone number.
-     *
-     * @return array{messageId: string, status: string}
-     * @throws \Exception
-     */
+
     public function sendDocument(string $phone, string $documentPath, string $caption = ''): array
     {
         $response = Http::withHeaders([
@@ -65,21 +55,13 @@ class WhatsAppService
         return $response->json();
     }
 
-    /**
-     * Get the current session status.
-     *
-     * @return array<string, mixed>
-     */
+
     public function getSessionStatus(): array
     {
         return $this->request('GET', "/api/sessions/{$this->sessionId}");
     }
 
-    /**
-     * Get chat history for a given phone number.
-     *
-     * @return array{messages: array<int, array<string, mixed>>}
-     */
+
     public function getChatHistory(string $phone, int $limit = 50): array
     {
         $chatId = $this->formatChatId($phone);
@@ -90,27 +72,19 @@ class WhatsAppService
         ]);
     }
 
-    /**
-     * Get the QR code for session linking.
-     *
-     * @return array{qrCode: string, status: string}
-     */
+
     public function getQrCode(): array
     {
         return $this->request('GET', "/api/sessions/{$this->sessionId}/qr");
     }
 
-    /**
-     * Start the WhatsApp session.
-     */
+
     public function startSession(): array
     {
         return $this->request('POST', "/api/sessions/{$this->sessionId}/start");
     }
 
-    /**
-     * Create a new WhatsApp session.
-     */
+
     public function createSession(string $name): array
     {
         return $this->request('POST', '/api/sessions', [
@@ -118,19 +92,13 @@ class WhatsAppService
         ]);
     }
 
-    /**
-     * List all WhatsApp sessions.
-     *
-     * @return array<int, array<string, mixed>>
-     */
+
     public function listSessions(): array
     {
         return $this->request('GET', '/api/sessions');
     }
 
-    /**
-     * Format a phone number to WhatsApp JID (e.g., 971501234567@c.us).
-     */
+
     public function formatChatId(string $phone): string
     {
         $cleaned = preg_replace('/[^0-9]/', '', $phone);
@@ -138,12 +106,7 @@ class WhatsAppService
         return "{$cleaned}@c.us";
     }
 
-    /**
-     * Make an authenticated request to the OpenWA API.
-     *
-     * @return array<string, mixed>
-     * @throws \Exception
-     */
+
     protected function request(string $method, string $path, array $data = []): array
     {
         $url = $this->baseUrl.$path;

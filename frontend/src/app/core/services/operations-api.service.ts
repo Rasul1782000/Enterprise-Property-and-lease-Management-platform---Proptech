@@ -105,11 +105,6 @@ export interface ModuleStats {
   [key: string]: any;
 }
 
-/**
- * Generic access layer for the operational modules. Every module follows the same
- * list / detail / stats / workflow-action contract, so one service covers them all
- * while still giving each page a typed record shape.
- */
 @Injectable({ providedIn: 'root' })
 export class OperationsApiService {
   constructor(private api: ApiService) {}
@@ -138,12 +133,10 @@ export class OperationsApiService {
     return this.api.delete<void>(`${endpoint}/${id}`);
   }
 
-  /** Fire a workflow transition, e.g. `run('bounced-cheques', 12, 'escalate')`. */
   run<T>(endpoint: string, id: number, action: string, payload: Record<string, any> = {}): Observable<T> {
     return this.api.post<T>(`${endpoint}/${id}/${action}`, payload);
   }
 
-  /* Convenience wrappers so page templates read cleanly. */
   vaultAssets(params?: ApiParams) { return this.list<VaultAsset>('vault-assets', params); }
   postDatedCheques(params?: ApiParams) { return this.list<PostDatedCheque>('post-dated-cheques', params); }
   leaseAgreements(params?: ApiParams) { return this.list<LeaseAgreement>('lease-agreements', params); }

@@ -44,14 +44,8 @@ type Any = any;
 
 const DAY = 86400000;
 
-/** ISO date (YYYY-MM-DD) for "today" — the default for workflow transitions. */
 const today = (): string => new Date().toISOString().slice(0, 10);
 
-/* ------------------------------------------------------------------ */
-/* Operational module registry                                         */
-/* ------------------------------------------------------------------ */
-
-/** Endpoint -> MockDb collection, for the UAE-specific operational modules. */
 const MODULE_ENDPOINTS: Record<string, string> = {
   'vault-assets': 'vaultAssets',
   'post-dated-cheques': 'postDatedCheques',
@@ -64,18 +58,15 @@ const MODULE_ENDPOINTS: Record<string, string> = {
   'bounced-cheques': 'bouncedCheques'
 };
 
-/** Field holding the status each module groups and filters by. */
 const MODULE_STATUS_FIELD: Record<string, string> = {
   'fit-out-requests': 'permit_status',
   'bounced-cheques': 'stage'
 };
 
-/** Extra status field rolled up alongside the primary one, prefixed in the counts. */
 const MODULE_SECONDARY_STATUS: Record<string, string> = {
   'fit-out-requests': 'noc_status'
 };
 
-/** Statuses that count as "needs attention" on the module's stat cards. */
 const MODULE_ATTENTION: Record<string, string[]> = {
   'vault-assets': ['expired', 'released'],
   'post-dated-cheques': ['returned', 'pending'],
@@ -88,7 +79,6 @@ const MODULE_ATTENTION: Record<string, string[]> = {
   'bounced-cheques': ['new', 'notified', 'promise_to_pay', 'partially_recovered', 'escalated', 'legal_action']
 };
 
-/** Numeric fields summed into each module's stat payload. */
 const MODULE_SUM_FIELDS: Record<string, string[]> = {
   'vault-assets': ['value'],
   'post-dated-cheques': ['amount'],
@@ -101,7 +91,6 @@ const MODULE_SUM_FIELDS: Record<string, string[]> = {
   'bounced-cheques': ['amount', 'recovered_amount', 'outstanding']
 };
 
-/** Workflow transitions each module exposes as `POST /{endpoint}/{id}/{action}`. */
 const MODULE_ACTIONS: Record<string, Record<string, (record: Any, body: Any) => Any>> = {
   'vault-assets': {
     release: () => ({ status: 'released', notes: 'Released to the holder on request.' }),
@@ -179,11 +168,6 @@ const MODULE_ACTIONS: Record<string, Record<string, (record: Any, body: Any) => 
   }
 };
 
-/**
- * In-memory stand-in for the REST API. Holds mutable copies of the seed data and
- * implements just enough of the backend contract (list filters, sorting,
- * pagination, nested `include`) for every page to render meaningful content.
- */
 export class MockDb {
   properties: PropertyRecord[] = structuredClone(MOCK_PROPERTIES);
   buildings: BuildingRecord[] = structuredClone(MOCK_BUILDINGS);
@@ -194,7 +178,6 @@ export class MockDb {
   invoices: InvoiceRecord[] = structuredClone(MOCK_INVOICES);
   payments: PaymentRecord[] = structuredClone(MOCK_PAYMENTS);
 
-  /* Operational modules — see MODULE_ENDPOINTS for the endpoint mapping. */
   vaultAssets: VaultAssetRecord[] = structuredClone(MOCK_VAULT_ASSETS);
   postDatedCheques: PostDatedChequeRecord[] = structuredClone(MOCK_POST_DATED_CHEQUES);
   leaseAgreements: LeaseAgreementRecord[] = structuredClone(MOCK_LEASE_AGREEMENTS);
@@ -210,10 +193,6 @@ export class MockDb {
     return list.reduce((m, r) => Math.max(m, Number(r.id) || 0), 0) + 1;
   }
 
-  /* ------------------------------------------------------------------ */
-  /* Router                                                              */
-  /* ------------------------------------------------------------------ */
-
   handle(req: HttpRequest<Any>): Observable<HttpEvent<Any>> | null {
     const path = this.pathOf(req);
     const method = req.method.toUpperCase();
@@ -225,7 +204,6 @@ export class MockDb {
     const noContent = () => of(new HttpResponse({ status: 204, body: null }) as unknown as HttpEvent<Any>);
     const notFound = () => throwError(() => ({ status: 404, error: { message: 'Resource not found' } }));
 
-    /* ------------------------------ auth ----------------------------- */
     if (path === 'auth/login' && method === 'POST') {
       const email = String(body.email || '').toLowerCase();
       const user = MOCK_USERS.find(u => u.email === email) ?? MOCK_USERS[0];
@@ -237,7 +215,6 @@ export class MockDb {
       return created({ user: { ...MOCK_USERS[0], email: body.email }, token: 'mock-jwt-token' });
     }
 
-    /* ---------------------------- dashboard -------------------------- */
     if (path === 'dashboard/stats') return send(this.dashboardStats());
     if (path === 'dashboard/recent-activity') return send(this.recentActivity(Number(req.params.get('limit')) || 10));
     if (path === 'dashboard/occupancy-chart') return send(this.occupancyChart());
@@ -247,7 +224,6 @@ export class MockDb {
       return send(this.propertyPerformance(Number(path.split('/').pop())) ?? null);
     }
 
-    /* ---------------------------- properties ------------------------- */
     if (path === 'properties' && method === 'GET') return send(this.listProperties(req));
     if (path === 'properties' && method === 'POST') {
       const record = this.store('properties', body, (r, id) => ({
@@ -272,7 +248,6 @@ export class MockDb {
       }
     }
 
-    /* ----------------------------- buildings ------------------------- */
     if (path === 'buildings' && method === 'GET') return send(this.listBuildings(req));
     if (path === 'buildings' && method === 'POST') {
       const record = this.store('buildings', body, (r, id) => {
@@ -298,7 +273,6 @@ export class MockDb {
       }
     }
 
-    /* ------------------------------- units --------------------------- */
     if (path === 'units' && method === 'GET') return send(this.listUnits(req));
     if (path === 'units' && method === 'POST') {
       const record = this.store('units', body, (r, id) => this.decorateUnit({
@@ -323,7 +297,6 @@ export class MockDb {
       }
     }
 
-    /* ------------------------------ tenants -------------------------- */
     if (path === 'tenants' && method === 'GET') return send(this.listTenants(req));
     if (path === 'tenants' && method === 'POST') {
       const record = this.store('tenants', body, (r, id) => ({
@@ -339,7 +312,6 @@ export class MockDb {
       const record = this.tenants.find(t => t.id === id);
       if (!record) return notFound();
 
-      /* Documents live under /tenants/{id}/documents[/{docId}][/download]. */
       if (tail[0] === 'documents') {
         if (method === 'POST' && tail.length === 1) return this.addTenantDocument(id, req.body);
         if (method === 'GET' && tail.length === 1) {
@@ -348,7 +320,6 @@ export class MockDb {
           if (category) rows = rows.filter(d => d.category === category);
           const term = req.params.get('search')?.toLowerCase();
           if (term) rows = rows.filter(d => d.name.toLowerCase().includes(term));
-          // Newest first unless a sort is requested, matching the backend.
           const sorted = req.params.get('sort')
             ? this.applySort(rows, req)
             : [...rows].sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
@@ -358,7 +329,6 @@ export class MockDb {
         const doc = this.tenantDocuments.find(d => d.id === docId && d.tenant_id === id);
         if (!doc) return notFound();
         if (method === 'GET' && tail[2] === 'download') {
-          // Returned unwrapped: `send()` would wrap the Blob in a second response.
           return of(new HttpResponse({
             status: 200,
             body: new Blob([`Mock content for ${doc.name}`], { type: doc.mime_type ?? 'application/octet-stream' })
@@ -380,7 +350,6 @@ export class MockDb {
       }
     }
 
-    /* ------------------------------- leases -------------------------- */
     if (path === 'leases' && method === 'GET') return send(this.listLeases(req));
     if (path === 'leases' && method === 'POST') {
       const record = this.store('leases', body, (r, id) => this.decorateLease({
@@ -428,7 +397,6 @@ export class MockDb {
       }
     }
 
-    /* ------------------------------ invoices ------------------------- */
     if (path === 'invoices' && method === 'GET') return send(this.listInvoices(req));
     if (path === 'invoices/bulk-generate' && method === 'POST') {
       const createdLeases: InvoiceRecord[] = (body.lease_ids ?? []).map((leaseId: number, i: number) => {
@@ -515,7 +483,6 @@ export class MockDb {
       }
     }
 
-    /* ---------------------- operational modules ---------------------- */
     const statsMatch = path.match(/^([a-z-]+)\/stats$/);
     if (statsMatch) {
       const entity = MODULE_ENDPOINTS[statsMatch[1]];
@@ -559,15 +526,6 @@ export class MockDb {
     return null;
   }
 
-  /* ------------------------------------------------------------------ */
-  /* Stores & helpers                                                    */
-  /* ------------------------------------------------------------------ */
-
-  /**
-   * Record an uploaded tenant document. Mirrors the backend's
-   * POST /tenants/{id}/documents, including the multipart payload: the file
-   * itself is not kept, only the metadata the API returns.
-   */
   private addTenantDocument(tenantId: number, body: Any): Observable<HttpEvent<Any>> {
     const form = body instanceof FormData ? body : null;
     const file = form?.get('file');
@@ -610,7 +568,6 @@ export class MockDb {
     return record;
   }
 
-  /** Merge `payload` into an existing record, keeping its id and stamping `updated_at`. */
   private update(entity: string, id: number, payload: Any): Any {
     const rows = (this as Any)[entity] as Any[];
     const index = rows.findIndex(r => r.id === id);
@@ -619,11 +576,6 @@ export class MockDb {
     return rows[index];
   }
 
-  /**
-   * Resource path for a request, e.g. `bounced-cheques/12/escalate` for
-   * `http://localhost:8000/api/bounced-cheques/12/escalate`. The origin and the
-   * API base segment are dropped so the router can match on the path alone.
-   */
   private pathOf(req: HttpRequest<Any>): string {
     const withoutOrigin = req.url.split('?')[0].replace(/^[a-z][a-z0-9+.-]*:\/\/[^/]*/i, '');
     const segments = withoutOrigin.split('/').filter(Boolean);
@@ -774,10 +726,6 @@ export class MockDb {
     return this.paginate(rows, req);
   }
 
-  /**
-   * Stat payload for a module, derived from the live collection so edits made in
-   * the UI are reflected in the cards immediately.
-   */
   private moduleStats(key: string, entity: string) {
     const rows = (this as Any)[entity] as Any[];
     const statusField = MODULE_STATUS_FIELD[key] ?? 'status';
@@ -795,7 +743,6 @@ export class MockDb {
     const by_status = count(statusField);
     const secondary = MODULE_SECONDARY_STATUS[key];
     if (secondary) {
-      // `noc_status` values already read `noc_issued`, so only prefix when needed.
       const prefix = secondary.split('_')[0];
       Object.assign(by_status, count(secondary, (value) => (value.startsWith(`${prefix}_`) ? '' : prefix)));
     }
@@ -832,10 +779,6 @@ export class MockDb {
     const lines = rows.map(r => columns.map(c => `"${String((r as Any)[c] ?? '').replace(/"/g, '""')}"`).join(','));
     return [header, ...lines].join('\n');
   }
-
-  /* ------------------------------------------------------------------ */
-  /* Dashboard aggregations                                              */
-  /* ------------------------------------------------------------------ */
 
   private daysUntil(date: string): number {
     return Math.round((new Date(date).getTime() - Date.now()) / DAY);

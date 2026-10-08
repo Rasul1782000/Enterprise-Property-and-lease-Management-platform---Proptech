@@ -60,7 +60,6 @@ export class WhatsAppChatComponent implements OnInit, OnDestroy {
   private api = inject(ApiService);
   private sse = inject(WhatsAppSseService);
 
-  // State
   conversations = signal<Conversation[]>([]);
   activeConversation = signal<Conversation | null>(null);
   messages = signal<ChatMessage[]>([]);
@@ -70,13 +69,8 @@ export class WhatsAppChatComponent implements OnInit, OnDestroy {
   searchQuery = signal('');
   loadError = signal<string | null>(null);
 
-  /**
-   * Inbound messages pushed over SSE, newest last. Drained on arrival and
-   * merged into the active conversation's thread.
-   */
   private pendingInbound = signal<InboundMessage[]>([]);
 
-  // Computed
   filteredConversations = computed(() => {
     const query = this.searchQuery().toLowerCase();
     if (!query) return this.conversations();
@@ -92,7 +86,6 @@ export class WhatsAppChatComponent implements OnInit, OnDestroy {
     this.loadConversations();
     this.sse.connect();
 
-    // Drain inbound messages as they arrive and fold them into the open thread.
     effect(() => {
       const incoming = this.sse.newMessages();
       if (incoming.length === 0) {
@@ -107,10 +100,6 @@ export class WhatsAppChatComponent implements OnInit, OnDestroy {
     this.sse.disconnect();
   }
 
-  /**
-   * Normalise an OpenWA JID ("971501234567@c.us") or a bare phone number down to
-   * comparable digits so an inbound sender can be matched to a conversation.
-   */
   private normalizePhone(value: string): string {
     const local = value.split('@')[0] ?? '';
     return local.replace(/[^0-9]/g, '');
@@ -142,7 +131,6 @@ export class WhatsAppChatComponent implements OnInit, OnDestroy {
 
     this.messages.update((msgs) => [...msgs, ...mapped]);
 
-    // Surface the newest inbound text on the conversation row.
     const latest = mapped[mapped.length - 1];
     this.conversations.update((convs) =>
       convs.map((c) =>
@@ -158,9 +146,6 @@ export class WhatsAppChatComponent implements OnInit, OnDestroy {
     );
   }
 
-  /**
-   * Check if WhatsApp session is connected
-   */
   async checkConnection(): Promise<void> {
     try {
       const res = await firstValueFrom(
@@ -172,12 +157,7 @@ export class WhatsAppChatComponent implements OnInit, OnDestroy {
     }
   }
 
-  /**
-   * Load conversation list (from tenants)
-   */
   async loadConversations(): Promise<void> {
-    // TODO: Fetch from /api/tenants and map to conversations
-    // For now, using mock data for demonstration
     this.conversations.set([
       {
         id: '1',
@@ -206,9 +186,6 @@ export class WhatsAppChatComponent implements OnInit, OnDestroy {
     ]);
   }
 
-  /**
-   * Load chat history for selected conversation
-   */
   async loadMessages(conversation: Conversation): Promise<void> {
     this.isLoading.set(true);
     this.activeConversation.set(conversation);
@@ -221,7 +198,6 @@ export class WhatsAppChatComponent implements OnInit, OnDestroy {
           limit: 50,
         })
       );
-      // Oldest first so the thread reads top-to-bottom.
       this.messages.set(
         (res.messages ?? []).slice().sort(
           (a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp)
@@ -235,16 +211,12 @@ export class WhatsAppChatComponent implements OnInit, OnDestroy {
     }
   }
 
-  /**
-   * Send a message
-   */
   async sendMessage(): Promise<void> {
     const text = this.newMessage().trim();
     const conversation = this.activeConversation();
 
     if (!text || !conversation) return;
 
-    // Optimistic UI update
     const tempMessage: ChatMessage = {
       id: `temp-${Date.now()}`,
       from: 'me',
@@ -264,8 +236,6 @@ export class WhatsAppChatComponent implements OnInit, OnDestroy {
         })
       );
     } catch {
-      // Roll the optimistic bubble back rather than leaving a message on
-      // screen that was never handed to WhatsApp.
       this.messages.update((msgs) =>
         msgs.filter((m) => m.id !== tempMessage.id)
       );
@@ -273,9 +243,6 @@ export class WhatsAppChatComponent implements OnInit, OnDestroy {
     }
   }
 
-  /**
-   * Format timestamp for display
-   */
   formatTime(dateStr: string): string {
     const date = new Date(dateStr);
     const now = new Date();
@@ -294,9 +261,6 @@ export class WhatsAppChatComponent implements OnInit, OnDestroy {
     });
   }
 
-  /**
-   * Get message status icon class
-   */
   getStatusIcon(status?: string): string {
     switch (status) {
       case 'read':
@@ -310,24 +274,14 @@ export class WhatsAppChatComponent implements OnInit, OnDestroy {
     }
   }
 
-  /**
-   * Get connection status tag severity
-   */
   getConnectionSeverity(): 'success' | 'danger' {
     return this.isConnected() ? 'success' : 'danger';
   }
 
-  /**
-   * Get connection status label
-   */
   getConnectionLabel(): string {
     return this.isConnected() ? 'Connected' : 'Disconnected';
   }
 
-  /**
-   * Explain *why* it is disconnected. "No session" and "gateway unreachable"
-   * need different actions, so they must not collapse to one generic string.
-   */
   getConnectionTooltip(): string {
     if (this.isConnected()) {
       return 'WhatsApp session is linked and ready to send.';

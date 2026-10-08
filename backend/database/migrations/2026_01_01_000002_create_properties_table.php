@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('properties', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('code')->unique(); // e.g. PROP-001
+            $table->string('code')->unique();
             $table->enum('type', ['commercial', 'multi_family', 'mixed_use'])->default('commercial');
             $table->string('address');
             $table->string('city');

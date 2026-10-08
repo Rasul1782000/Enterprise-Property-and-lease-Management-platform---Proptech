@@ -8,45 +8,32 @@ export type TagSeverity = 'success' | 'info' | 'warn' | 'danger' | 'secondary' |
 
 const EMPTY_STATS: ModuleStats = { total: 0, attention: 0, by_status: {} };
 
-/** Statuses that read as healthy/closed across every module. */
 const SEVERITY: Record<string, TagSeverity> = {
-  // shared
   active: 'success', paid: 'success', executed: 'success', registered: 'success',
   approved: 'success', noc_issued: 'success', recovered: 'success', cleared: 'success',
-  // neutral / in flight
   draft: 'secondary', sent: 'info', submitted: 'info', deposited: 'info',
   notified: 'info', promise_to_pay: 'info', inspection_scheduled: 'info',
   under_review: 'info', under_negotiation: 'info', partially_signed: 'info',
   partially_recovered: 'info', reservation: 'info',
-  // needs a look
   pending: 'warn', sealed: 'warn', reserved: 'warn', issued: 'warn',
   partially_paid: 'warn', new: 'warn', not_submitted: 'warn', returned: 'warn',
   replaced: 'warn', expired: 'warn', escalated: 'warn',
-  // bad
   overdue: 'danger', rejected: 'danger', bounced: 'danger', noc_rejected: 'danger',
   legal_action: 'danger', frozen: 'danger', written_off: 'danger',
   terminated: 'secondary', released: 'secondary', closed: 'secondary', cancelled: 'secondary',
   declined: 'secondary'
 };
 
-/**
- * Shared plumbing for the operational module pages: list state, server-side
- * paging / sorting / search, stat cards and the workflow-action runner. Each
- * page supplies its `endpoint` plus any module-specific columns and actions.
- */
 @Directive()
 export abstract class ModulePage<T extends { id: number }> implements OnInit {
   protected readonly api = inject(OperationsApiService);
   protected readonly messages = inject(MessageService);
   protected readonly confirmation = inject(ConfirmationService);
 
-  /** API resource this page reads from, e.g. `bounced-cheques`. */
   abstract readonly endpoint: string;
 
-  /** `Math` is not exposed to templates by default, but pages need `Math.abs`/`Math.round`. */
   protected readonly Math = Math;
 
-  /** Default sort column; override in a subclass when the API expects another field. */
   protected defaultSort = 'id';
 
   rows = signal<T[]>([]);
@@ -61,7 +48,7 @@ export abstract class ModulePage<T extends { id: number }> implements OnInit {
 
   searchTerm = '';
   statusFilter: string | null = null;
-  /** Module-specific filters merged into the request params, keyed by API field name. */
+  
   filters: Record<string, any> = {};
 
   ngOnInit(): void {
@@ -69,7 +56,6 @@ export abstract class ModulePage<T extends { id: number }> implements OnInit {
     this.reload();
   }
 
-  /** Re-fetch rows and stats — call after any action that mutates data. */
   reload(): void {
     this.load();
     this.loadStats();
@@ -113,8 +99,6 @@ export abstract class ModulePage<T extends { id: number }> implements OnInit {
     return params;
   }
 
-  /* ------------------------------ table events ------------------------------ */
-
   onLazyLoad(event: any): void {
     if (event?.sortField) {
       this.sort = event.field;
@@ -146,9 +130,6 @@ export abstract class ModulePage<T extends { id: number }> implements OnInit {
     this.load();
   }
 
-  /* -------------------------------- actions -------------------------------- */
-
-  /** Run a workflow transition and refresh the page. */
   act(row: T, action: string, detail: string, payload: Record<string, any> = {}): void {
     this.api.run<T>(this.endpoint, row.id, action, payload).subscribe({
       next: () => {
@@ -159,7 +140,6 @@ export abstract class ModulePage<T extends { id: number }> implements OnInit {
     });
   }
 
-  /** Confirm, then send a generic PATCH to the record. */
   patch(row: T, payload: Record<string, any>, detail: string): void {
     this.api.update<T>(this.endpoint, row.id, payload as Partial<T>).subscribe({
       next: () => {
@@ -188,8 +168,6 @@ export abstract class ModulePage<T extends { id: number }> implements OnInit {
       }
     });
   }
-
-  /* ------------------------------ formatting ------------------------------- */
 
   money(value: any, currency = 'AED'): string {
     const n = Number(value || 0);
@@ -230,14 +208,10 @@ export abstract class ModulePage<T extends { id: number }> implements OnInit {
     return !!value && new Date(value).getTime() < Date.now();
   }
 
-  /* ----------------------------- stat helpers ----------------------------- */
-
-  /** Count for a status key, tolerating the `noc_`-style prefixed rollups. */
   count(status: string): number {
     return Number(this.stats().by_status?.[status] ?? 0);
   }
 
-  /** Stat cards derived from the module's `/stats` payload. */
   protected card(label: string, value: string | number, icon: string, tone: StatCard['tone'], hint?: string): StatCard {
     return { label, value, icon, tone, hint };
   }

@@ -11,7 +11,7 @@ class TenantDocument extends Model
 {
     use HasFactory;
 
-    /** Files the portal accepts for a tenant document, keyed by the stored category. */
+
     public const CATEGORIES = [
         'id_document',
         'lease_agreement',
@@ -42,11 +42,7 @@ class TenantDocument extends Model
         return $this->belongsTo(User::class, 'uploaded_by');
     }
 
-    /**
-     * A time-limited link straight to the object, so the browser never has to
-     * proxy the bytes through the API. Falls back to a proxying API route when
-     * the disk cannot presign (a local disk, or S3 without the SDK).
-     */
+
     public function getUrlAttribute(): string
     {
         try {
@@ -59,7 +55,7 @@ class TenantDocument extends Model
         }
     }
 
-    /** Lower-cased extension without the dot, e.g. `pdf`. */
+
     public function getExtensionAttribute(): string
     {
         return strtolower(pathinfo($this->path, PATHINFO_EXTENSION));

@@ -3,19 +3,28 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Invoice;
+use App\Http\Resources\PaymentResource;
 use App\Models\Payment;
 use Illuminate\Http\Request;
+use Spatie\QueryBuilder\AllowedFilter;
+use Spatie\QueryBuilder\QueryBuilder;
 
 class PaymentController extends Controller
 {
     public function index(Request $request)
     {
-        return response()->json(
-            Payment::with(['invoice', 'tenant'])
-                ->when($request->invoice_id, fn ($q, $id) => $q->where('invoice_id', $id))
-                ->latest()->paginate($request->get('per_page', 15))
-        );
+        $payments = QueryBuilder::for(Payment::class)
+            ->with(['invoice', 'tenant'])
+            ->allowedFilters([
+                AllowedFilter::exact('invoice_id'),
+                AllowedFilter::exact('tenant_id'),
+                AllowedFilter::exact('method'),
+            ])
+            ->allowedSorts(['paid_at', 'amount', 'created_at'])
+            ->paginate($request->get('per_page', 15))
+            ->appends($request->query());
+
+        return PaymentResource::collection($payments);
     }
 
     public function store(Request $request)
@@ -23,23 +32,30 @@ class PaymentController extends Controller
         $data = $request->validate([
             'invoice_id' => 'required|exists:invoices,id',
             'amount' => 'required|numeric|min:0.01',
-            'method' => 'required|in:cash,bank_transfer,check,card,online',
+            'payment_method' => 'required|in:cash,bank_transfer,check,card,online',
             'reference' => 'nullable|string|max:255',
-            'paid_at' => 'nullable|date',
+            'payment_date' => 'nullable|date',
             'notes' => 'nullable|string',
         ]);
-        $data['paid_at'] = $data['paid_at'] ?? $data['payment_date'] ?? now();
-        $data['method'] = $data['method'] ?? $data['payment_method'] ?? 'cash';
-        $invoice = Invoice::findOrFail($data['invoice_id']);
-        $data['tenant_id'] = $invoice->tenant_id;
-        $data['recorded_by'] = $request->user()->id;
-        $payment = Payment::create($data);
 
-        return response()->json($payment->load('invoice'), 201);
+        $invoice = \App\Models\Invoice::findOrFail($data['invoice_id']);
+
+        $payment = Payment::create([
+            'invoice_id' => $invoice->id,
+            'tenant_id' => $invoice->tenant_id,
+            'amount' => $data['amount'],
+            'method' => $data['payment_method'],
+            'reference' => $data['reference'] ?? null,
+            'notes' => $data['notes'] ?? null,
+            'paid_at' => $data['payment_date'] ?? now(),
+            'recorded_by' => $request->user()?->id,
+        ]);
+
+        return new PaymentResource($payment->load('invoice'));
     }
 
     public function show(Payment $payment)
     {
-        return response()->json($payment->load(['invoice', 'tenant']));
+        return new PaymentResource($payment->load(['invoice', 'tenant']));
     }
 }

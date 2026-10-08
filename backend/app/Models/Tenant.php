@@ -11,8 +11,9 @@ class Tenant extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'first_name', 'last_name', 'email', 'phone', 'company_name', 'id_number',
-        'date_of_birth', 'address', 'emergency_contact', 'status', 'notes',
+        'code', 'first_name', 'last_name', 'email', 'phone', 'company_name', 'tax_id',
+        'date_of_birth', 'address', 'emergency_contact', 'emergency_contact_name',
+        'emergency_contact_phone', 'status', 'notes',
     ];
 
     protected $casts = [
@@ -48,12 +49,21 @@ class Tenant extends Model
 
     public function documents()
     {
-        // Ordering is left to the caller so QueryBuilder can apply its own.
+
         return $this->hasMany(TenantDocument::class);
     }
 
     public function scopeSearch($q, $term)
     {
         return $q->where(fn ($qq) => $qq->where('first_name', 'like', "%{$term}%")->orWhere('last_name', 'like', "%{$term}%")->orWhere('email', 'like', "%{$term}%"));
+    }
+
+    protected static function booted()
+    {
+        static::creating(function ($tenant) {
+            if (empty($tenant->code)) {
+                $tenant->code = 'TEN-'.str_pad((Tenant::max('id') ?? 0) + 1, 5, '0', STR_PAD_LEFT);
+            }
+        });
     }
 }

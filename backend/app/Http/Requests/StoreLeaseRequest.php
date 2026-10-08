@@ -17,6 +17,7 @@ class StoreLeaseRequest extends FormRequest
         return [
             'unit_id' => 'required|exists:units,id',
             'tenant_id' => 'required|exists:tenants,id',
+            'type' => 'nullable|in:fixed,periodic,commercial,residential',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after:start_date',
             'rent_amount' => 'required|numeric|min:0',
@@ -25,6 +26,8 @@ class StoreLeaseRequest extends FormRequest
             'due_day' => 'nullable|integer|min:1|max:28',
             'status' => 'sometimes|in:draft,active,expired,terminated,renewed',
             'payment_frequency' => 'sometimes|in:monthly,quarterly,yearly',
+            'escalation_clause' => 'nullable|string',
+            'renewal_options' => 'nullable|integer|min:0',
             'terms' => 'nullable|array',
             'notes' => 'nullable|string',
         ];
@@ -33,7 +36,7 @@ class StoreLeaseRequest extends FormRequest
     public function withValidator($validator)
     {
         $validator->after(function ($v) {
-            // prevent double booking: unit already has active lease overlapping dates
+
             if ($this->unit_id && $this->start_date && $this->end_date) {
                 $conflict = Lease::where('unit_id', $this->unit_id)
                     ->where('status', 'active')

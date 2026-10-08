@@ -14,6 +14,7 @@ class Lease extends Model
         'lease_number', 'unit_id', 'tenant_id', 'start_date', 'end_date',
         'rent_amount', 'deposit_amount', 'late_fee_percent', 'due_day',
         'status', 'payment_frequency', 'terms', 'notes', 'document_path', 'created_by',
+        'type', 'escalation_clause', 'renewal_options', 'signed_at', 'terminated_at',
     ];
 
     protected $casts = [
@@ -21,7 +22,10 @@ class Lease extends Model
         'end_date' => 'date',
         'rent_amount' => 'decimal:2',
         'deposit_amount' => 'decimal:2',
+        'late_fee_percent' => 'decimal:2',
         'terms' => 'array',
+        'signed_at' => 'datetime',
+        'terminated_at' => 'datetime',
     ];
 
     public function unit()
@@ -44,7 +48,7 @@ class Lease extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    // building via unit
+
     public function building()
     {
         return $this->hasOneThrough(Building::class, Unit::class, 'id', 'id', 'unit_id', 'building_id');
@@ -72,13 +76,14 @@ class Lease extends Model
                 $lease->lease_number = 'LEASE-'.now()->format('Y').'-'.str_pad((Lease::count() + 1), 5, '0', STR_PAD_LEFT);
             }
         });
+
         static::created(function ($lease) {
-            // mark unit occupied
+
             $lease->unit()->update(['status' => 'occupied']);
         });
         static::updated(function ($lease) {
             if ($lease->isDirty('status') && in_array($lease->status, ['expired', 'terminated'])) {
-                // check if unit has other active leases
+
                 if (! $lease->unit->leases()->where('status', 'active')->exists()) {
                     $lease->unit()->update(['status' => 'vacant']);
                 }

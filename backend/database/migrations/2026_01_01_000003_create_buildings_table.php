@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('buildings', function (Blueprint $table) {
             $table->id();
             $table->foreignId('property_id')->constrained()->cascadeOnDelete();
-            $table->string('name'); // Tower A, Block 1
+            $table->string('name');
             $table->string('code')->unique();
             $table->integer('floors')->default(1);
             $table->integer('year_built')->nullable();

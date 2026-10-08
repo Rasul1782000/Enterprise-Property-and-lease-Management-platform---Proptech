@@ -35,7 +35,6 @@ export class LeaseRenewalEngine extends ModulePage<LeaseRenewal> {
     { label: 'Next 365 days', value: 365 }
   ];
 
-  /** Leases inside the selected expiry horizon — the queue the engine works through. */
   pipeline = computed(() =>
     this.rows()
       .filter(r => r.days_to_expiry <= this.horizon() && r.days_to_expiry > 0 && r.status !== 'accepted' && r.status !== 'declined')
@@ -62,7 +61,6 @@ export class LeaseRenewalEngine extends ModulePage<LeaseRenewal> {
     this.horizon.set(days);
   }
 
-  /** Loaded rows whose lease expires within `days` and has not been decided. */
   countWithin(days: number): number {
     return this.rows().filter(r => r.days_to_expiry > 0 && r.days_to_expiry <= days).length;
   }

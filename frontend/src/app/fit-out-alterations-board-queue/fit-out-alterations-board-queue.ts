@@ -32,7 +32,6 @@ export class FitOutAlterationsBoardQueue extends ModulePage<FitOutRequest> {
   priorities = PRIORITIES;
   selected = signal<FitOutRequest | null>(null);
 
-  /** Approved permits still waiting on a final NOC. */
   awaitingNoc = computed(() => this.rows().filter(r => r.permit_status === 'approved' && r.noc_status !== 'noc_issued'));
 
   cards = computed<StatCard[]>(() => {

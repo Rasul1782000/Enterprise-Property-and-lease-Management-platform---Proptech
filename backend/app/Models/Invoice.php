@@ -12,13 +12,14 @@ class Invoice extends Model
     protected $fillable = [
         'invoice_number', 'lease_id', 'tenant_id', 'unit_id',
         'period_start', 'period_end', 'due_date', 'amount', 'late_fee', 'total_amount',
-        'status', 'notes', 'sent_at',
+        'status', 'notes', 'sent_at', 'type', 'issue_date', 'currency',
     ];
 
     protected $casts = [
         'period_start' => 'date',
         'period_end' => 'date',
         'due_date' => 'date',
+        'issue_date' => 'date',
         'amount' => 'decimal:2',
         'late_fee' => 'decimal:2',
         'total_amount' => 'decimal:2',
@@ -43,6 +44,11 @@ class Invoice extends Model
     public function payments()
     {
         return $this->hasMany(Payment::class);
+    }
+
+    public function lineItems()
+    {
+        return $this->hasMany(InvoiceLineItem::class);
     }
 
     public function getIsOverdueAttribute(): bool
@@ -73,6 +79,9 @@ class Invoice extends Model
             }
             if (empty($inv->total_amount)) {
                 $inv->total_amount = $inv->amount + $inv->late_fee;
+            }
+            if (empty($inv->issue_date)) {
+                $inv->issue_date = $inv->period_start ?? now();
             }
         });
     }

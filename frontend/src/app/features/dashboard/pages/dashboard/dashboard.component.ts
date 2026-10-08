@@ -50,7 +50,6 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   loading = signal(true);
   lastUpdated = signal<Date | null>(null);
 
-  /* Raw series, held as signals so the template can drive empty/error states. */
   occupancySeries = signal<{ labels: string[]; occupied: number[]; vacant: number[] } | null>(null);
   revenueSeries = signal<{ labels: string[]; collected: number[]; outstanding: number[] } | null>(null);
   expiringSeries = signal<{ labels: string[]; expiring: number[] } | null>(null);
@@ -59,7 +58,6 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   private revenueChart?: Chart;
   private expiringChart?: Chart;
 
-  /* ---- Derived headline figures --------------------------------------- */
   readonly occupancyRate = computed(() => {
     const units = this.stats().units;
     if (!units.total) return 0;
@@ -89,8 +87,6 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit(): void {
-    // Canvases only exist once the loading skeletons are swapped out, so give
-    // the view a tick to render them before Chart.js measures anything.
     setTimeout(() => this.renderCharts(), 0);
   }
 
@@ -138,7 +134,6 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  /* ---- Formatting ------------------------------------------------------ */
   formatCurrency(value: number): string {
     const amount = Number(value) || 0;
     return '$' + Math.round(amount).toLocaleString('en-US');
@@ -171,7 +166,6 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   }
 
-  /* ---- Activity presentation ------------------------------------------ */
   activityStyle(type: string): ActivityStyle {
     const styles: Record<string, ActivityStyle> = {
       lease_created: { icon: 'pi pi-file-plus', label: 'Lease created', tone: 'coral' },
@@ -189,7 +183,6 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   }
 
-  /* ---- Charts ---------------------------------------------------------- */
   private pickSeries(source: { datasets?: { data?: unknown[] }[] } | null, index: number): number[] {
     const data = source?.datasets?.[index]?.data;
     return Array.isArray(data) ? data.map(v => Number(v) || 0) : [];
@@ -246,8 +239,6 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       return options.currency ? this.formatCompactCurrency(Number(value)) : String(Math.round(Number(value)));
     };
 
-    /* Rounded tops read as softer, more deliberate bars; the radius is capped so
-       short bars (a lease count of 2 next to a value of 6) don't turn into pills. */
     const rounded = datasets.map(d => ({
       ...d,
       borderWidth: 0,
@@ -290,8 +281,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
         },
         plugins: {
           legend: {
-            /* A single-series chart gains nothing from a legend naming the only
-               colour, and the space is better spent on the plot itself. */
+            
             display: options.legend !== false,
             position: 'top',
             align: 'end',

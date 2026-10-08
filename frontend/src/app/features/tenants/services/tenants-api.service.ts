@@ -46,15 +46,14 @@ export interface TenantDocument {
   mime_type: string | null;
   size_kb: number;
   uploaded_by: number | null;
-  /** Presigned object-storage link, or the API proxy route as a fallback. */
+  
   url: string;
-  /** Lower-cased extension without the dot, e.g. `pdf`. */
+  
   extension: string;
   created_at: string;
   updated_at: string;
 }
 
-/** Categories the backend accepts on upload. Keep in step with TenantDocument::CATEGORIES. */
 export const TENANT_DOCUMENT_CATEGORIES = [
   { label: 'Other', value: 'other' },
   { label: 'ID Document', value: 'id_document' },
@@ -65,12 +64,10 @@ export const TENANT_DOCUMENT_CATEGORIES = [
   { label: 'Correspondence', value: 'correspondence' }
 ];
 
-/** Extensions the backend accepts on upload. Keep in step with the controller's `mimes` rule. */
 export const TENANT_DOCUMENT_EXTENSIONS = [
   'pdf', 'jpg', 'jpeg', 'png', 'webp', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'txt', 'zip'
 ];
 
-/** 10 MB, matching the backend's `max:10240` rule. */
 export const TENANT_DOCUMENT_MAX_KB = 10240;
 
 @Injectable({ providedIn: 'root' })
@@ -111,7 +108,6 @@ export class TenantsApiService {
     return this.api.getPaginated<TenantDocument>(`${this.endpoint}/${tenantId}/documents`, params);
   }
 
-  /** Upload one document against a tenant. `file` must not be renamed. */
   uploadDocument(tenantId: number, file: File, name?: string, category?: string): Observable<TenantDocument> {
     const form = new FormData();
     form.append('file', file, file.name);

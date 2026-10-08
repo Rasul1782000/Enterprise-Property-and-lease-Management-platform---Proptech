@@ -25,7 +25,6 @@ export class VaultManagement extends ModulePage<VaultAsset> {
   selected = signal<VaultAsset | null>(null);
   depositFilter = signal<string | null>(null);
 
-  /** Safes currently holding at least one asset, for the "safe contents" panel. */
   safes = computed(() => {
     const map = new Map<string, { safe_id: string; safe_location: string; assets: VaultAsset[]; value: number }>();
     this.rows().forEach(a => {

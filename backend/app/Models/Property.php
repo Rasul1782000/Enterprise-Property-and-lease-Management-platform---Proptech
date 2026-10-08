@@ -32,17 +32,17 @@ class Property extends Model
 
     public function units()
     {
-        return $this->hasManyThrough(Unit::class, Building::class);
+        return $this->hasManyThrough(Unit::class, Building::class)->withTrashedParents();
     }
 
-    // computed: occupancy rate
+
     public function getOccupancyRateAttribute(): float
     {
         $total = $this->units()->count();
         if ($total === 0) {
             return 0;
         }
-        $occupied = $this->units()->where('status', 'occupied')->count();
+        $occupied = $this->units()->where('units.status', 'occupied')->count();
 
         return round($occupied / $total * 100, 2);
     }

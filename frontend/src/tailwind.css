@@ -15,17 +15,10 @@
 
 @import "tailwindcss";
 
-/* Preserve the v3 `content` glob so utility generation stays deterministic
-   rather than relying on automatic source detection. */
-@source "./**/*.{html,ts}";
+@source ".*.{html,ts}";
 
-/* ==========================================================================
-   BounceBox design tokens
-   Coral drives action, teal supports and confirms, sunshine yellow celebrates.
-   Everything is oversized, pill-shaped and built for small fingers.
-   ========================================================================== */
 @theme {
-  /* Coral - primary actions, main highlights */
+  
   --color-coral-50: #fff5f5;
   --color-coral-100: #ffe4e4;
   --color-coral-200: #ffcccc;
@@ -37,7 +30,6 @@
   --color-coral-800: #a63a3a;
   --color-coral-900: #7a2b2b;
 
-  /* Teal - supporting accents, navigation, correct */
   --color-teal-50: #edfbfa;
   --color-teal-100: #d3f5f2;
   --color-teal-200: #a8ebe6;
@@ -49,7 +41,6 @@
   --color-teal-800: #277a75;
   --color-teal-900: #215f5c;
 
-  /* Sunshine yellow - rewards and celebration */
   --color-sunny-50: #fffdf2;
   --color-sunny-100: #fff9cc;
   --color-sunny-200: #fff3a3;
@@ -61,7 +52,6 @@
   --color-sunny-800: #8a6c1c;
   --color-sunny-900: #6b531a;
 
-  /* Role aliases. Coral is also exposed as `primary` for templates. */
   --color-primary-50: var(--color-coral-50);
   --color-primary-100: var(--color-coral-100);
   --color-primary-200: var(--color-coral-200);
@@ -97,12 +87,10 @@
 
   --color-accent: var(--color-coral-600);
 
-  /* Titan One carries game-like headlines, Poppins everything else. */
   --font-display: "Titan One", "Poppins", system-ui, sans-serif;
   --font-sans: "Poppins", system-ui, sans-serif;
   --font-mono: "Roboto Mono", ui-monospace, monospace;
 
-  /* Everything is very rounded: 16px inputs, 24px cards, pill controls. */
   --radius-sm: 16px;
   --radius-md: 16px;
   --radius-lg: 24px;
@@ -115,7 +103,7 @@
   --shadow-coral: 0 4px 14px rgba(255, 107, 107, 0.35);
   --shadow-teal: 0 4px 14px rgba(78, 205, 196, 0.35);
   --shadow-sunny: 0 4px 14px rgba(255, 230, 109, 0.4);
-  /* Historic aliases used across component stylesheets. */
+  
   --shadow-card: 0 2px 4px rgba(0, 0, 0, 0.08);
   --shadow-raised: 0 4px 10px rgba(0, 0, 0, 0.12);
 
@@ -127,7 +115,6 @@
   --spacing-2xl: 48px;
   --spacing-3xl: 64px;
 
-  /* Nothing renders below 14px anywhere in the interface. */
   --text-xs: 14px;
   --text-xs--line-height: 1.4;
   --text-xs--font-weight: 600;
@@ -144,6 +131,5 @@
   --text-3xl: 48px;
   --text-3xl--line-height: 1.2;
 
-  /* Minimum 44px touch target for small fingers. */
   --min-height-touch: 44px;
 }

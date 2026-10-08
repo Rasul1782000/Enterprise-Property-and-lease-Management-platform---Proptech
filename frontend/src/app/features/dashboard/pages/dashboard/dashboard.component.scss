@@ -1,10 +1,3 @@
-/* ==========================================================================
-   Dashboard layout
-   One vertical rhythm (`gap`) drives the whole page: header, KPI row, chart
-   panels, activity. Everything else is a two-column grid that collapses to a
-   single column on narrow screens.
-   ========================================================================== */
-
 :host { display: block; }
 
 .dashboard {
@@ -13,9 +6,6 @@
   gap: 1.5rem;
 }
 
-/* ---------------------------------------------------------------- header */
-/* `.page-header` is a flex row; without this the title block collapses to the
-   width of its longest word and the subtitle wraps one word per line. */
 .page-header { margin-bottom: 0; }
 .page-header > :first-child { flex: 1 1 auto; min-width: 0; }
 
@@ -29,16 +19,12 @@
 }
 .updated-stamp .pi { font-size: 0.875rem; color: var(--ink-400); }
 
-/* ---------------------------------------------------------------- KPI row */
 .kpi-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 1rem;
 }
 
-/* Tiles sit on a shared baseline in a grid row, so stretch them and pin the
-   breakdown line to the bottom — otherwise the taller tile leaves the shorter
-   ones with a ragged gap under their figures. */
 .metric-tile {
   position: relative;
   align-items: stretch;
@@ -51,8 +37,6 @@
   box-shadow: var(--shadow-md);
 }
 
-/* A tone-coloured cap along the top edge lets the row be scanned by colour
-   before any number is read. */
 .metric-tile::before {
   content: "";
   position: absolute;
@@ -69,7 +53,6 @@
 }
 .metric-tile .metric-split { margin-top: auto; padding-top: 0.625rem; }
 
-/* Tinted icon chips so the four tiles read as distinct at a glance. */
 .metric-tile--coral { --tile-accent: var(--coral-500); }
 .metric-tile--teal  { --tile-accent: var(--teal-500); }
 .metric-tile--sunny { --tile-accent: var(--sunny-400); }
@@ -91,7 +74,6 @@
 }
 .metric-icon .skeleton-icon { opacity: 0.35; }
 
-/* Eyebrow label above the figure, so the number is the loudest thing here. */
 .metric-label {
   font-size: 0.75rem;
   font-weight: 700;
@@ -99,10 +81,7 @@
   text-transform: uppercase;
   color: var(--ink-500);
 }
-/* Deliberately NOT the display font: Titan One ships a single weight, so asking
-   for weight 700 makes the browser synthesise a doubled, embossed overlay that
-   reads as garbled digits at this size. Poppins at 700 stays crisp and the
-   global tabular-nums rule keeps columns aligned. */
+
 .metric-value {
   font-family: var(--font-body);
   font-size: 2rem;
@@ -148,7 +127,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Occupancy meter inside the units tile. */
 .mini-meter {
   margin-top: 0.75rem;
   height: 8px;
@@ -164,7 +142,6 @@
   transition: width 0.4s ease;
 }
 
-/* ---------------------------------------------------------------- panels */
 .panel-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -179,13 +156,9 @@
   min-width: 0;
 }
 
-/* Paired panels are stretched to a common row height; let the chart soak up the
-   slack instead of leaving a block of dead space beneath it. */
 .panel-grid { align-items: stretch; }
 .panel-grid .chart-frame--grow { flex: 1 1 auto; min-height: 240px; }
 
-/* Quiet panels: a headline panel stays interactive, the rest sit flat so the
-   eye lands on the chart rather than on five competing card edges. */
 .panel { padding: 1.25rem 1.5rem 1.5rem; }
 .panel--quiet {
   transition: none;
@@ -197,8 +170,6 @@
   box-shadow: none;
 }
 
-/* Never wrap: paired panels must keep identical header heights or their charts
-   start at different y positions. The title truncates instead. */
 .panel-head {
   display: flex;
   align-items: center;
@@ -209,7 +180,6 @@
 }
 .panel-head > :first-child { min-width: 0; flex: 1 1 auto; }
 
-/* Icon sits in a tinted chip that echoes the tile accents. */
 .panel-title {
   display: flex;
   align-items: center;
@@ -233,7 +203,7 @@
   color: var(--panel-accent-fg, var(--coral-800));
 }
 .panel-title-text { display: flex; flex-direction: column; min-width: 0; }
-/* Long subtitles truncate on one line instead of pushing the header taller. */
+
 .panel-title-text > .panel-title-label,
 .panel-title-text > .panel-sub {
   display: block;
@@ -242,7 +212,6 @@
   white-space: nowrap;
 }
 
-/* `.panel-sub` sits inside the display-font title, so it must opt back out. */
 .panel-sub {
   margin: 0.125rem 0 0;
   font-family: var(--font-body);
@@ -273,7 +242,6 @@
 .trend-pill--down { background: #fee2e2; color: #991b1b; }
 .count-chip { background: var(--ink-100); color: var(--ink-600); }
 
-/* Chart.js needs an explicitly sized parent, otherwise the canvas collapses. */
 .chart-frame {
   position: relative;
   width: 100%;
@@ -282,14 +250,9 @@
 }
 .chart-frame--tall   { height: 320px; }
 .chart-frame--short { height: 240px; }
-/* Chart.js owns the canvas box itself; overriding it here fights the
-   library's responsive resize and squashes the bars. Leave it alone. */
 
 .chart-frame .empty-state { height: 100%; }
 
-/* ---------------------------------------------------------------- brief */
-/* Two-up stat cells rather than full-width rows: the brief reads as a small
-   table instead of a long list of dashed rules. */
 .detail-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -331,9 +294,6 @@
 }
 .detail-list .value-danger { color: var(--coral-700); }
 
-/* ---------------------------------------------------------------- activity */
-/* Two columns of events so the feed occupies roughly half the vertical space a
-   single column of ten rows would need. */
 .activity-list {
   margin: 0;
   padding: 0;
@@ -407,10 +367,9 @@
 .chip--teal  { background: var(--teal-100);                 color: var(--teal-800); }
 .chip--sunny { background: var(--sunny-200);                color: var(--sunny-800); }
 
-/* ---------------------------------------------------------------- responsive */
 @media (max-width: 1180px) {
   .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  /* Two event columns get cramped once each card is half the page width. */
+  
   .activity-list { grid-template-columns: minmax(0, 1fr); }
 }
 
@@ -421,8 +380,6 @@
   .panel-grid .chart-frame--grow { min-height: 280px; }
 }
 
-/* Once panels stack, a title no longer competes with a chip on the same line, so
-   let both breathe again — truncated headings read as breakage, not brevity. */
 @media (max-width: 760px) {
   .panel-head {
     flex-wrap: wrap;
@@ -436,7 +393,7 @@
 }
 
 @media (max-width: 760px) {
-  /* Two brief cells side by side stop fitting once the panel is full width. */
+  
   .detail-list { grid-template-columns: minmax(0, 1fr); }
 }
 
@@ -445,9 +402,9 @@
   
   .chart-frame--tall { height: 240px; }
   .chart-frame--short { height: 200px; }
-  /* The two-column feed is far too cramped at this width. */
+  
   .activity-list { grid-template-columns: minmax(0, 1fr); }
-  /* Type chip drops under the description rather than squeezing it. */
+  
   .activity-item { flex-wrap: wrap; }
   .activity-item .chip { margin-left: 3.375rem; }
   .activity-desc { white-space: normal; }

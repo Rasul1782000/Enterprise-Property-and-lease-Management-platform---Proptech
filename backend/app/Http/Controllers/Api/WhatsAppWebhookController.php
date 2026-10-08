@@ -10,19 +10,11 @@ use Throwable;
 
 class WhatsAppWebhookController extends Controller
 {
-    /**
-     * POST /api/whatsapp/webhook
-     * Receives inbound messages and events from OpenWA.
-     */
+
     public function handle(Request $request)
     {
-        /*
-         * Order matters. With no secret configured there is nothing to verify
-         * against, so this route is unauthenticated by definition and must
-         * refuse rather than trust the caller. Checking the signature first
-         * would report this misconfiguration as a bad signature, hiding the
-         * real problem.
-         */
+
+
         if (empty(config('services.openwa.webhook_secret'))) {
             Log::warning('OpenWA webhook received but OPENWA_WEBHOOK_SECRET is not configured', [
                 'ip' => $request->ip(),
@@ -50,7 +42,7 @@ class WhatsAppWebhookController extends Controller
             'event' => $event['event'] ?? 'unknown',
         ]);
 
-        // Handle different event types
+
         match ($event['event'] ?? '') {
             'message' => $this->handleInboundMessage($event),
             'session.status' => $this->handleSessionStatus($event),
@@ -60,9 +52,7 @@ class WhatsAppWebhookController extends Controller
         return response()->json(['received' => true]);
     }
 
-    /**
-     * Handle an inbound WhatsApp message.
-     */
+
     protected function handleInboundMessage(array $event): void
     {
         $message = $event['data'] ?? [];
@@ -70,7 +60,7 @@ class WhatsAppWebhookController extends Controller
         $body = $message['body'] ?? '';
         $timestamp = $message['timestamp'] ?? now()->toIso8601String();
 
-        // Store in cache for real-time retrieval via SSE
+
         $cacheKey = 'whatsapp:inbound:messages';
         $messages = Cache::get($cacheKey, []);
         $messages[] = [
@@ -80,14 +70,14 @@ class WhatsAppWebhookController extends Controller
             'direction' => 'inbound',
         ];
 
-        // Keep only the last 100 messages in cache
+
         if (count($messages) > 100) {
             $messages = array_slice($messages, -100);
         }
 
         Cache::put($cacheKey, $messages, now()->addHours(24));
 
-        // Also store per-phone for easy lookup
+
         $phoneKey = 'whatsapp:inbound:'.md5($from);
         $phoneMessages = Cache::get($phoneKey, []);
         $phoneMessages[] = [
@@ -104,9 +94,7 @@ class WhatsAppWebhookController extends Controller
         ]);
     }
 
-    /**
-     * Handle a session status change event.
-     */
+
     protected function handleSessionStatus(array $event): void
     {
         $status = $event['data']['status'] ?? 'unknown';
@@ -116,9 +104,7 @@ class WhatsAppWebhookController extends Controller
         Log::info('WhatsApp session status changed', ['status' => $status]);
     }
 
-    /**
-     * Verify the HMAC signature from OpenWA.
-     */
+
     protected function verifySignature(string $payload, ?string $signature): bool
     {
         $secret = config('services.openwa.webhook_secret');

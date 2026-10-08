@@ -31,7 +31,6 @@ export class MainLayoutComponent {
   private confirmation = inject(ConfirmationService);
   private messages = inject(MessageService);
 
-  /** Primary links, grouped so the operational modules don't swamp the core lists. */
   navSections: NavSection[] = [
     {
       heading: 'Overview',
@@ -69,7 +68,6 @@ export class MainLayoutComponent {
     }
   ];
 
-  /** Flat view of every link, used by the "skip to" list and the active check. */
   nav: NavItem[] = this.navSections.flatMap(section => section.items);
 
   profileMenu = [
@@ -82,10 +80,8 @@ export class MainLayoutComponent {
     return (this.auth.user()?.name || 'J').charAt(0).toUpperCase();
   }
 
-  /** Drawer visibility on narrow screens only; the top bar is always pinned. */
   navOpen = false;
 
-  /** Heading of the currently expanded top-bar group, or null when all are shut. */
   openGroup: string | null = null;
 
   private readonly navToggleRef = viewChild<ElementRef<HTMLButtonElement>>('navToggle');
@@ -93,8 +89,6 @@ export class MainLayoutComponent {
 
   constructor() {
     document.addEventListener('keydown', this.onKeydown);
-    // Clicking anywhere outside a group trigger dismisses the open panel; the
-    // trigger's own handler stops propagation so it can toggle instead.
     document.addEventListener('click', this.onDocumentClick);
     this.destroyRef.onDestroy(() => {
       document.removeEventListener('keydown', this.onKeydown);
@@ -125,7 +119,6 @@ export class MainLayoutComponent {
     this.openGroup = null;
   }
 
-  /** A group reads as current when any of its links matches the live URL. */
   isSectionActive(section: NavSection): boolean {
     return section.items.some(item => this.router.isActive(item.route, !!item.exact));
   }
@@ -136,7 +129,6 @@ export class MainLayoutComponent {
     document.body.style.overflow = this.navOpen ? 'hidden' : '';
   }
 
-  /** `restoreFocus` is only for dismissals — following a link must keep focus put. */
   closeNav(restoreFocus = false): void {
     if (!this.navOpen) return;
     this.navOpen = false;

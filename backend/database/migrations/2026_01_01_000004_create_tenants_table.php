@@ -8,15 +8,15 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // tenants before units to satisfy FK in users; units don't reference tenants directly
+
         Schema::create('tenants', function (Blueprint $table) {
             $table->id();
             $table->string('first_name');
             $table->string('last_name');
             $table->string('email')->unique();
             $table->string('phone', 30)->nullable();
-            $table->string('company_name')->nullable(); // for commercial
-            $table->string('id_number', 50)->nullable(); // gov id
+            $table->string('company_name')->nullable();
+            $table->string('id_number', 50)->nullable();
             $table->date('date_of_birth')->nullable();
             $table->text('address')->nullable();
             $table->string('emergency_contact')->nullable();

@@ -11,7 +11,7 @@ class HandleHardcodedToken
 {
     public function handle(Request $request, Closure $next): Response
     {
-        // If already authenticated via sanctum, continue
+
         if (Auth::guard('sanctum')->check()) {
             return $next($request);
         }

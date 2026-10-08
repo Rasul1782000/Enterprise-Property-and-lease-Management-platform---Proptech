@@ -11,7 +11,7 @@ class Unit extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'building_id', 'unit_number', 'floor', 'sqft', 'bedrooms', 'bathrooms',
+        'building_id', 'unit_number', 'name', 'floor', 'sqft', 'bedrooms', 'bathrooms',
         'rent_amount', 'unit_type', 'status', 'amenities', 'description',
     ];
 

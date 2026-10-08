@@ -34,7 +34,6 @@ export class ServiceChargeAndEscrowManagement extends ModulePage<ServiceCharge> 
     this.loadEscrow();
   }
 
-  /** Budget vs actual across the whole portfolio, for the variance banner. */
   variancePct = computed(() => {
     const s = this.stats();
     const budgeted = Number(s.budgeted_amount || 0);
