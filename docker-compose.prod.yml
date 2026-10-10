@@ -1,0 +1,243 @@
+version: '3.8'
+
+services:
+  # Reverse proxy with automatic HTTPS via Let's Encrypt
+  traefik:
+    image: traefik:v3.0
+    container_name: traefik
+    command:
+      - "--api.dashboard=true"
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.letsencrypt.acme.email=admin@rasul17.indevs.in"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+      - "--log.level=INFO"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "letsencrypt:/letsencrypt"
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  # Frontend - Angular + Nginx
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: property-lease-frontend
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`rasul17.indevs.in`)"
+      - "traefik.http.routers.frontend.entrypoints=websecure"
+      - "traefik.http.routers.frontend.tls.certresolver=letsencrypt"
+      - "traefik.http.services.frontend.loadbalancer.server.port=80"
+    networks:
+      - app-network
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+  # Backend - Laravel + PHP-FPM
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: property-lease-backend
+    environment:
+      - APP_ENV=production
+      - APP_DEBUG=false
+      - APP_URL=https://rasul17.indevs.in
+      - FRONTEND_URL=https://rasul17.indevs.in
+      - DB_CONNECTION=mysql
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_DATABASE=property_lease
+      - DB_USERNAME=property_lease
+      - DB_PASSWORD=${DB_PASSWORD}
+      - SANCTUM_STATEFUL_DOMAINS=rasul17.indevs.in
+      - SESSION_DOMAIN=rasul17.indevs.in
+      - MAIL_FROM_ADDRESS=noreply@rasul17.indevs.in
+      - MAIL_MAILER=smtp
+      - MAIL_HOST=${MAIL_HOST}
+      - MAIL_PORT=${MAIL_PORT}
+      - MAIL_USERNAME=${MAIL_USERNAME}
+      - MAIL_PASSWORD=${MAIL_PASSWORD}
+      - MAIL_ENCRYPTION=${MAIL_ENCRYPTION}
+      - AWS_ENDPOINT_URL=
+      - CACHE_DRIVER=redis
+      - SESSION_DRIVER=redis
+      - QUEUE_CONNECTION=redis
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    volumes:
+      - backend-storage:/var/www/html/storage
+      - backend-bootstrap-cache:/var/www/html/bootstrap/cache
+    networks:
+      - app-network
+    restart: unless-stopped
+    depends_on:
+      - db
+      - redis
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  # Backend worker for queues
+  backend-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: property-lease-backend-worker
+    command: php artisan queue:work --sleep=3 --tries=3 --timeout=90
+    environment:
+      - APP_ENV=production
+      - APP_DEBUG=false
+      - APP_URL=https://rasul17.indevs.in
+      - FRONTEND_URL=https://rasul17.indevs.in
+      - DB_CONNECTION=mysql
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_DATABASE=property_lease
+      - DB_USERNAME=property_lease
+      - DB_PASSWORD=${DB_PASSWORD}
+      - SANCTUM_STATEFUL_DOMAINS=rasul17.indevs.in
+      - SESSION_DOMAIN=rasul17.indevs.in
+      - MAIL_FROM_ADDRESS=noreply@rasul17.indevs.in
+      - MAIL_MAILER=smtp
+      - MAIL_HOST=${MAIL_HOST}
+      - MAIL_PORT=${MAIL_PORT}
+      - MAIL_USERNAME=${MAIL_USERNAME}
+      - MAIL_PASSWORD=${MAIL_PASSWORD}
+      - MAIL_ENCRYPTION=${MAIL_ENCRYPTION}
+      - AWS_ENDPOINT_URL=
+      - CACHE_DRIVER=redis
+      - SESSION_DRIVER=redis
+      - QUEUE_CONNECTION=redis
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    volumes:
+      - backend-storage:/var/www/html/storage
+      - backend-bootstrap-cache:/var/www/html/bootstrap/cache
+    networks:
+      - app-network
+    restart: unless-stopped
+    depends_on:
+      - db
+      - redis
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  # Backend scheduler
+  backend-scheduler:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: property-lease-backend-scheduler
+    command: php artisan schedule:work
+    environment:
+      - APP_ENV=production
+      - APP_DEBUG=false
+      - APP_URL=https://rasul17.indevs.in
+      - FRONTEND_URL=https://rasul17.indevs.in
+      - DB_CONNECTION=mysql
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_DATABASE=property_lease
+      - DB_USERNAME=property_lease
+      - DB_PASSWORD=${DB_PASSWORD}
+      - SANCTUM_STATEFUL_DOMAINS=rasul17.indevs.in
+      - SESSION_DOMAIN=rasul17.indevs.in
+      - MAIL_FROM_ADDRESS=noreply@rasul17.indevs.in
+      - MAIL_MAILER=smtp
+      - MAIL_HOST=${MAIL_HOST}
+      - MAIL_PORT=${MAIL_PORT}
+      - MAIL_USERNAME=${MAIL_USERNAME}
+      - MAIL_PASSWORD=${MAIL_PASSWORD}
+      - MAIL_ENCRYPTION=${MAIL_ENCRYPTION}
+      - AWS_ENDPOINT_URL=
+      - CACHE_DRIVER=redis
+      - SESSION_DRIVER=redis
+      - QUEUE_CONNECTION=redis
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    volumes:
+      - backend-storage:/var/www/html/storage
+      - backend-bootstrap-cache:/var/www/html/bootstrap/cache
+    networks:
+      - app-network
+    restart: unless-stopped
+    depends_on:
+      - db
+      - redis
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+
+  # MySQL Database
+  db:
+    image: mysql:8.0
+    container_name: property-lease-db
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
+      - MYSQL_DATABASE=property_lease
+      - MYSQL_USER=property_lease
+      - MYSQL_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - db-data:/var/lib/mysql
+    networks:
+      - app-network
+    restart: unless-stopped
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  # Redis for cache/session/queue
+  redis:
+    image: redis:7-alpine
+    container_name: property-lease-redis
+    volumes:
+      - redis-data:/data
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+
+volumes:
+  db-data:
+  redis-data:
+  letsencrypt:
+  backend-storage:
+  backend-bootstrap-cache:
+
+networks:
+  app-network:
+    driver: bridge

@@ -1,6 +1,6 @@
 export const environment = {
   production: false,
-  apiUrl: 'http://localhost:8000/api',
+  apiUrl: 'https://rasul17.indevs.in/api',
   appName: 'PropertyLease Portal',
   useMockData: false
 };

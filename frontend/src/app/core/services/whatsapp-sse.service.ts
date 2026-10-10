@@ -40,7 +40,8 @@ export class WhatsAppSseService {
       try {
         const messages: InboundMessage[] = JSON.parse(event.data);
         this.newMessages.update((msgs) => [...msgs, ...messages]);
-      } catch {
+      } catch (err) {
+        console.warn('whatsapp: dropped malformed message payload', err);
       }
     });
 
@@ -48,7 +49,8 @@ export class WhatsAppSseService {
       try {
         const data: HeartbeatData = JSON.parse(event.data);
         this.sessionStatus.set(data.status);
-      } catch {
+      } catch (err) {
+        console.warn('whatsapp: dropped malformed heartbeat payload', err);
       }
     });
 

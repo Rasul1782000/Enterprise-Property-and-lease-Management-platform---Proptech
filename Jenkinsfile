@@ -21,10 +21,21 @@ pipeline {
         AWS_STORAGE_PREFIX    = 'portal'
 
         // ---- Container registry ----------------------------------------
-        // Override these on the Jenkins job (or this block) with your real registry.
-        DOCKER_REGISTRY       = 'your-registry.azurecr.io'
-        IMAGE_NAME            = 'proptech-frontend'
+        // Configure these in Jenkins credentials or job configuration:
+        // DOCKER_REGISTRY  = 'ghcr.io' or 'your-registry.azurecr.io' or 'docker.io'
+        // IMAGE_NAME_FRONTEND = 'proptech-frontend'
+        // IMAGE_NAME_BACKEND  = 'proptech-backend'
+        // CREDENTIALS_ID  = 'docker-registry-credentials'
+        DOCKER_REGISTRY       = ''
+        IMAGE_NAME_FRONTEND   = 'proptech-frontend'
+        IMAGE_NAME_BACKEND    = 'proptech-backend'
         CREDENTIALS_ID        = 'docker-registry-credentials'
+
+        // ---- Production deployment --------------------------------------
+        // Set these for production deployment
+        PROD_SERVER           = ''
+        PROD_SSH_KEY          = 'prod-ssh-key'
+        PROD_USER             = 'deploy'
     }
 
     /*
@@ -362,39 +373,71 @@ pipeline {
             }
         }
 
-        stage('Build Production Docker Image') {
+        stage('Build Production Docker Images') {
             // `docker build` / `docker run`: needs the Jenkins socket.
             agent any
             steps {
-                echo 'Building production container image...'
+                echo 'Building production container images...'
                 script {
                     def commit = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
-                    def imageTag = "${env.IMAGE_NAME}:${commit}"
 
+                    // Build Frontend
+                    def frontendTag = "${env.IMAGE_NAME_FRONTEND}:${commit}"
                     dir('frontend') {
-                        sh "docker build -t ${imageTag} -t ${env.IMAGE_NAME}:latest ."
+                        sh "docker build -t ${frontendTag} -t ${env.IMAGE_NAME_FRONTEND}:latest ."
                     }
 
-                    // Smoke-test the built container before it is ever published.
+                    // Build Backend
+                    def backendTag = "${env.IMAGE_NAME_BACKEND}:${commit}"
+                    dir('backend') {
+                        sh "docker build -t ${backendTag} -t ${env.IMAGE_NAME_BACKEND}:latest ."
+                    }
+
+                    // Smoke-test frontend container
                     sh """
                         set -e
-                        docker rm -f proptech-smoke >/dev/null 2>&1 || true
-                        docker run -d --name proptech-smoke -p 8099:80 ${imageTag} >/dev/null
+                        docker rm -f proptech-frontend-smoke >/dev/null 2>&1 || true
+                        docker run -d --name proptech-frontend-smoke -p 8099:80 ${frontendTag} >/dev/null
                         for i in \$(seq 1 30); do
-                            if docker exec proptech-smoke curl -fsS http://localhost/ >/dev/null 2>&1; then
-                                echo "Image serves HTTP after \${i}s"
-                                docker rm -f proptech-smoke >/dev/null
+                            if docker exec proptech-frontend-smoke curl -fsS http://localhost/ >/dev/null 2>&1; then
+                                echo "Frontend image serves HTTP after \${i}s"
+                                docker rm -f proptech-frontend-smoke >/dev/null
                                 exit 0
                             fi
                             sleep 1
                         done
-                        echo 'Image did not serve HTTP in time'
-                        docker logs --tail 50 proptech-smoke || true
+                        echo 'Frontend image did not serve HTTP in time'
+                        docker logs --tail 50 proptech-frontend-smoke || true
                         exit 1
                     """
 
-                    echo "Image ready: ${imageTag}"
-                    env.IMAGE_TAG = imageTag
+                    // Smoke-test backend container (health endpoint)
+                    sh """
+                        set -e
+                        docker rm -f proptech-backend-smoke >/dev/null 2>&1 || true
+                        docker run -d --name proptech-backend-smoke \
+                            -e APP_ENV=production \
+                            -e APP_DEBUG=false \
+                            -e APP_URL=https://rasul17.indevs.in \
+                            -e DB_CONNECTION=sqlite \
+                            ${backendTag} >/dev/null
+                        for i in \$(seq 1 60); do
+                            if docker exec proptech-backend-smoke curl -fsS http://localhost:8000/up >/dev/null 2>&1; then
+                                echo "Backend image health check passed after \${i}s"
+                                docker rm -f proptech-backend-smoke >/dev/null
+                                exit 0
+                            fi
+                            sleep 1
+                        done
+                        echo 'Backend image health check failed'
+                        docker logs --tail 50 proptech-backend-smoke || true
+                        exit 1
+                    """
+
+                    echo "Frontend image ready: ${frontendTag}"
+                    echo "Backend image ready: ${backendTag}"
+                    env.FRONTEND_IMAGE_TAG = frontendTag
+                    env.BACKEND_IMAGE_TAG = backendTag
                 }
             }
         }
@@ -402,11 +445,13 @@ pipeline {
         stage('Push to Registry') {
             // params, not environment: PUSH_IMAGE is a build parameter, so an
             // `environment name` check would never match.
-            when { expression { params.PUSH_IMAGE == true } }
+            when {
+                expression { params.PUSH_IMAGE == true && env.DOCKER_REGISTRY != '' }
+            }
             // `docker login` / `docker push`: needs the Jenkins socket.
             agent any
             steps {
-                echo "Pushing ${env.IMAGE_TAG} to ${env.DOCKER_REGISTRY}..."
+                echo "Pushing images to ${env.DOCKER_REGISTRY}..."
                 withCredentials([usernamePassword(
                     credentialsId: env.CREDENTIALS_ID,
                     usernameVariable: 'DOCKER_USER',
@@ -415,8 +460,18 @@ pipeline {
                     sh """
                         set -e
                         echo "\$DOCKER_PASS" | docker login ${env.DOCKER_REGISTRY} -u "\$DOCKER_USER" --password-stdin
-                        docker tag ${env.IMAGE_TAG} ${env.DOCKER_REGISTRY}/${env.IMAGE_NAME}:latest
-                        docker push ${env.DOCKER_REGISTRY}/${env.IMAGE_NAME}:latest
+
+                        # Push Frontend
+                        docker tag ${env.FRONTEND_IMAGE_TAG} ${env.DOCKER_REGISTRY}/${env.IMAGE_NAME_FRONTEND}:latest
+                        docker push ${env.DOCKER_REGISTRY}/${env.IMAGE_NAME_FRONTEND}:latest
+                        docker tag ${env.FRONTEND_IMAGE_TAG} ${env.DOCKER_REGISTRY}/${env.IMAGE_NAME_FRONTEND}:${env.FRONTEND_IMAGE_TAG.split(':')[1]}
+                        docker push ${env.DOCKER_REGISTRY}/${env.IMAGE_NAME_FRONTEND}:${env.FRONTEND_IMAGE_TAG.split(':')[1]}
+
+                        # Push Backend
+                        docker tag ${env.BACKEND_IMAGE_TAG} ${env.DOCKER_REGISTRY}/${env.IMAGE_NAME_BACKEND}:latest
+                        docker push ${env.DOCKER_REGISTRY}/${env.IMAGE_NAME_BACKEND}:latest
+                        docker tag ${env.BACKEND_IMAGE_TAG} ${env.DOCKER_REGISTRY}/${env.IMAGE_NAME_BACKEND}:${env.BACKEND_IMAGE_TAG.split(':')[1]}
+                        docker push ${env.DOCKER_REGISTRY}/${env.IMAGE_NAME_BACKEND}:${env.BACKEND_IMAGE_TAG.split(':')[1]}
                     """
                 }
             }
@@ -425,12 +480,67 @@ pipeline {
         stage('Deploy to Production') {
             when {
                 branch 'main'
+                expression { env.PROD_SERVER != '' }
             }
             agent any
             steps {
-                echo 'Triggering production deployment sequence...'
-                // Add your deployment commands here (e.g., SSH trigger or Kubernetes rollouts)
-                echo 'Deployment successful.'
+                echo 'Deploying to production server...'
+                withCredentials([sshUserPrivateKey(
+                    credentialsId: env.PROD_SSH_KEY,
+                    keyFileVariable: 'SSH_KEY',
+                    usernameVariable: 'SSH_USER'
+                )]) {
+                    // Deploy using docker-compose.prod.yml on the production server
+                    sh """
+                        set -e
+                        # Create deployment archive
+                        tar -czf deploy.tar.gz docker-compose.prod.yml .env.production deploy.sh
+
+                        # Copy to production server
+                        scp -o StrictHostKeyChecking=no -i \${SSH_KEY} deploy.tar.gz ${env.PROD_USER}@${env.PROD_SERVER}:/tmp/
+
+                        # Execute deployment on production server
+                        ssh -o StrictHostKeyChecking=no -i \${SSH_KEY} ${env.PROD_USER}@${env.PROD_SERVER} << 'EOF'
+                            set -e
+                            cd /opt/property-lease-portal
+                            tar -xzf /tmp/deploy.tar.gz
+
+                            # Pull latest images from registry
+                            if [ -n "${env.DOCKER_REGISTRY}" ]; then
+                                docker login ${env.DOCKER_REGISTRY} -u "\$DOCKER_USER" -p "\$DOCKER_PASS"
+                                docker compose -f docker-compose.prod.yml pull
+                            fi
+
+                            # Build locally if no registry
+                            docker compose -f docker-compose.prod.yml build --no-cache
+
+                            # Run migrations
+                            docker compose -f docker-compose.prod.yml run --rm backend php artisan migrate --force
+
+                            # Create storage link
+                            docker compose -f docker-compose.prod.yml run --rm backend php artisan storage:link
+
+                            # Optimize
+                            docker compose -f docker-compose.prod.yml run --rm backend php artisan config:cache
+                            docker compose -f docker-compose.prod.yml run --rm backend php artisan route:cache
+                            docker compose -f docker-compose.prod.yml run --rm backend php artisan view:cache
+
+                            # Start services
+                            docker compose -f docker-compose.prod.yml up -d
+
+                            # Wait for health
+                            sleep 15
+                            docker compose -f docker-compose.prod.yml ps
+
+                            echo 'Deployment complete!'
+                            echo 'Frontend: https://rasul17.indevs.in'
+                            echo 'API: https://rasul17.indevs.in/api'
+                        EOF
+
+                        # Cleanup
+                        rm deploy.tar.gz
+                    """
+                }
             }
         }
     }
@@ -446,7 +556,7 @@ pipeline {
                     echo "Leaving the shared '${env.FLOCI_CONTAINER}' container running."
                 }
             }
-            sh 'docker rm -f proptech-smoke >/dev/null 2>&1 || true'
+            sh 'docker rm -f proptech-frontend-smoke proptech-backend-smoke >/dev/null 2>&1 || true'
             cleanWs()
         }
         success {

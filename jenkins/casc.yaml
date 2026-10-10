@@ -26,7 +26,7 @@ jobs:
             scm {
               git {
                 remote {
-                  url('https://github.com/Rasul1782000/Enterprise-Property-and-lease-Management-platform---Proptech.git')
+                  url('https://github.com/Rasul1782000/Enterprise-Property-and-lease-Management-Portal.git')
                 }
                 branches('*/main')
               }
