@@ -183,27 +183,32 @@ pipeline {
                  * project name or directory changes.
                  */
                 script {
-                    def net = sh(
+                    def networks = sh(
                         script: '''
                             set -e
-                            # The Jenkins container's own primary network.
-                            #
-                            # The Go template emits one network name per line via
-                            # the built-in `println`. Concatenating the names
-                            # directly ({{$k}}{{end}}) produced values like
+                            # One network name per line. The `println` built-in is
+                            # what keeps them separate: concatenating the names
+                            # inline ({{$k}}{{end}}) produces values like
                             # "jenkins_defaultmy-shared-network" whenever the
-                            # container is attached to more than one network,
-                            # which is what the Floci stages then tried to
-                            # `docker network connect`.
+                            # container is attached to more than one network, and
+                            # the Floci stages then try to `docker network connect`
+                            # that whole string and fail.
                             docker inspect -f '{{range $k,$v := .NetworkSettings.Networks}}{{println $k}}{{end}}' "$(hostname)"
                         ''',
                         returnStdout: true
-                    ).trim().split('\n')[0].trim()
+                    ).trim().split('\n')*.trim().findAll { it }
+
+                    # Prefer a user-defined network. The default `bridge` (and
+                    # `host`/`none`) have no embedded DNS, so a Floci started
+                    # there would never resolve at http://floci:4566 for the
+                    # composer/node stages that join this network.
+                    def userDefined = networks.findAll { !(it in ['bridge', 'host', 'none']) }
+                    def net = userDefined ? userDefined.first() : (networks ? networks.first() : '')
 
                     if (!net) {
                         error 'Could not determine the Docker network the Jenkins container is attached to.'
                     }
-                    echo "Jenkins container network: ${net}"
+                    echo "Jenkins container network: ${net} (all: ${networks.join(', ')})"
 
                     // Reuse an existing Floci, but only if it can actually be
                     // reached over that network. A container left on the default
@@ -424,11 +429,14 @@ pipeline {
                     sh """
                         set -e
                         docker rm -f proptech-backend-smoke >/dev/null 2>&1 || true
+                        # A throwaway APP_KEY is required because Laravel boots the
+                        # encrypter/session services even for the /up health route.
                         docker run -d --name proptech-backend-smoke \
                             -e APP_ENV=production \
                             -e APP_DEBUG=false \
                             -e APP_URL=https://rasul17.indevs.in \
                             -e DB_CONNECTION=sqlite \
+                            -e APP_KEY=base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA= \
                             ${backendTag} >/dev/null
                         for i in \$(seq 1 60); do
                             if docker exec proptech-backend-smoke curl -fsS http://localhost:8000/up >/dev/null 2>&1; then

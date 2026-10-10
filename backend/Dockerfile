@@ -50,9 +50,12 @@ COPY docker/nginx.conf /etc/nginx/nginx.conf
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY docker/php.ini /usr/local/etc/php/conf.d/custom.ini
 
-RUN mkdir -p /var/www/html/storage/logs \
+RUN mkdir -p /var/www/html/storage/framework/sessions \
+             /var/www/html/storage/framework/views \
+             /var/www/html/storage/framework/cache/data \
+             /var/www/html/storage/logs \
     && touch /var/www/html/storage/logs/laravel.log \
-    && chown -R www-data:www-data /var/www/html/storage/logs
+    && chown -R www-data:www-data /var/www/html/storage
 
 EXPOSE 8000
 
