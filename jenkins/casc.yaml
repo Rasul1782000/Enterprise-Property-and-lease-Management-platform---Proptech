@@ -20,40 +20,54 @@ unclassified:
 
 jobs:
   - script: >
-      pipelineJob('enterprise-property-portal') {
-        definition {
-          cpsScm {
-            scm {
-              git {
-                remote {
-                  url('https://github.com/Rasul1782000/Enterprise-Property-and-lease-Management-Portal.git')
-                }
-                branches('*/main')
-              }
-            }
-            scriptPath('Jenkinsfile')
+      multibranchPipelineJob('enterprise-property-portal') {
+        branchSources {
+          git {
+            id('proptech-git')
+            remote('https://github.com/Rasul1782000/Enterprise-Property-and-lease-Management-platform---Proptech.git')
+            /*
+             * The branches this job builds. A branch matching these wildcards
+             * gets its own sub-job under this folder and runs the same
+             * Jenkinsfile.
+             *
+             * Only `main` deploys: the Jenkinsfile's "Deploy to Production"
+             * stage is guarded by `when { branch 'main' }`, so all other
+             * branches stop after tests/images.
+             */
+            includes('main develop feature/* release/*')
+            excludes('*-wip')
           }
         }
-        triggers {
-          /*
-           * Periodic poll cadence.
-           *
-           * IMPORTANT: Jenkins cron has a one-minute floor. There is no
-           * second-level granularity in the syntax, so a 12-second trigger
-           * cannot be expressed here. `* * * * *` is the fastest this can
-           * possibly poll: once per minute.
-           *
-           * A trigger that fires while a build is already running is dropped,
-           * not queued (the pipeline sets `disableConcurrentBuilds()`), so a
-           * one-minute cadence against multi-minute builds means Jenkins
-           * simply keeps one build in flight and re-polls right after it
-           * finishes. That is the closest useful behaviour to what was asked.
-           *
-           * `H/5` would spread the poll across the five minutes instead of
-           * firing on the minute boundary, which matters once several agents
-           * share the controller. That trade-off is not worth it while
-           * shaking the pipeline down, so the exact `* * * * *` is used here.
-           */
-          scm('* * * * *')
+        /*
+         * No `factory` block is needed: the default branch project factory
+         * already runs the script at `Jenkinsfile`.
+         */
+
+        /*
+         * Re-scan the branch sources every five minutes. A scan discovers both
+         * new branches and new commits on existing branches, and schedules a
+         * build for anything whose revision moved.
+         *
+         * A multibranch project is a folder (ComputedFolder), not a Job, so
+         * the scan trigger is `PeriodicFolderTrigger` (its interval is in
+         * milliseconds). job-dsl's generic `triggers { cron(...) }` would emit
+         * a `hudson.triggers.TimerTrigger`, which is typed for a Job and does
+         * not drive folder scans.
+         *
+         * The node is built explicitly instead of with a nested
+         * `NodeBuilder { ... }` closure: inside a `configure` block the nested
+         * closure's owner chain resolves `interval(...)` against the DSL script
+         * (which silently swallows unknown methods), so the child element would
+         * never be emitted.
+         */
+        configure { project ->
+          def trigger = new Node(null, 'com.cloudbees.hudson.plugins.folder.computed.PeriodicFolderTrigger')
+          trigger.appendNode('interval', '300000')
+          project / 'triggers' << trigger
+        }
+        orphanedItemStrategy {
+          discardOldItems {
+            numToKeep(20)
+          }
         }
       }
