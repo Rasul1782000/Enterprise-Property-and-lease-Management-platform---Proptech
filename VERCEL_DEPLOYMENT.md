@@ -66,7 +66,9 @@ VERCEL_PROJECT_ID = 'prj_XcprW7xNZSBZRAp9pwOfNX7NA7gY'
 VERCEL_TOKEN_ID   = 'vercel-token'   // Jenkins credential id
 ```
 
-The only missing piece is the token. Add it as a Jenkins credential:
+The only missing piece is the token. Full steps are in
+[`CREDENTIALS.md`](CREDENTIALS.md). In short, add it as a Jenkins
+credential:
 
 - **Manage Jenkins → Credentials → (global) → Add Credentials**
 - Kind: **Secret text**
