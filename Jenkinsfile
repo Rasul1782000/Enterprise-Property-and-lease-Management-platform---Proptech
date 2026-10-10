@@ -37,22 +37,18 @@ pipeline {
     }
 
     /*
-     * No pipeline-wide agent on purpose.
+     * The pipeline-wide agent is the Jenkins controller itself (`agent any`).
+     * The Jenkins image ships Node 22, PHP/Composer and the Docker CLI, and the
+     * Docker socket is mounted into it, so one node can run every stage. It
+     * also gives the `post` section the node context its cleanup steps need;
+     * with `agent none` those steps abort with
+     * "Attempted to execute a step that requires a node context".
      *
-     * This pipeline needs three different toolchains, and a single top-level
-     * `docker`/`agent` directive forces one of them onto every stage:
-     *
-     *   - Node 22   -> npm ci, lint, vitest
-     *   - PHP 8.2+ -> composer install, artisan test, storage:ensure-bucket
-     *   - Docker    -> floci run, image build, smoke test, registry push
-     *
-     * `composer:latest` has PHP but neither Node nor the Docker CLI, so a
-     * pipeline-wide agent breaks the frontend and Docker stages. Each stage
-     * below therefore declares the agent it actually needs. Stages that talk
-     * to the Docker daemon stay on `agent any`, which is the Jenkins container
-     * itself and is the only context with the socket mounted.
+     * Stages that want an isolated toolchain still override this with their own
+     * `agent { docker { ... } }`. The composer stages additionally join the
+     * compose network so they can resolve and reach Floci.
      */
-    agent none
+    agent any
 
     options {
         buildDiscarder(logRotator(numToKeepStr: '10'))
@@ -191,7 +187,14 @@ pipeline {
                         script: '''
                             set -e
                             # The Jenkins container's own primary network.
-                            docker inspect -f '{{range $k,$v := .NetworkSettings.Networks}}{{$k}}{{end}}' "$(hostname)"
+                            #
+                            # The Go template emits one network name per line.
+                            # Concatenating them without a separator ({{$k}}{{end}})
+                            # produced names like "jenkins_defaultmy-shared-network"
+                            # whenever the container is attached to more than one
+                            # network, which is exactly what the Floci stages then
+                            # tried to `docker network connect`.
+                            docker inspect -f '{{range $k,$v := .NetworkSettings.Networks}}{{$k}}{{"\n"}}{{end}}' "$(hostname)"
                         ''',
                         returnStdout: true
                     ).trim().split('\n')[0].trim()
@@ -287,7 +290,11 @@ pipeline {
             agent {
                 docker {
                     image 'composer:latest'
-                    args '-u root -v $HOME/.composer:/root/.composer'
+                    // Docker agents start on Docker's default bridge network,
+                    // where the `floci` service name does not resolve. Join the
+                    // compose network (the one the Jenkins container is on) so
+                    // the backend can reach http://floci:4566.
+                    args "--network ${env.FLOCI_NETWORK ?: 'jenkins_default'} -u root -v \$HOME/.composer:/root/.composer"
                 }
             }
             steps {
@@ -302,7 +309,10 @@ pipeline {
             agent {
                 docker {
                     image 'composer:latest'
-                    args '-u root -v $HOME/.composer:/root/.composer'
+                    // Same reason as Bootstrap Storage: the Laravel S3
+                    // integration tests talk to http://floci:4566, which only
+                    // resolves on the compose network.
+                    args "--network ${env.FLOCI_NETWORK ?: 'jenkins_default'} -u root -v \$HOME/.composer:/root/.composer"
                 }
             }
             steps {
