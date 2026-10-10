@@ -1,6 +1,4 @@
 pipeline {
-    agent any
-
     environment {
         // ---- Floci (local AWS emulator) ---------------------------------
         // Floci accepts any dummy credentials, so `test`/`test` is used
@@ -123,8 +121,8 @@ pipeline {
         }
 
         stage('Parallel Quality & Linting') {
-            // Container stage itself: each branch below declares its own agent.
-            agent none
+            // A stage that contains parallel stages cannot declare its own
+            // `agent`; each parallel branch below declares the agent it needs.
             parallel {
                 stage('Code Linting') {
                     agent {
