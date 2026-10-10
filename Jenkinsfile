@@ -188,13 +188,14 @@ pipeline {
                             set -e
                             # The Jenkins container's own primary network.
                             #
-                            # The Go template emits one network name per line.
-                            # Concatenating them without a separator ({{$k}}{{end}})
-                            # produced names like "jenkins_defaultmy-shared-network"
-                            # whenever the container is attached to more than one
-                            # network, which is exactly what the Floci stages then
-                            # tried to `docker network connect`.
-                            docker inspect -f '{{range $k,$v := .NetworkSettings.Networks}}{{$k}}{{"\n"}}{{end}}' "$(hostname)"
+                            # The Go template emits one network name per line via
+                            # the built-in `println`. Concatenating the names
+                            # directly ({{$k}}{{end}}) produced values like
+                            # "jenkins_defaultmy-shared-network" whenever the
+                            # container is attached to more than one network,
+                            # which is what the Floci stages then tried to
+                            # `docker network connect`.
+                            docker inspect -f '{{range $k,$v := .NetworkSettings.Networks}}{{println $k}}{{end}}' "$(hostname)"
                         ''',
                         returnStdout: true
                     ).trim().split('\n')[0].trim()
