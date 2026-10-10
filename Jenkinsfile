@@ -198,10 +198,10 @@ pipeline {
                         returnStdout: true
                     ).trim().split('\n')*.trim().findAll { it }
 
-                    # Prefer a user-defined network. The default `bridge` (and
-                    # `host`/`none`) have no embedded DNS, so a Floci started
-                    # there would never resolve at http://floci:4566 for the
-                    # composer/node stages that join this network.
+                    // Prefer a user-defined network. The default `bridge` (and
+                    // `host`/`none`) have no embedded DNS, so a Floci started
+                    // there would never resolve at http://floci:4566 for the
+                    // composer/node stages that join this network.
                     def userDefined = networks.findAll { !(it in ['bridge', 'host', 'none']) }
                     def net = userDefined ? userDefined.first() : (networks ? networks.first() : '')
 
