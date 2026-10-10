@@ -196,7 +196,7 @@ pipeline {
                             docker inspect -f '{{range $k,$v := .NetworkSettings.Networks}}{{println $k}}{{end}}' "$(hostname)"
                         ''',
                         returnStdout: true
-                    ).trim().split('\n')*.trim().findAll { it }
+                    ).trim().split('\n').collect { it.trim() }.findAll { it }
 
                     // Prefer a user-defined network. The default `bridge` (and
                     // `host`/`none`) have no embedded DNS, so a Floci started
