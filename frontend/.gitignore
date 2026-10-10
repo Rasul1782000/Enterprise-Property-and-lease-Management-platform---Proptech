@@ -2,3 +2,5 @@
 /dist
 /.angular
 .env
+
+.vercel

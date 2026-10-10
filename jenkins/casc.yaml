@@ -30,9 +30,10 @@ jobs:
              * gets its own sub-job under this folder and runs the same
              * Jenkinsfile.
              *
-             * Only `main` deploys: the Jenkinsfile's "Deploy to Production"
-             * stage is guarded by `when { branch 'main' }`, so all other
-             * branches stop after tests/images.
+             * Only `main` deploys: the Jenkinsfile's "Deploy Frontend to
+             * Vercel" stage is guarded by `when { branch 'main' }`, so all
+             * other branches stop after tests/images. Nothing is deployed to
+             * the Docker/Traefik production host anymore.
              */
             includes('main develop feature/* release/*')
             excludes('*-wip')

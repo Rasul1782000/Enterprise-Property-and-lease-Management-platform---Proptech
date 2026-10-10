@@ -13,3 +13,6 @@ vendor/
 Thumbs.db
 /storage/*.key
 /storage/app/pdfs/*.pdf
+
+.vercel
+.env*.local

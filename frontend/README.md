@@ -8,7 +8,7 @@
 ```powershell
 cd frontend
 npm ci            # deterministic install from package-lock.json
-npm start         # http://localhost:4200 (proxies /api -> http://localhost:8000)
+npm start         # http://localhost:4200 (proxies /api, /sanctum -> https://rasul17.indevs.in)
 ```
 
 ## Scripts
@@ -31,8 +31,8 @@ npm run build:prod  # production config (environment.prod.ts, hashed assets, bud
 ## Environments
 | File | Used by | apiUrl | Mock data |
 |---|---|---|---|
-| `src/environments/environment.ts` | dev (`ng serve`, `ng test`) | `http://localhost:8000/api` | on |
-| `src/environments/environment.prod.ts` | `--configuration production` | `/api` (proxied by nginx) | off |
+| `src/environments/environment.ts` | dev (`ng serve`, `ng test`) | `https://rasul17.indevs.in/api` | off |
+| `src/environments/environment.prod.ts` | `--configuration production` | `https://rasul17.indevs.in/api` | off |
 
 `angular.json` swaps them via `fileReplacements` in the `production` configuration — do not remove that block, or the production bundle ships the dev API URL and mock data.
 
@@ -53,9 +53,9 @@ How the pieces fit together:
   calls can resolve theme tokens without re-emitting Tailwind.
 - Component stylesheets that use `@apply` need their own `@reference` line.
 
-**Restoring `angular.json`:** it is currently missing from the working tree, so
-`ng build` / `ng serve` / `ng test` all fail. When you restore it, make sure the
-global `build.options.styles` array contains both entries, in this order:
+**If `angular.json` is ever missing,** `ng build` / `ng serve` / `ng test` all
+fail. When you restore it, make sure the global `build.options.styles` array
+contains both entries, in this order:
 
 ```jsonc
 "styles": [
@@ -70,8 +70,12 @@ builder runs **Sass before PostCSS**, so `@import "tailwindcss"` inside a `.scss
 file is intercepted by Sass and fails with `Can't find stylesheet to import`.
 Keeping the Tailwind entry in plain CSS is what makes this work.
 
-The Dockerfile is also missing from the working tree; `Jenkinsfile` runs
-`docker build -t <tag> .` from inside `frontend/`, so that stage needs it back.
+The `Dockerfile` must stay in the tree as well; `Jenkinsfile` runs
+`docker build -t <tag> .` from inside `frontend/`.
+
+**`ng serve` refuses to start?** The Angular CLI hard-fails on unsupported Node
+versions (e.g. `22.22.0`). Run `nvm use` in `frontend/` to pick up `.nvmrc`
+(`24.20.0`), or install Node `22.22.3+` / `24.15+` / `26+`.
 
 ## Testing
 - Runner: **Vitest** (`@angular/build:unit-test`, jsdom) — 11 specs across feature areas
@@ -85,6 +89,32 @@ docker build -t proptech-frontend .
 docker run --rm -p 8080:80 proptech-frontend
 ```
 Multi-stage build (`node:22.22-alpine` → `nginx:1.27-alpine`). `nginx.conf` serves the SPA with history fallback, immutable caching for hashed assets, and reverse-proxies `/api` to `http://backend:8000`.
+
+## Deploy (Vercel)
+
+The Angular app is deployed to **Vercel**. The Laravel API is *not* deployed
+by this pipeline — it stays at `https://rasul17.indevs.in`, which is also the
+`apiUrl` baked into both environment files. Build settings live in
+`vercel.json`:
+
+- `buildCommand`: `npm run build:prod`
+- `outputDirectory`: `dist/frontend/browser`
+- every route is rewritten to `/index.html` so deep links work
+- `"engines": { "node": "22.x" }` in `package.json` pins Vercel's Node to a
+  release that satisfies Angular 22's runtime requirement
+
+Linked/manual deploy:
+
+```powershell
+npx vercel login       # once
+npx vercel link        # writes .vercel/project.json
+npx vercel pull --yes --environment=production
+npx vercel build --prod
+npx vercel deploy --prebuilt --prod
+```
+
+CI runs the same commands (`npx vercel@latest`) in the Jenkinsfile's
+**Deploy Frontend to Vercel** stage. See `../VERCEL_DEPLOYMENT.md`.
 
 ## Login
 Seeded account: `admin@propertylease.test` / `password`
