@@ -113,6 +113,14 @@ sets `use_path_style_endpoint => true`. Real AWS accepts path-style too.
 **Credentials:** Floci accepts any dummy credentials; the project standardises
 on `test`/`test`. No real AWS key is needed to run the suite.
 
+Buckets the project expects on Floci:
+
+| Bucket | Used by |
+|---|---|
+| `property-lease-ci` | Jenkins builds (`AWS_STORAGE_BUCKET` in the `Jenkinsfile`) |
+| `property-lease-documents` | Local dev / `.env` default |
+| `openwa-media` | OpenWA WhatsApp media (`jenkins/docker-compose.yml`) |
+
 ```bash
 # Create the bucket if it does not exist (idempotent)
 cd backend && php artisan storage:ensure-bucket
@@ -137,6 +145,11 @@ Each of these was a real bug, worth remembering when editing the pipeline:
 - **Hardcoded network names.** `docker network inspect jenkins_default` breaks
   when the compose directory or project name changes. The pipeline now reads the
   Jenkins container's own network via `docker inspect -f ... "$(hostname)"`.
+- **Concatenated network names.** Ranging the network map with `{{$k}}{{end}}`
+  joins the names with no separator (`jenkins_defaultmy-shared-network`), which
+  then fails as a `docker network connect` argument. The pipeline uses
+  `{{println $k}}` so each name is on its own line, and prefers a user-defined
+  network over the DNS-less default `bridge`.
 - **Port collisions.** Publishing `-p 4566:4566` collides with a Floci already
   running on the host. The pipeline reuses an existing `floci` container and
   starts one only if none exists, with no host port mapping.

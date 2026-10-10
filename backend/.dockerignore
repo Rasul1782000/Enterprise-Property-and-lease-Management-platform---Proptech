@@ -1,0 +1,28 @@
+# Keep the build context small and the production image clean. Without this
+# file `COPY . .` pulls the developer's vendor/ (with dev dependencies), their
+# .env (secrets), .git history and local runtime state into the build stage,
+# which the runtime stage then copies wholesale via `COPY --from=build /app`.
+.git
+.gitignore
+.dockerignore
+.env
+.env.*
+vendor
+node_modules
+tests
+*.log
+.phpunit.result.cache
+build.bat
+README.md
+
+# Runtime state rebuilt on every deploy (the Dockerfile recreates these dirs).
+storage/framework/cache/data/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/logs/*
+storage/prometheus/*
+storage/app/pdfs/*.pdf
+database/*.sqlite
+database/*.sqlite-journal
+database/*.sqlite-wal
+database/*.sqlite-shm
