@@ -201,28 +201,46 @@ pipeline {
             }
             // `npx vercel` needs Node/npm, which the Jenkins container ships.
             steps {
-                echo "Deploying the Angular frontend to Vercel (project ${env.VERCEL_PROJECT_ID})..."
-                withCredentials([string(credentialsId: env.VERCEL_TOKEN_ID, variable: 'VERCEL_TOKEN')]) {
-                    withEnv([
-                        "VERCEL_ORG_ID=${env.VERCEL_ORG_ID}",
-                        "VERCEL_PROJECT_ID=${env.VERCEL_PROJECT_ID}"
-                    ]) {
-                        /*
-                         * Run from the repository root: the Vercel project's
-                         * Root Directory is `frontend/`, so the CLI resolves the
-                         * app (and frontend/vercel.json) from here.
-                         *
-                         * Official Vercel CI flow: pull the project settings,
-                         * build locally (runs the install + build commands from
-                         * vercel.json), then ship the prebuilt output. `--prod`
-                         * promotes it to the production domain.
-                         */
-                        sh '''
-                            set -e
-                            npx --yes vercel@latest pull --yes --environment=production --token="$VERCEL_TOKEN"
-                            npx --yes vercel@latest build --prod --token="$VERCEL_TOKEN"
-                            npx --yes vercel@latest deploy --prebuilt --prod --token="$VERCEL_TOKEN"
-                        '''
+                script {
+                    /*
+                     * The only external prerequisite is a Jenkins secret-text
+                     * credential named by VERCEL_TOKEN_ID holding a Vercel token.
+                     * If it is missing (or the deploy fails) we mark the build
+                     * UNSTABLE and explain what to do rather than failing the
+                     * whole pipeline - a missing credential is a setup step, not
+                     * a code regression.
+                     */
+                    try {
+                        echo "Deploying the Angular frontend to Vercel (project ${env.VERCEL_PROJECT_ID})..."
+                        withCredentials([string(credentialsId: env.VERCEL_TOKEN_ID, variable: 'VERCEL_TOKEN')]) {
+                            withEnv([
+                                "VERCEL_ORG_ID=${env.VERCEL_ORG_ID}",
+                                "VERCEL_PROJECT_ID=${env.VERCEL_PROJECT_ID}"
+                            ]) {
+                                /*
+                                 * Run from the repository root: the Vercel
+                                 * project's Root Directory is `frontend/`, so the
+                                 * CLI resolves the app (and frontend/vercel.json)
+                                 * from here.
+                                 *
+                                 * Official Vercel CI flow: pull the project
+                                 * settings, build locally (runs the install +
+                                 * build commands from vercel.json), then ship the
+                                 * prebuilt output. `--prod` promotes it to the
+                                 * production domain.
+                                 */
+                                sh '''
+                                    set -e
+                                    npx --yes vercel@latest pull --yes --environment=production --token="$VERCEL_TOKEN"
+                                    npx --yes vercel@latest build --prod --token="$VERCEL_TOKEN"
+                                    npx --yes vercel@latest deploy --prebuilt --prod --token="$VERCEL_TOKEN"
+                                '''
+                            }
+                        }
+                    } catch (e) {
+                        echo "Vercel deploy did not run: ${e.message}"
+                        echo "Add a Jenkins secret-text credential with id '${env.VERCEL_TOKEN_ID}' (a Vercel token) to enable it - see VERCEL_DEPLOYMENT.md."
+                        currentBuild.result = 'UNSTABLE'
                     }
                 }
             }
