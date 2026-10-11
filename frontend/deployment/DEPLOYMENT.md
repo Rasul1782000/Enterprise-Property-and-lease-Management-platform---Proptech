@@ -17,44 +17,39 @@ environment before directing users to it. See [`../../VERCEL_DEPLOYMENT.md`](../
 
 ## Local API, MySQL, Redis, and Floci
 
-From the repository root in PowerShell, create your local environment file by
-copying the single template:
+Create `frontend\deployment\.env` and set `APP_KEY`, `DB_PASSWORD`, and
+`DB_ROOT_PASSWORD`, plus the optional `DEMO_SEED_ENABLED` / `DEMO_PASSWORD`
+values; the Compose file in `docker-compose.local.yml` lists the required
+names. Generate an application key with `php artisan key:generate --show` from
+`backend\` and put the returned `base64:...` value in `APP_KEY`. Compose loads
+that file automatically. Then build the one Laravel API image, start
+MySQL/Redis/Floci, apply migrations, ensure the S3 bucket, and start the API:
 
 ```powershell
-Copy-Item frontend\deployment\.env.example frontend\deployment\.env.local
-```
-
-Replace the `CHANGE_ME` values with unique local secrets. Generate an
-application key with `php artisan key:generate --show` from `backend\` and put
-the returned `base64:...` value in `APP_KEY`. Then build the one Laravel API
-image, start MySQL/Redis/Floci, apply migrations, ensure the S3 bucket, and
-start the API:
-
-```powershell
-docker compose --env-file frontend\deployment\.env.local -f frontend\deployment\docker-compose.local.yml build app
-docker compose --env-file frontend\deployment\.env.local -f frontend\deployment\docker-compose.local.yml up -d --wait db redis floci
-docker compose --env-file frontend\deployment\.env.local -f frontend\deployment\docker-compose.local.yml run --rm app php artisan migrate --force
-docker compose --env-file frontend\deployment\.env.local -f frontend\deployment\docker-compose.local.yml run --rm app php artisan storage:ensure-bucket
-docker compose --env-file frontend\deployment\.env.local -f frontend\deployment\docker-compose.local.yml up -d app
+docker compose -f frontend\deployment\docker-compose.local.yml build app
+docker compose -f frontend\deployment\docker-compose.local.yml up -d --wait db redis floci
+docker compose -f frontend\deployment\docker-compose.local.yml run --rm app php artisan migrate --force
+docker compose -f frontend\deployment\docker-compose.local.yml run --rm app php artisan storage:ensure-bucket
+docker compose -f frontend\deployment\docker-compose.local.yml up -d app
 ```
 
 The API listens on `http://localhost:8000`. MySQL and object data persist in
 named volumes. Stop containers without deleting those volumes with:
 
 ```powershell
-docker compose --env-file frontend\deployment\.env.local -f frontend\deployment\docker-compose.local.yml down
+docker compose -f frontend\deployment\docker-compose.local.yml down
 ```
 
 To create local sample records and login accounts, first set
 `DEMO_SEED_ENABLED=true` and choose a unique `DEMO_PASSWORD` of at least 12
-characters in `.env.local`, then run:
+characters in `.env`, then run:
 
 ```powershell
-docker compose --env-file frontend\deployment\.env.local -f frontend\deployment\docker-compose.local.yml run --rm app php artisan db:seed --force
+docker compose -f frontend\deployment\docker-compose.local.yml run --rm app php artisan db:seed --force
 ```
 
 The admin login is `admin@propertylease.test`; use the password from your local
-`.env.local`. Password hashes are stored in MySQL. Demo seeding is rejected in
+`.env`. Password hashes are stored in MySQL. Demo seeding is rejected in
 production and is never run automatically by migrations.
 
 Start the Angular development server separately from `frontend\` with

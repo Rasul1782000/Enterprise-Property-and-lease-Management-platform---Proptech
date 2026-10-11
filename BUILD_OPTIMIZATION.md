@@ -31,8 +31,8 @@ npm start
 ### Local API stack (Docker)
 
 The Laravel API, MySQL, Redis, and Floci run together through Docker Compose in
-`frontend/deployment/`. Copy `frontend/deployment/.env.example` to
-`frontend/deployment/.env.local`, set unique local secrets, then follow
+`frontend/deployment/`. Create `frontend/deployment/.env`, set unique local
+secrets, then follow
 [`frontend/deployment/DEPLOYMENT.md`](frontend/deployment/DEPLOYMENT.md).
 
 ## Optimization Highlights
