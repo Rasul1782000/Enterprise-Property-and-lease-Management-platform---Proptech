@@ -7,7 +7,6 @@
   [draggable]="false"
   [style]="{ width: '32rem' }">
   <div class="space-y-4">
-    <!-- Drop zone doubles as the file picker; the input stays visually hidden. -->
     <label
       class="drop-zone"
       [class.drop-zone-active]="dragging()"
@@ -65,7 +64,6 @@
       </form>
     }
 
-    <!-- Host-supplied extras, e.g. a list of the tenant's most recent documents. -->
     <ng-content select="[dialogExtra]" />
   </div>
 

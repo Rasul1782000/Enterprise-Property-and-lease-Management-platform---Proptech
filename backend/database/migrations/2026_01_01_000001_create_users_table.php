@@ -15,7 +15,7 @@ return new class extends Migration
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->enum('role', ['admin', 'manager', 'accountant', 'tenant'])->default('manager');
-            $table->foreignId('tenant_id')->nullable()->constrained('tenants')->nullOnDelete();
+            $table->unsignedBigInteger('tenant_id')->nullable();
             $table->rememberToken();
             $table->timestamps();
         });

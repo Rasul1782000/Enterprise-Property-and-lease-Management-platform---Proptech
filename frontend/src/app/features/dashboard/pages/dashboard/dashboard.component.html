@@ -1,6 +1,5 @@
 <div class="dashboard">
 
-  <!-- ───────────────────────────── page header ───────────────────────────── -->
   <header class="page-header">
     <div>
       <h1 class="page-title">Dashboard</h1>
@@ -23,7 +22,6 @@
     </div>
   </header>
 
-  <!-- ───────────────────────────── loading ──────────────────────────────── -->
   @if (loading()) {
     <div class="kpi-grid">
       @for (i of [0, 1, 2, 3]; track i) {
@@ -48,7 +46,6 @@
       </section>
     </div>
   } @else {
-    <!-- ─────────────────────────── headline metrics ──────────────────────── -->
     <div class="kpi-grid">
       <article class="metric-tile metric-tile--coral">
         <span class="metric-icon"><i class="pi pi-building"></i></span>
@@ -103,7 +100,6 @@
       </article>
     </div>
 
-    <!-- ─────────────────────────── trend panels ────────────────────────── -->
     <div class="panel-grid">
       <section class="section-card panel panel--quiet panel--teal">
         <header class="panel-head">
@@ -161,7 +157,6 @@
       </section>
     </div>
 
-    <!-- ────────────────────────── lease risk + brief ───────────────────── -->
     <div class="panel-grid panel-grid--halves">
       <section class="section-card panel panel--quiet panel--sunny">
         <header class="panel-head">
@@ -236,7 +231,6 @@
       </section>
     </div>
 
-    <!-- ───────────────────────────── recent activity ────────────────────── -->
     <section class="section-card panel panel--quiet">
       <header class="panel-head">
         <div>

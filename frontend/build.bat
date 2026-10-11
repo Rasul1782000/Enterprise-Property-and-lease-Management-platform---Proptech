@@ -1,14 +1,4 @@
 @echo off
-REM ============================================================
-REM  One-shot setup + production build for the Angular frontend.
-REM  Install deps (if needed) and build in a single run, so
-REM  there is no need to run `npm install` and `npm run build`
-REM  separately every time.
-REM
-REM  Usage:  build.bat            (production build)
-REM          build.bat dev        (development build)
-REM          build.bat serve      (install only, then dev server)
-REM ============================================================
 setlocal enabledelayedexpansion
 
 set "MODE=%~1"
@@ -24,9 +14,6 @@ if not exist package.json (
     exit /b 1
 )
 
-REM --- Dependencies -------------------------------------------------
-REM `npm ci` is only valid with a lockfile in sync; fall back to
-REM `npm install` so a freshly cloned or edited lockfile still works.
 if not exist node_modules (
     echo [1/2] Installing dependencies ^(first run^)...
     call npm ci --no-audit --fund=false
@@ -49,7 +36,6 @@ if not exist node_modules (
 
 if "%MODE%"=="serve" goto :serve
 
-REM --- Build ---------------------------------------------------------
 echo [2/2] Building...
 if "%MODE%"=="dev" (
     call npm run build

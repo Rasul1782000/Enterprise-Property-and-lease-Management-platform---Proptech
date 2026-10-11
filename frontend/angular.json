@@ -49,6 +49,24 @@
               ],
               "outputHashing": "all"
             },
+            "local": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.local.ts"
+                }
+              ]
+            },
+            "production-local": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.prod.local.ts"
+                }
+              ],
+              "optimization": true,
+              "outputHashing": "all"
+            },
             "development": {
               "optimization": false,
               "extractLicenses": false,
@@ -62,6 +80,12 @@
           "configurations": {
             "production": {
               "buildTarget": "frontend:build:production"
+            },
+            "local": {
+              "buildTarget": "frontend:build:local"
+            },
+            "production-local": {
+              "buildTarget": "frontend:build:production-local"
             },
             "development": {
               "buildTarget": "frontend:build:development"

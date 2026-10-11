@@ -14,19 +14,23 @@ use App\Http\Controllers\Api\WhatsAppStreamController;
 use App\Http\Controllers\Api\WhatsAppWebhookController;
 use Illuminate\Support\Facades\Route;
 
-Route::post('/auth/login', [AuthController::class, 'login']);
-Route::post('/auth/register', [AuthController::class, 'register']);
-Route::prefix('auth')->group(function () {
+Route::middleware('throttle:5,1')->group(function () {
+    Route::post('/auth/login', [AuthController::class, 'login']);
+    Route::post('/auth/register', [AuthController::class, 'register']);
+});
+Route::prefix('auth')->middleware('throttle:5,1')->group(function () {
     Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
     Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 });
-Route::middleware('hardcoded.token')->group(function () {
-    Route::post('/auth/logout', [AuthController::class, 'logout']);
-    Route::get('/auth/me', [AuthController::class, 'me']);
-    Route::post('/auth/refresh', [AuthController::class, 'refresh']);
-    Route::post('/auth/change-password', [AuthController::class, 'changePassword']);
-    Route::put('/auth/profile', [AuthController::class, 'updateProfile']);
+Route::prefix('auth')->middleware('auth:sanctum')->group(function () {
+    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/me', [AuthController::class, 'me']);
+    Route::post('/refresh', [AuthController::class, 'refresh']);
+    Route::post('/change-password', [AuthController::class, 'changePassword']);
+    Route::put('/profile', [AuthController::class, 'updateProfile']);
+});
 
+Route::middleware(['auth:sanctum', 'staff'])->group(function () {
     Route::apiResource('properties', PropertyController::class);
     Route::get('/properties/{property}/occupancy', [PropertyController::class, 'occupancy']);
     Route::post('/properties/{property}/image', [PropertyController::class, 'uploadImage']);
@@ -75,7 +79,7 @@ Route::middleware('hardcoded.token')->group(function () {
 
 Route::get('/whatsapp/stream', [WhatsAppStreamController::class, 'stream']);
 
-Route::middleware('hardcoded.token')
+Route::middleware(['auth:sanctum', 'staff'])
     ->prefix('dashboard')
     ->group(function () {
         Route::get('/stats', [DashboardController::class, 'stats']);

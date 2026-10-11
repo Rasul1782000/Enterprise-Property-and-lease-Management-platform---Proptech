@@ -1,0 +1,4 @@
+**
+!frontend/
+!frontend/deployment/
+!frontend/deployment/jenkins-casc.yaml

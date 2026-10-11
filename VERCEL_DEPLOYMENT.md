@@ -13,7 +13,7 @@ deploy target).
 | `frontend/vercel.json` | Vercel project settings: build command, output dir, SPA rewrite, security headers |
 | `frontend/package.json` → `engines.node` | Pins Vercel's Node to `22.x` (Angular 22 needs `22.22.3+`) |
 | `frontend/.nvmrc` | Local dev Node (`24.20.0`); also satisfies Angular 22 |
-| `Jenkinsfile` → `Deploy Frontend to Vercel` | CI stage that runs `vercel pull/build/deploy --prod` on `main` |
+| `frontend/deployment/Jenkinsfile` → `Deploy Frontend to Vercel` | CI stage that runs `vercel pull/build/deploy --prod` on `main` |
 
 ## Status
 
@@ -57,8 +57,8 @@ the project).
 
 ## Wiring it into Jenkins
 
-The two IDs are already committed in the `environment` block at the top of
-`Jenkinsfile`:
+The project IDs are configured in the `environment` block of
+`frontend/deployment/Jenkinsfile`:
 
 ```groovy
 VERCEL_ORG_ID     = 'team_wpE0cAB9zBtXOEltZjBRtcqP'
@@ -66,7 +66,8 @@ VERCEL_PROJECT_ID = 'prj_XcprW7xNZSBZRAp9pwOfNX7NA7gY'
 VERCEL_TOKEN_ID   = 'vercel-token'   // Jenkins credential id
 ```
 
-The only missing piece is the token. Full steps are in
+The Jenkins secret-text credential is required; the deploy stage fails if it
+is absent or Vercel rejects the release. Full steps are in
 [`CREDENTIALS.md`](CREDENTIALS.md). In short, add it as a Jenkins
 credential:
 
@@ -88,8 +89,8 @@ npx vercel@latest deploy --prebuilt --prod --token="$VERCEL_TOKEN"
 command ships that prebuilt output to the production domain.
 
 - Branches other than `main` stop after lint/test/build — they never deploy.
-- If the two IDs are left empty the deploy stage is skipped, so a half-configured
-  job cannot accidentally push a broken build.
+- Configure the production API origin, CORS allowlist, TLS, and object storage
+  separately from Vercel. Vercel hosts only the Angular static frontend.
 
 ## Manual deploy
 

@@ -10,16 +10,15 @@ composer install
 Copy-Item .env.example .env
 php artisan key:generate
 # edit .env: DB_* , MAIL_* , FRONTEND_URL
-php artisan migrate --seed
+php artisan migrate
 php artisan storage:link
 php artisan serve  # http://localhost:8000
 ```
 
-Demo logins after seed:
-- admin@propertylease.test / password (admin)
-- manager@propertylease.test / password (manager)
-- accountant@propertylease.test / password (accountant)
-- any tenant email / password (tenant)
+For local demo data only, set `DEMO_SEED_ENABLED=true` and a unique
+`DEMO_PASSWORD` (12+ characters) in `.env`, then run `php artisan db:seed`.
+The seeded admin login is `admin@propertylease.test` and uses that password.
+Passwords are stored hashed in MySQL; demo seeding is rejected in production.
 
 ## Scheduler (Windows)
 ```powershell

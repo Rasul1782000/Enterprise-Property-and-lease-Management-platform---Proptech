@@ -1,17 +1,3 @@
-/* ==========================================================================
-   Tailwind CSS v4 entrypoint.
-
-   This file is deliberately plain CSS (not SCSS). The Angular application
-   builder runs the Sass preprocessor BEFORE PostCSS, so a Sass-level
-   `@import "tailwindcss"` would be intercepted by Sass and fail to resolve.
-   Keeping the Tailwind entry in a .css file lets Sass pass it straight
-   through to @tailwindcss/postcss.
-
-   Styles that call @apply live in styles.scss and pull these tokens in via
-   `@reference "tailwind.css"`.
-
-   Previously this configuration lived in tailwind.config.js (v3).
-   ========================================================================== */
 
 @import "tailwindcss";
 

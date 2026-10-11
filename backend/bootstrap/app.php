@@ -1,7 +1,7 @@
 <?php
 
-use App\Http\Middleware\HandleHardcodedToken;
 use App\Http\Middleware\RecordMetrics;
+use App\Http\Middleware\EnsureStaffRole;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -16,13 +16,10 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->statefulApi();
         $middleware->alias([
-            'hardcoded.token' => HandleHardcodedToken::class,
+            'staff' => EnsureStaffRole::class,
         ]);
 
-        // Global so every route lands on the dashboard, not just the ones that
-        // remember to opt in. It excludes the scrape endpoint and /up itself.
         $middleware->append(RecordMetrics::class);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
     })->create();

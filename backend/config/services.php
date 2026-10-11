@@ -25,7 +25,7 @@ return [
 
     'openwa' => [
         'base_url' => env('OPENWA_BASE_URL', 'http://openwa:2785'),
-        'api_key' => env('OPENWA_API_KEY', 'dev-admin-key'),
+        'api_key' => env('OPENWA_API_KEY'),
         'session_id' => env('OPENWA_SESSION_ID', ''),
         'webhook_secret' => env('OPENWA_WEBHOOK_SECRET', ''),
 

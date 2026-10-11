@@ -11,10 +11,6 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
-/**
- * Covers the tenant document endpoints, including the write path that puts
- * objects on the `documents` disk (Floci in dev/CI, S3 in production).
- */
 class TenantDocumentUploadTest extends TestCase
 {
     use RefreshDatabase;
@@ -64,7 +60,6 @@ class TenantDocumentUploadTest extends TestCase
 
             $client->deleteBucket(['Bucket' => $bucket]);
         } catch (\Throwable) {
-            // Best-effort cleanup.
         }
 
         parent::tearDown();
@@ -79,7 +74,6 @@ class TenantDocumentUploadTest extends TestCase
         ]);
     }
 
-    /** @test */
     public function uploading_a_document_stores_the_object_and_records_it_against_the_tenant(): void
     {
         $tenant = $this->makeTenant();
@@ -99,12 +93,10 @@ class TenantDocumentUploadTest extends TestCase
         $this->assertSame('documents', $document->disk);
         $this->assertSame('pdf', $document->extension);
 
-        // The object must genuinely exist in the bucket, not just be recorded.
         Storage::disk('documents')->assertExists($document->path);
         $this->assertStringContainsString("tenants/{$tenant->id}", $document->path);
     }
 
-    /** @test */
     public function the_document_list_returns_only_that_tenants_documents(): void
     {
         $tenant = $this->makeTenant();
@@ -135,7 +127,6 @@ class TenantDocumentUploadTest extends TestCase
         $this->assertSame('Lease agreement.pdf', $response->json('data.0.name'));
     }
 
-    /** @test */
     public function the_document_list_can_be_filtered_by_category(): void
     {
         $tenant = $this->makeTenant();
@@ -156,7 +147,6 @@ class TenantDocumentUploadTest extends TestCase
         $this->assertSame('B.pdf', $response->json('data.0.name'));
     }
 
-    /** @test */
     public function a_rejected_file_type_is_a_validation_error_and_stores_nothing(): void
     {
         $tenant = $this->makeTenant();
@@ -169,7 +159,6 @@ class TenantDocumentUploadTest extends TestCase
         $this->assertSame(0, TenantDocument::count());
     }
 
-    /** @test */
     public function an_unknown_category_is_a_validation_error(): void
     {
         $tenant = $this->makeTenant();
@@ -182,7 +171,6 @@ class TenantDocumentUploadTest extends TestCase
         $response->assertStatus(422)->assertJsonValidationErrors('category');
     }
 
-    /** @test */
     public function deleting_a_document_removes_both_the_row_and_the_object(): void
     {
         $tenant = $this->makeTenant();
@@ -200,7 +188,6 @@ class TenantDocumentUploadTest extends TestCase
         Storage::disk('documents')->assertMissing($path);
     }
 
-    /** @test */
     public function a_document_cannot_be_reached_through_the_wrong_tenant(): void
     {
         $tenant = $this->makeTenant();
@@ -222,7 +209,6 @@ class TenantDocumentUploadTest extends TestCase
         $this->deleteJson("/api/tenants/{$other->id}/documents/{$document->id}")->assertNotFound();
     }
 
-    /** @test */
     public function the_download_route_streams_the_stored_object(): void
     {
         $tenant = $this->makeTenant();

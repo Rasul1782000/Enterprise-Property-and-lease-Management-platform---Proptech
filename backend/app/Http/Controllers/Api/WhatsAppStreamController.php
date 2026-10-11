@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Laravel\Sanctum\PersonalAccessToken;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class WhatsAppStreamController extends Controller
@@ -17,7 +17,7 @@ class WhatsAppStreamController extends Controller
 
 
 
-        if (! $request->user() && ! $this->hasStreamCredential($request)) {
+        if (! $this->hasStreamCredential($request)) {
             abort(401, 'Unauthenticated.');
         }
 
@@ -75,16 +75,20 @@ class WhatsAppStreamController extends Controller
 
     private function hasStreamCredential(Request $request): bool
     {
+        if (in_array($request->user()?->role, ['admin', 'manager', 'accountant'], true)) {
+            return true;
+        }
+
         $token = $request->query('token');
 
         if (! is_string($token) || $token === '') {
             return false;
         }
 
-        if (str_starts_with($token, 'hardcoded-admin-token-')) {
-            return true;
-        }
+        $accessToken = PersonalAccessToken::findToken($token);
 
-        return Auth::guard('sanctum')->getSanctumUserByToken($token) !== null;
+        return $accessToken !== null
+            && ! $accessToken->expires_at?->isPast()
+            && in_array($accessToken->tokenable?->role, ['admin', 'manager', 'accountant'], true);
     }
 }

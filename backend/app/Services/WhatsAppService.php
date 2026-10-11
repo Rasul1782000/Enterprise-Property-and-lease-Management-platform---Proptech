@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use RuntimeException;
 use Throwable;
 
 class WhatsAppService
@@ -15,7 +16,7 @@ class WhatsAppService
     public function __construct()
     {
         $this->baseUrl = rtrim(config('services.openwa.base_url', 'http://openwa:2785'), '/');
-        $this->apiKey = config('services.openwa.api_key', 'dev-admin-key');
+        $this->apiKey = config('services.openwa.api_key', '');
         $this->sessionId = config('services.openwa.session_id', '');
     }
 
@@ -33,6 +34,7 @@ class WhatsAppService
 
     public function sendDocument(string $phone, string $documentPath, string $caption = ''): array
     {
+        $this->ensureApiKey();
         $response = Http::withHeaders([
             'X-API-Key' => $this->apiKey,
         ])->attach(
@@ -109,6 +111,7 @@ class WhatsAppService
 
     protected function request(string $method, string $path, array $data = []): array
     {
+        $this->ensureApiKey();
         $url = $this->baseUrl.$path;
 
         $http = Http::withHeaders([
@@ -139,5 +142,12 @@ class WhatsAppService
         }
 
         return $response->json();
+    }
+
+    private function ensureApiKey(): void
+    {
+        if (trim($this->apiKey) === '') {
+            throw new RuntimeException('OPENWA_API_KEY must be configured before using the WhatsApp gateway.');
+        }
     }
 }

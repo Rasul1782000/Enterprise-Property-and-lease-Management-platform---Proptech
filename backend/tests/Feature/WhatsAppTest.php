@@ -2,23 +2,16 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use App\Services\WhatsAppService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
+use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
-/**
- * Tests for the WhatsApp integration via OpenWA.
- *
- * These tests mock the OpenWA HTTP API so they run without a live
- * OpenWA container. They verify that the WhatsAppService correctly
- * formats requests and handles responses.
- */
 class WhatsAppTest extends TestCase
 {
-    // The route-level cases resolve a bearer token through the sanctum guard,
-    // which touches personal_access_tokens.
     use RefreshDatabase;
 
     protected function setUp(): void
@@ -32,7 +25,6 @@ class WhatsAppTest extends TestCase
         ]);
     }
 
-    /** @test */
     public function it_formats_phone_number_to_whatsapp_jid(): void
     {
         $service = new WhatsAppService();
@@ -42,7 +34,6 @@ class WhatsAppTest extends TestCase
         $this->assertEquals('971501234567@c.us', $service->formatChatId('971-50-123-4567'));
     }
 
-    /** @test */
     public function it_sends_text_message_via_openwa_api(): void
     {
         Http::fake([
@@ -65,7 +56,6 @@ class WhatsAppTest extends TestCase
         });
     }
 
-    /** @test */
     public function it_gets_session_status(): void
     {
         Http::fake([
@@ -82,7 +72,6 @@ class WhatsAppTest extends TestCase
         $this->assertEquals('ready', $status['status']);
     }
 
-    /** @test */
     public function it_gets_chat_history(): void
     {
         Http::fake([
@@ -101,7 +90,6 @@ class WhatsAppTest extends TestCase
         $this->assertEquals('Hello', $history['messages'][0]['body']);
     }
 
-    /** @test */
     public function it_throws_exception_on_api_failure(): void
     {
         Http::fake([
@@ -118,7 +106,6 @@ class WhatsAppTest extends TestCase
         $service->sendText('+971501234567', 'Hello');
     }
 
-    /** @test */
     public function it_creates_a_new_session(): void
     {
         Http::fake([
@@ -136,7 +123,6 @@ class WhatsAppTest extends TestCase
         $this->assertEquals('created', $session['status']);
     }
 
-    /** @test */
     public function it_starts_a_session(): void
     {
         Http::fake([
@@ -152,28 +138,25 @@ class WhatsAppTest extends TestCase
         $this->assertEquals('initializing', $result['status']);
     }
 
-    /** @test */
     public function status_reports_not_connected_when_the_gateway_is_unreachable(): void
     {
         Http::fake(fn () => throw new ConnectionException('gateway down'));
 
-        $response = $this->withToken('hardcoded-admin-token-test')
-            ->getJson('/api/whatsapp/status');
+        $this->authenticateAsStaff();
+        $response = $this->getJson('/api/whatsapp/status');
 
-        // A dead gateway is a 503, not a 500: nothing is wrong with the app.
         $response->assertStatus(503);
         $this->assertFalse($response->json('connected'));
     }
 
-    /** @test */
     public function send_returns_a_failure_payload_rather_than_throwing(): void
     {
         Http::fake([
             '*/api/sessions/*/messages/send-text' => Http::response(['message' => 'Session not ready'], 409),
         ]);
 
-        $response = $this->withToken('hardcoded-admin-token-test')
-            ->postJson('/api/whatsapp/send', [
+        $this->authenticateAsStaff();
+        $response = $this->postJson('/api/whatsapp/send', [
                 'phone' => '+971501234567',
                 'message' => 'Hello',
             ]);
@@ -182,15 +165,13 @@ class WhatsAppTest extends TestCase
         $this->assertFalse($response->json('success'));
     }
 
-    /** @test */
     public function send_validates_its_input_before_reaching_the_gateway(): void
     {
         Http::fake();
 
-        $response = $this->withToken('hardcoded-admin-token-test')
-            ->postJson('/api/whatsapp/send', [
+        $this->authenticateAsStaff();
+        $response = $this->postJson('/api/whatsapp/send', [
                 'phone' => '+971501234567',
-                // Over OpenWA's 4096-character limit.
                 'message' => str_repeat('a', 4097),
             ]);
 
@@ -200,11 +181,22 @@ class WhatsAppTest extends TestCase
         Http::assertNothingSent();
     }
 
-    /** @test */
     public function the_stream_route_rejects_an_unauthenticated_caller(): void
     {
         $response = $this->getJson('/api/whatsapp/stream');
 
         $response->assertStatus(401);
+    }
+
+    private function authenticateAsStaff(): void
+    {
+        $user = User::create([
+            'name' => 'Test Admin',
+            'email' => 'admin@example.test',
+            'password' => 'secret-password',
+            'role' => 'admin',
+        ]);
+
+        Sanctum::actingAs($user);
     }
 }

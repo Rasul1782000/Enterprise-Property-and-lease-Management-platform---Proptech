@@ -13,10 +13,6 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
-/**
- * Covers the two endpoints that write to object storage through the
- * `documents` disk (Floci in dev/CI, S3 in production).
- */
 class LeaseDocumentStorageTest extends TestCase
 {
     use RefreshDatabase;
@@ -60,7 +56,6 @@ class LeaseDocumentStorageTest extends TestCase
 
             $client->deleteBucket(['Bucket' => $bucket]);
         } catch (\Throwable) {
-            // Best-effort cleanup.
         }
 
         parent::tearDown();
@@ -104,13 +99,11 @@ class LeaseDocumentStorageTest extends TestCase
             'end_date' => now()->addYear(),
             'rent_amount' => 1500,
             'deposit_amount' => 3000,
-            // The leases enum allows: draft, active, expired, terminated, renewed.
             'status' => 'draft',
             'payment_frequency' => 'monthly',
         ]);
     }
 
-    /** @test */
     public function signing_a_lease_stores_the_pdf_and_activates_it(): void
     {
         $lease = $this->makeLease();
@@ -130,7 +123,6 @@ class LeaseDocumentStorageTest extends TestCase
         $this->assertSame('active', $lease->status);
         $this->assertSame('signed/lease_LSE-TST-1.pdf', $lease->document_path);
 
-        // The object must genuinely exist in the bucket, not just be recorded.
         Storage::disk('documents')->assertExists($lease->document_path);
 
         $pdf = Storage::disk('documents')->get($lease->document_path);
@@ -138,7 +130,6 @@ class LeaseDocumentStorageTest extends TestCase
         $this->assertGreaterThan(500, strlen($pdf), 'Rendered lease PDF looks suspiciously small.');
     }
 
-    /** @test */
     public function re_signing_replaces_the_document_rather_than_duplicating_it(): void
     {
         $lease = $this->makeLease();

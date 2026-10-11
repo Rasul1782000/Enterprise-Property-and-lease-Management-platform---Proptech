@@ -70,8 +70,9 @@ builder runs **Sass before PostCSS**, so `@import "tailwindcss"` inside a `.scss
 file is intercepted by Sass and fails with `Can't find stylesheet to import`.
 Keeping the Tailwind entry in plain CSS is what makes this work.
 
-The `Dockerfile` must stay in the tree as well; `Jenkinsfile` runs
-`docker build -t <tag> .` from inside `frontend/`.
+Docker deployment assets live under [`deployment/`](./deployment/). The
+Angular frontend is built and hosted by Vercel; Docker builds the Laravel API
+and is not used to host the frontend in production.
 
 **`ng serve` refuses to start?** The Angular CLI hard-fails on unsupported Node
 versions (e.g. `22.22.0`). Run `nvm use` in `frontend/` to pick up `.nvmrc`
@@ -83,25 +84,30 @@ versions (e.g. `22.22.0`). Run `nvm use` in `frontend/` to pick up `.nvmrc`
 - `src/testing/setup.ts` — jsdom polyfill for `ResizeObserver` (PrimeNG tabs)
 - `tsconfig.spec.json` — spec compilation with `vitest/globals` types
 
-## Docker
-```powershell
-docker build -t proptech-frontend .
-docker run --rm -p 8080:80 proptech-frontend
-```
-Multi-stage build (`node:22.22-alpine` → `nginx:1.27-alpine`). `nginx.conf` serves the SPA with history fallback, immutable caching for hashed assets, and reverse-proxies `/api` to `http://backend:8000`.
-
 ## Deploy (Vercel)
 
 The Angular app is deployed to **Vercel**. The Laravel API is *not* deployed
-by this pipeline — it stays at `https://rasul17.indevs.in`, which is also the
-`apiUrl` baked into both environment files. Build settings live in
-`vercel.json`:
+by this pipeline. Production builds use the API URL in
+`src/environments/environment.prod.ts`; set it to the deployed API origin
+before release. Values in Angular environment files are compiled into public
+JavaScript and must never contain credentials or other secrets. Build settings
+live in `vercel.json`:
 
 - `buildCommand`: `npm run build:prod`
 - `outputDirectory`: `dist/frontend/browser`
 - every route is rewritten to `/index.html` so deep links work
 - `"engines": { "node": "22.x" }` in `package.json` pins Vercel's Node to a
   release that satisfies Angular 22's runtime requirement
+
+## Frontend environment configurations
+
+- `npm start` / `ng serve`: `environment.ts` (development API at `localhost:8000`)
+- `npm run start:local`: `environment.local.ts` (local API at `127.0.0.1:8000`)
+- `npm run build:prod`: `environment.prod.ts` (production API; used by Vercel)
+- `npm run build:prod:local`: `environment.prod.local.ts` (optimized local API build)
+
+These are public frontend settings, not secret environment files. Configure
+production API CORS to allow the Vercel site origin.
 
 Linked/manual deploy:
 
@@ -113,8 +119,15 @@ npx vercel build --prod
 npx vercel deploy --prebuilt --prod
 ```
 
-CI runs the same commands (`npx vercel@latest`) in the Jenkinsfile's
-**Deploy Frontend to Vercel** stage. See `../VERCEL_DEPLOYMENT.md`.
+CI runs the same commands (`npx vercel@latest`) in
+[`deployment/Jenkinsfile`](./deployment/Jenkinsfile). See
+[`../VERCEL_DEPLOYMENT.md`](../VERCEL_DEPLOYMENT.md).
 
 ## Login
-Seeded account: `admin@propertylease.test` / `password`
+Local demo data is opt-in. Set `DEMO_SEED_ENABLED=true` and a unique,
+12-character-or-longer `DEMO_PASSWORD` in
+[`deployment/.env.local`](./deployment/.env.local), then run
+`deployment\build-and-run.bat demo` from the repository root. The admin email
+is `admin@propertylease.test`; the password is never committed or stored in
+plaintext (Laravel stores its hash in MySQL). Do not seed demo accounts in
+production.

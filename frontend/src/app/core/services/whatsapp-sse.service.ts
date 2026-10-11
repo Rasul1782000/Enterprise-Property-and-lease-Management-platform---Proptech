@@ -1,4 +1,5 @@
 import { Injectable, signal } from '@angular/core';
+import { environment } from '../../../environments/environment';
 
 export interface InboundMessage {
   from: string;
@@ -17,22 +18,21 @@ export class WhatsAppSseService {
   private eventSource: EventSource | null = null;
 
   newMessages = signal<InboundMessage[]>([]);
-  
+
   connectionStatus = signal<'connected' | 'disconnected' | 'connecting'>('disconnected');
 
   sessionStatus = signal<string>('unknown');
 
   connect(): void {
     if (this.eventSource) {
-      return; // Already connected
+      return;
     }
 
     this.connectionStatus.set('connecting');
 
     const token = this.readToken();
-    const url = token
-      ? `/api/whatsapp/stream?token=${encodeURIComponent(token)}`
-      : '/api/whatsapp/stream';
+    const streamUrl = `${environment.apiUrl}/whatsapp/stream`;
+    const url = token ? `${streamUrl}?token=${encodeURIComponent(token)}` : streamUrl;
 
     this.eventSource = new EventSource(url);
 

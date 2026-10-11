@@ -19,7 +19,9 @@ composer install
 Copy-Item .env.example .env
 php artisan key:generate
 # edit .env: DB_DATABASE=property_lease, DB_USERNAME/DB_PASSWORD, MAIL_*, FRONTEND_URL=http://localhost:4200
-php artisan migrate --seed      # seeds admin/manager/accountant + 4 properties, 6-12 units each, 10 leases
+php artisan migrate
+# Optional local-only demo data: set DEMO_SEED_ENABLED=true and a unique
+# DEMO_PASSWORD (12+ characters) in backend/.env before php artisan db:seed.
 php artisan storage:link
 php artisan serve               # http://localhost:8000
 # in another terminal for scheduler:
@@ -46,11 +48,11 @@ npm start    # http://localhost:4200  (proxy -> :8000)
 
 Environment: `frontend/src/environments/environment.ts` -> `apiUrl: http://localhost:8000/api`
 
-### 3) Logins (after seed)
-- `admin@propertylease.test` / `password` (admin)
-- `manager@propertylease.test` / `password` (manager)
-- `accountant@propertylease.test` / `password` (accountant)
-- any tenant email shown in Tenants list / `password`
+### 3) Local demo login (optional)
+- Email: `admin@propertylease.test`
+- Password: the local-only `DEMO_PASSWORD` configured before explicitly
+  running the demo seeder. The seeder stores password hashes in MySQL and is
+  disabled in production; there is no built-in shared demo password.
 
 ## Backend Highlights
 - **Eloquent Relationships**: `Property hasMany Building hasMany Unit hasMany Lease belongsTo Tenant`, `Lease hasMany Invoice hasMany Payment`, scopes `active`, `vacant`, `overdue`, `expiringSoon`
@@ -76,16 +78,32 @@ Windows Task Scheduler: trigger `php.exe artisan schedule:run` every minute.
 
 | Component | Where | Notes |
 |---|---|---|
-| Jenkins | `docker compose` in `jenkins/` | Web UI on http://localhost:8888 |
+| Jenkins | `frontend/deployment/docker-compose.jenkins.yml` | Web UI on http://localhost:8888 |
 | Floci | `floci/floci:latest` | Local AWS emulator, port 4566 |
 | Frontend | Angular 22 + PrimeNG | Vitest via `@angular/build:unit-test` |
 | Backend | Laravel 12 + MySQL | S3 access via `aws/aws-sdk-php` + Flysystem |
 
+Before starting Jenkins, set a unique administrator password in the
+`JENKINS_ADMIN_PASSWORD` environment variable. On Linux/macOS:
+
 ```bash
-docker compose -f jenkins/docker-compose.yml up -d
+read -s JENKINS_ADMIN_PASSWORD
+export JENKINS_ADMIN_PASSWORD
+docker compose -f frontend/deployment/docker-compose.jenkins.yml up -d --build
 ```
 
-Jenkins is on http://localhost:8888 (`admin` / `admin123`).
+On PowerShell:
+
+```powershell
+$secure = Read-Host "Jenkins administrator password" -AsSecureString
+$env:JENKINS_ADMIN_PASSWORD = [System.Net.NetworkCredential]::new("", $secure).Password
+docker compose -f frontend/deployment/docker-compose.jenkins.yml up -d --build
+```
+
+Jenkins is available on http://localhost:8888 and is bound to localhost only.
+Jenkins has access to the host Docker socket for image builds, which is
+effectively host-level control. Floci does not need that socket for this
+project's S3 use. Keep the CI stack local-only and do not run untrusted jobs.
 The Floci web console is on http://localhost:4500.
 
 ### Object storage: Floci in dev/CI, real S3 in production
@@ -119,7 +137,7 @@ Buckets the project expects on Floci:
 |---|---|
 | `property-lease-ci` | Jenkins builds (`AWS_STORAGE_BUCKET` in the `Jenkinsfile`) |
 | `property-lease-documents` | Local dev / `.env` default |
-| `openwa-media` | OpenWA WhatsApp media (`jenkins/docker-compose.yml`) |
+| `openwa-media` | Optional local OpenWA profile (`frontend/deployment/docker-compose.jenkins.yml`) |
 
 ```bash
 # Create the bucket if it does not exist (idempotent)
@@ -131,9 +149,9 @@ cd backend && php artisan test
 
 ### Adding a service the pipeline needs
 
-1. Add the plugin ID to `jenkins/Dockerfile` `jenkins-plugin-cli --plugins`.
+1. Add the plugin ID to `frontend/deployment/Dockerfile.jenkins` `jenkins-plugin-cli --plugins`.
 2. Verify it still resolves — withdrawn plugins fail the image build.
-3. Rebuild: `docker compose -f jenkins/docker-compose.yml build`.
+3. Rebuild: `docker compose -f frontend/deployment/docker-compose.jenkins.yml build`.
 
 ### Jenkinsfile defects this setup avoids
 

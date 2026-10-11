@@ -1,0 +1,105 @@
+services:
+  app:
+    image: property-lease-api:local
+    build:
+      context: ../..
+      dockerfile: frontend/deployment/Dockerfile.backend
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "false"
+      APP_KEY: ${APP_KEY:?Set APP_KEY in frontend/deployment/.env.local}
+      APP_URL: http://localhost:8000
+      FRONTEND_URL: http://localhost:4200
+      DB_CONNECTION: mysql
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_DATABASE: property_lease
+      DB_USERNAME: property_lease
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in frontend/deployment/.env.local}
+      SANCTUM_STATEFUL_DOMAINS: localhost:4200,127.0.0.1:4200
+      SESSION_DOMAIN: localhost
+      MAIL_MAILER: log
+      MAIL_FROM_ADDRESS: noreply@propertylease.test
+      CACHE_DRIVER: redis
+      SESSION_DRIVER: redis
+      QUEUE_CONNECTION: redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      FILESYSTEM_DISK: documents
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_ENDPOINT_URL: http://floci:4566
+      AWS_STORAGE_BUCKET: property-lease-documents
+      AWS_STORAGE_PREFIX: portal
+      AWS_USE_PATH_STYLE_ENDPOINT: "true"
+      DEMO_SEED_ENABLED: ${DEMO_SEED_ENABLED:-false}
+      DEMO_PASSWORD: ${DEMO_PASSWORD:-}
+      LOG_CHANNEL: stderr
+    volumes:
+      - app-storage:/var/www/html/storage
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      floci:
+        condition: service_started
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?Set DB_ROOT_PASSWORD in frontend/deployment/.env.local}
+      MYSQL_DATABASE: property_lease
+      MYSQL_USER: property_lease
+      MYSQL_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in frontend/deployment/.env.local}
+    volumes:
+      - db-data:/var/lib/mysql
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+
+  floci:
+    image: floci/floci:latest
+    volumes:
+      - floci-data:/app/data
+    ports:
+      - "127.0.0.1:4566:4566"
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+volumes:
+  db-data:
+  app-storage:
+  floci-data:

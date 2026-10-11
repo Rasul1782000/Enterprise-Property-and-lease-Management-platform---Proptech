@@ -1,0 +1,14 @@
+**
+!backend/
+!backend/**
+!frontend/
+!frontend/deployment/
+!frontend/deployment/backend-docker/
+!frontend/deployment/backend-docker/**
+
+backend/.env
+backend/.env.*
+backend/vendor/
+backend/storage/
+backend/tests/
+backend/database/*.sqlite*

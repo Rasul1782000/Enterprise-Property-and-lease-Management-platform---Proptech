@@ -11,17 +11,41 @@ use App\Models\Tenant;
 use App\Models\Unit;
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Hash;
+use RuntimeException;
 
 class DemoDataSeeder extends Seeder
 {
     public function run(): void
     {
+        if (App::environment('production') || ! filter_var(env('DEMO_SEED_ENABLED', false), FILTER_VALIDATE_BOOLEAN)) {
+            throw new RuntimeException('Demo seeding is disabled. Enable DEMO_SEED_ENABLED only for a non-production database.');
+        }
 
-        $admin = User::create(['name' => 'Admin', 'email' => 'admin@propertylease.test', 'password' => Hash::make('password'), 'role' => 'admin']);
-        $manager = User::create(['name' => 'Sarah Manager', 'email' => 'manager@propertylease.test', 'password' => Hash::make('password'), 'role' => 'manager']);
-        $accountant = User::create(['name' => 'Alex Accountant', 'email' => 'accountant@propertylease.test', 'password' => Hash::make('password'), 'role' => 'accountant']);
+        $demoPassword = env('DEMO_PASSWORD');
+        if (! is_string($demoPassword) || strlen($demoPassword) < 12) {
+            throw new RuntimeException('Set DEMO_PASSWORD to a unique value of at least 12 characters before seeding demo users.');
+        }
 
+        $admin = User::updateOrCreate(
+            ['email' => 'admin@propertylease.test'],
+            ['name' => 'Admin', 'password' => Hash::make($demoPassword), 'role' => 'admin']
+        );
+        $manager = User::updateOrCreate(
+            ['email' => 'manager@propertylease.test'],
+            ['name' => 'Sarah Manager', 'password' => Hash::make($demoPassword), 'role' => 'manager']
+        );
+        $accountant = User::updateOrCreate(
+            ['email' => 'accountant@propertylease.test'],
+            ['name' => 'Alex Accountant', 'password' => Hash::make($demoPassword), 'role' => 'accountant']
+        );
+
+        if (Property::where('code', 'PROP-001')->exists()) {
+            $this->command->info('Demo accounts updated; sample property data already exists.');
+
+            return;
+        }
 
         $tenants = collect();
         foreach (range(1, 12) as $i) {
@@ -35,7 +59,7 @@ class DemoDataSeeder extends Seeder
                 'status' => 'active',
             ]);
 
-            User::create(['name' => $t->full_name, 'email' => $t->email, 'password' => Hash::make('password'), 'role' => 'tenant', 'tenant_id' => $t->id]);
+            User::create(['name' => $t->full_name, 'email' => $t->email, 'password' => Hash::make($demoPassword), 'role' => 'tenant', 'tenant_id' => $t->id]);
             $tenants->push($t);
         }
 

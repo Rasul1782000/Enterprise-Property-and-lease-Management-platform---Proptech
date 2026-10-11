@@ -25,10 +25,19 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
         });
+
+        
+        Schema::table('users', function (Blueprint $table) {
+            $table->foreign('tenant_id')->references('id')->on('tenants')->nullOnDelete();
+        });
     }
 
     public function down(): void
     {
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropForeign(['tenant_id']);
+        });
+
         Schema::dropIfExists('tenants');
     }
 };

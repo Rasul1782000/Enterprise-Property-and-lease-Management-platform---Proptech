@@ -1,0 +1,48 @@
+jenkins:
+  systemMessage: "Enterprise Property & Lease Management Portal - CI/CD Server"
+  numExecutors: 2
+  mode: NORMAL
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: "admin"
+          name: "Administrator"
+          password: "${JENKINS_ADMIN_PASSWORD}"
+  authorizationStrategy:
+    loggedInUsersCanDoAnything:
+      allowAnonymousRead: false
+
+unclassified:
+  location:
+    url: "http://localhost:8888/"
+    adminAddress: "admin@localhost"
+
+jobs:
+  - script: >
+      multibranchPipelineJob('enterprise-property-portal') {
+        branchSources {
+          git {
+            id('proptech-git')
+            remote('https://github.com/Rasul1782000/Enterprise-Property-and-lease-Management-platform---Proptech.git')
+            includes('main develop feature/* release/*')
+            excludes('*-wip')
+          }
+        }
+        factory {
+          workflowBranchProjectFactory {
+            scriptPath('frontend/deployment/Jenkinsfile')
+          }
+        }
+
+        configure { project ->
+          def trigger = new Node(null, 'com.cloudbees.hudson.plugins.folder.computed.PeriodicFolderTrigger')
+          trigger.appendNode('interval', '300000')
+          project / 'triggers' << trigger
+        }
+        orphanedItemStrategy {
+          discardOldItems {
+            numToKeep(20)
+          }
+        }
+      }
