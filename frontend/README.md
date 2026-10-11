@@ -126,8 +126,13 @@ CI runs the same commands (`npx vercel@latest`) in
 ## Login
 Local demo data is opt-in. Set `DEMO_SEED_ENABLED=true` and a unique,
 12-character-or-longer `DEMO_PASSWORD` in
-[`deployment/.env.local`](./deployment/.env.local), then run
-`deployment\build-and-run.bat demo` from the repository root. The admin email
-is `admin@propertylease.test`; the password is never committed or stored in
-plaintext (Laravel stores its hash in MySQL). Do not seed demo accounts in
-production.
+[`deployment/.env.local`](./deployment/.env.local), then run the following
+from the repository root:
+
+```powershell
+docker compose --env-file frontend\deployment\.env.local -f frontend\deployment\docker-compose.local.yml run --rm app php artisan db:seed --force
+```
+
+The admin email is `admin@propertylease.test`; the password is never committed or
+stored in plaintext (Laravel stores its hash in MySQL). Do not seed demo
+accounts in production.

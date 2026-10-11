@@ -17,31 +17,40 @@ environment before directing users to it. See [`../../VERCEL_DEPLOYMENT.md`](../
 
 ## Local API, MySQL, Redis, and Floci
 
-From the repository root in PowerShell:
+From the repository root in PowerShell, create your local environment file by
+copying the single template:
 
 ```powershell
-Copy-Item frontend\deployment\.env.local.example frontend\deployment\.env.local
+Copy-Item frontend\deployment\.env.example frontend\deployment\.env.local
 ```
 
 Replace the `CHANGE_ME` values with unique local secrets. Generate an
 application key with `php artisan key:generate --show` from `backend\` and put
-the returned `base64:...` value in `APP_KEY`. Then run:
+the returned `base64:...` value in `APP_KEY`. Then build the one Laravel API
+image, start MySQL/Redis/Floci, apply migrations, ensure the S3 bucket, and
+start the API:
 
 ```powershell
-frontend\deployment\build-and-run.bat local
+docker compose --env-file frontend\deployment\.env.local -f frontend\deployment\docker-compose.local.yml build app
+docker compose --env-file frontend\deployment\.env.local -f frontend\deployment\docker-compose.local.yml up -d --wait db redis floci
+docker compose --env-file frontend\deployment\.env.local -f frontend\deployment\docker-compose.local.yml run --rm app php artisan migrate --force
+docker compose --env-file frontend\deployment\.env.local -f frontend\deployment\docker-compose.local.yml run --rm app php artisan storage:ensure-bucket
+docker compose --env-file frontend\deployment\.env.local -f frontend\deployment\docker-compose.local.yml up -d app
 ```
 
-The script builds one Laravel API image, starts MySQL/Redis/Floci, waits for
-MySQL, applies migrations, ensures the S3 bucket, and starts the API on
-`http://localhost:8000`. MySQL and object data persist in named volumes. The
-`stop-local` action stops containers without deleting those volumes.
+The API listens on `http://localhost:8000`. MySQL and object data persist in
+named volumes. Stop containers without deleting those volumes with:
+
+```powershell
+docker compose --env-file frontend\deployment\.env.local -f frontend\deployment\docker-compose.local.yml down
+```
 
 To create local sample records and login accounts, first set
 `DEMO_SEED_ENABLED=true` and choose a unique `DEMO_PASSWORD` of at least 12
 characters in `.env.local`, then run:
 
 ```powershell
-frontend\deployment\build-and-run.bat demo
+docker compose --env-file frontend\deployment\.env.local -f frontend\deployment\docker-compose.local.yml run --rm app php artisan db:seed --force
 ```
 
 The admin login is `admin@propertylease.test`; use the password from your local
@@ -54,11 +63,13 @@ Start the Angular development server separately from `frontend\` with
 ## Optional local Jenkins/Floci CI
 
 Jenkins is bound to `127.0.0.1:8888`; set a unique `JENKINS_ADMIN_PASSWORD`
-in the current PowerShell session and run:
+in the current PowerShell session, build the Jenkins image, and start the
+stack:
 
 ```powershell
 $env:JENKINS_ADMIN_PASSWORD = Read-Host "Jenkins administrator password"
-frontend\deployment\build-and-run.bat ci
+docker compose -f frontend\deployment\docker-compose.jenkins.yml build
+docker compose -f frontend\deployment\docker-compose.jenkins.yml up -d jenkins floci
 ```
 
 The Jenkins container mounts the host Docker socket to build the API image.
@@ -68,8 +79,11 @@ internet. Floci does not require Docker socket access for this project's S3
 integration. OpenWA is optional and starts only with the `whatsapp` Compose
 profile.
 
-The single Windows batch orchestrator is
-[`build-and-run.bat`](./build-and-run.bat); it supports `build`, `local`,
-`demo`, `ci`, `stop-local`, and `stop-ci`. Stop actions preserve data. Do not
-run `docker compose down -v` unless intentionally deleting local databases and
-uploads.
+Stop Jenkins and Floci with:
+
+```powershell
+docker compose -f frontend\deployment\docker-compose.jenkins.yml down
+```
+
+Stop actions preserve data. Do not run `docker compose down -v` unless
+intentionally deleting local databases and uploads.
