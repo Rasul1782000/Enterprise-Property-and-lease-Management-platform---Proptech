@@ -16,7 +16,8 @@ RUN jenkins-plugin-cli --plugins \
     role-strategy \
     job-dsl \
     pipeline-stage-view \
-    timestamper
+    timestamper \
+    workspace-cleanup
 
 USER root
 COPY frontend/deployment/jenkins-casc.yaml /etc/jenkins/casc.yaml

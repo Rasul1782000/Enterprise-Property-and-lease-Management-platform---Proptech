@@ -48,13 +48,13 @@ pipeline {
         stage('Install Dependencies') {
             parallel {
                 stage('Frontend') {
-                    agent { docker { image 'node:22.22-alpine'; args '-u root -v $HOME/.npm:/root/.npm' } }
+                    agent { docker { image 'node:24-alpine'; reuseNode true; args '-u root -v $HOME/.npm:/root/.npm' } }
                     steps {
                         dir('frontend') { sh 'npm ci --no-audit --fund=false' }
                     }
                 }
                 stage('Backend') {
-                    agent { docker { image 'composer:2.7'; args '-u root -v $HOME/.composer:/root/.composer' } }
+                    agent { docker { image 'composer:2.7'; reuseNode true; args '-u root -v $HOME/.composer:/root/.composer' } }
                     steps {
                         dir('backend') {
                             sh 'composer install --no-interaction --prefer-dist --no-progress'
@@ -111,17 +111,18 @@ pipeline {
         stage('Test') {
             parallel {
                 stage('Lint') {
-                    agent { docker { image 'node:22.22-alpine'; args '-u root -v $HOME/.npm:/root/.npm' } }
+                    agent { docker { image 'node:24-alpine'; reuseNode true; args '-u root -v $HOME/.npm:/root/.npm' } }
                     steps { dir('frontend') { sh 'npm run lint --if-present' } }
                 }
                 stage('Frontend') {
-                    agent { docker { image 'node:22.22-alpine'; args '-u root -v $HOME/.npm:/root/.npm' } }
+                    agent { docker { image 'node:24-alpine'; reuseNode true; args '-u root -v $HOME/.npm:/root/.npm' } }
                     steps { dir('frontend') { sh 'npm test' } }
                 }
                 stage('Backend') {
                     agent {
                         docker {
                             image 'composer:2.7'
+                            reuseNode true
                             args "--network ${env.FLOCI_NETWORK ?: 'jenkins_default'} -u root -v \$HOME/.composer:/root/.composer"
                         }
                     }
@@ -176,7 +177,7 @@ pipeline {
                 branch 'main'
                 expression { env.VERCEL_ORG_ID != '' && env.VERCEL_PROJECT_ID != '' }
             }
-            agent { docker { image 'node:22.22-alpine' } }
+            agent { docker { image 'node:24-alpine'; reuseNode true } }
             steps {
                 script {
                             echo "Deploying the Angular frontend to Vercel (project ${env.VERCEL_PROJECT_ID})..."

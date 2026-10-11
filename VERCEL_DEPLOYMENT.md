@@ -11,7 +11,7 @@ deploy target).
 | File | Purpose |
 |---|---|
 | `frontend/vercel.json` | Vercel project settings: build command, output dir, SPA rewrite, security headers |
-| `frontend/package.json` → `engines.node` | Pins Vercel's Node to `22.x` (Angular 22 needs `22.22.3+`) |
+| `frontend/package.json` → `engines.node` | Pins Vercel's Node to `24.x` (Angular 22 needs `24.15.0+`) |
 | `frontend/.nvmrc` | Local dev Node (`24.20.0`); also satisfies Angular 22 |
 | `frontend/deployment/Jenkinsfile` → `Deploy Frontend to Vercel` | CI stage that runs `vercel pull/build/deploy --prod` on `main` |
 
@@ -122,8 +122,8 @@ config allows it (`config/cors.php` / `FRONTEND_URL` in the backend env).
 ## Troubleshooting
 
 - **Build fails with "Angular CLI requires a minimum Node.js version"** — Vercel
-  is using an old Node. Confirm `"engines": { "node": "22.x" }` is present in
-  `frontend/package.json`, or set Node 22.x under Vercel → Project → Settings →
+  is using an old Node. Confirm `"engines": { "node": "24.x" }` is present in
+  `frontend/package.json`, or set Node 24.x under Vercel → Project → Settings →
   General → Node.js Version.
 - **Blank page / 404 on refresh** — the SPA rewrite in `vercel.json` is missing
   or the output directory is wrong. It must be `dist/frontend/browser`.

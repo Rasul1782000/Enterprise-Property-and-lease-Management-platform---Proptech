@@ -148,7 +148,7 @@ Enterprise Property and lease Manaement Portal/
 ## Technical Specifications
 
 ### Runtime Requirements
-- **Node.js** 20+ with npm
+- **Node.js** 24.15+ (or 22.22.3+) with npm
 - **PHP** 8.2+ with Composer
 
 ### Integration

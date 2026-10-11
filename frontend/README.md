@@ -96,7 +96,7 @@ live in `vercel.json`:
 - `buildCommand`: `npm run build:prod`
 - `outputDirectory`: `dist/frontend/browser`
 - every route is rewritten to `/index.html` so deep links work
-- `"engines": { "node": "22.x" }` in `package.json` pins Vercel's Node to a
+- `"engines": { "node": "24.x" }` in `package.json` pins Vercel's Node to a
   release that satisfies Angular 22's runtime requirement
 
 ## Frontend environment configurations
