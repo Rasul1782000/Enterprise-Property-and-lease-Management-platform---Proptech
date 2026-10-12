@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\WhatsAppWebhookController;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Test;
 
 class WhatsAppWebhookSecurityTest extends TestCase
 {
@@ -41,6 +42,7 @@ class WhatsAppWebhookSecurityTest extends TestCase
         );
     }
 
+    #[Test]
     public function it_rejects_unsigned_payloads_when_a_secret_is_configured(): void
     {
         config(['services.openwa.webhook_secret' => self::SECRET]);
@@ -51,6 +53,7 @@ class WhatsAppWebhookSecurityTest extends TestCase
         $this->assertSame([], Cache::get(self::CACHE_KEY, []));
     }
 
+    #[Test]
     public function it_rejects_a_signature_that_does_not_match(): void
     {
         config(['services.openwa.webhook_secret' => self::SECRET]);
@@ -61,6 +64,7 @@ class WhatsAppWebhookSecurityTest extends TestCase
         $this->assertSame([], Cache::get(self::CACHE_KEY, []));
     }
 
+    #[Test]
     public function it_accepts_a_correctly_signed_payload(): void
     {
         config(['services.openwa.webhook_secret' => self::SECRET]);
@@ -79,6 +83,7 @@ class WhatsAppWebhookSecurityTest extends TestCase
         $this->assertSame('inbound', $stored[0]['direction']);
     }
 
+    #[Test]
     public function it_refuses_to_trust_callers_while_no_secret_is_configured(): void
     {
         config(['services.openwa.webhook_secret' => '']);
@@ -89,6 +94,7 @@ class WhatsAppWebhookSecurityTest extends TestCase
         $this->assertSame([], Cache::get(self::CACHE_KEY, []));
     }
 
+    #[Test]
     public function it_records_a_session_status_event(): void
     {
         config(['services.openwa.webhook_secret' => self::SECRET]);

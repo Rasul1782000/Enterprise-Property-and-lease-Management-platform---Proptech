@@ -7,9 +7,11 @@ use Aws\S3\S3Client;
 use Illuminate\Support\Facades\Config;
 use RuntimeException;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Test;
 
 class S3ClientFactoryTest extends TestCase
 {
+    #[Test]
     public function it_builds_a_client_with_the_configured_emulator_endpoint(): void
     {
         Config::set('filesystems.disks.documents', [
@@ -32,6 +34,7 @@ class S3ClientFactoryTest extends TestCase
         );
     }
 
+    #[Test]
     public function it_enables_path_style_urls_for_emulator_compatibility(): void
     {
         Config::set('filesystems.disks.documents', [
@@ -49,6 +52,7 @@ class S3ClientFactoryTest extends TestCase
         $this->assertTrue($client->getConfig('use_path_style_endpoint'));
     }
 
+    #[Test]
     public function the_sdk_honours_the_aws_endpoint_url_environment_variable(): void
     {
         $original = getenv('AWS_ENDPOINT_URL');
@@ -77,6 +81,7 @@ class S3ClientFactoryTest extends TestCase
         }
     }
 
+    #[Test]
     public function an_explicit_disk_endpoint_wins_over_the_environment_variable(): void
     {
         $original = getenv('AWS_ENDPOINT_URL');
@@ -105,6 +110,7 @@ class S3ClientFactoryTest extends TestCase
         }
     }
 
+    #[Test]
     public function it_rejects_a_disk_that_is_not_configured_as_s3(): void
     {
         Config::set('filesystems.disks.documents', ['driver' => 'local']);
@@ -115,6 +121,7 @@ class S3ClientFactoryTest extends TestCase
         S3ClientFactory::forDisk('documents');
     }
 
+    #[Test]
     public function it_rejects_a_missing_disk(): void
     {
         $this->expectException(RuntimeException::class);
@@ -122,6 +129,7 @@ class S3ClientFactoryTest extends TestCase
         S3ClientFactory::forDisk('no-such-disk');
     }
 
+    #[Test]
     public function it_throws_when_the_disk_has_no_bucket(): void
     {
         Config::set('filesystems.disks.documents', [
@@ -136,6 +144,7 @@ class S3ClientFactoryTest extends TestCase
         S3ClientFactory::bucket('documents');
     }
 
+    #[Test]
     public function it_reports_the_configured_endpoint_for_diagnostics(): void
     {
         Config::set('filesystems.disks.documents', [
@@ -148,6 +157,7 @@ class S3ClientFactoryTest extends TestCase
         $this->assertSame('http://floci:4566', S3ClientFactory::endpoint('documents'));
     }
 
+    #[Test]
     public function it_describes_the_aws_region_when_no_endpoint_is_set(): void
     {
         Config::set('filesystems.disks.documents', [

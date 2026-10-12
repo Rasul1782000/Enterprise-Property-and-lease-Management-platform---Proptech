@@ -9,6 +9,7 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Test;
 
 class WhatsAppTest extends TestCase
 {
@@ -25,6 +26,7 @@ class WhatsAppTest extends TestCase
         ]);
     }
 
+    #[Test]
     public function it_formats_phone_number_to_whatsapp_jid(): void
     {
         $service = new WhatsAppService();
@@ -34,6 +36,7 @@ class WhatsAppTest extends TestCase
         $this->assertEquals('971501234567@c.us', $service->formatChatId('971-50-123-4567'));
     }
 
+    #[Test]
     public function it_sends_text_message_via_openwa_api(): void
     {
         Http::fake([
@@ -56,6 +59,7 @@ class WhatsAppTest extends TestCase
         });
     }
 
+    #[Test]
     public function it_gets_session_status(): void
     {
         Http::fake([
@@ -72,6 +76,7 @@ class WhatsAppTest extends TestCase
         $this->assertEquals('ready', $status['status']);
     }
 
+    #[Test]
     public function it_gets_chat_history(): void
     {
         Http::fake([
@@ -90,6 +95,7 @@ class WhatsAppTest extends TestCase
         $this->assertEquals('Hello', $history['messages'][0]['body']);
     }
 
+    #[Test]
     public function it_throws_exception_on_api_failure(): void
     {
         Http::fake([
@@ -106,6 +112,7 @@ class WhatsAppTest extends TestCase
         $service->sendText('+971501234567', 'Hello');
     }
 
+    #[Test]
     public function it_creates_a_new_session(): void
     {
         Http::fake([
@@ -123,6 +130,7 @@ class WhatsAppTest extends TestCase
         $this->assertEquals('created', $session['status']);
     }
 
+    #[Test]
     public function it_starts_a_session(): void
     {
         Http::fake([
@@ -138,6 +146,7 @@ class WhatsAppTest extends TestCase
         $this->assertEquals('initializing', $result['status']);
     }
 
+    #[Test]
     public function status_reports_not_connected_when_the_gateway_is_unreachable(): void
     {
         Http::fake(fn () => throw new ConnectionException('gateway down'));
@@ -149,6 +158,7 @@ class WhatsAppTest extends TestCase
         $this->assertFalse($response->json('connected'));
     }
 
+    #[Test]
     public function send_returns_a_failure_payload_rather_than_throwing(): void
     {
         Http::fake([
@@ -165,6 +175,7 @@ class WhatsAppTest extends TestCase
         $this->assertFalse($response->json('success'));
     }
 
+    #[Test]
     public function send_validates_its_input_before_reaching_the_gateway(): void
     {
         Http::fake();
@@ -181,6 +192,7 @@ class WhatsAppTest extends TestCase
         Http::assertNothingSent();
     }
 
+    #[Test]
     public function the_stream_route_rejects_an_unauthenticated_caller(): void
     {
         $response = $this->getJson('/api/whatsapp/stream');

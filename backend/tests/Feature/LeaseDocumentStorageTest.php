@@ -12,6 +12,7 @@ use App\Support\Storage\S3ClientFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Test;
 
 class LeaseDocumentStorageTest extends TestCase
 {
@@ -104,14 +105,18 @@ class LeaseDocumentStorageTest extends TestCase
         ]);
     }
 
+    #[Test]
     public function signing_a_lease_stores_the_pdf_and_activates_it(): void
     {
         $lease = $this->makeLease();
 
-        $this->actingAs($lease->created_by ?? User::first() ?? User::create([
+        // role must be explicit: the DB default only applies after a reload, and
+        // actingAs() hands this in-memory instance straight to the staff middleware.
+        $this->actingAs(User::create([
             'name' => 'Admin',
             'email' => 'admin@example.test',
             'password' => bcrypt('secret1234'),
+            'role' => 'admin',
         ]));
 
         $response = $this->postJson("/api/leases/{$lease->id}/sign");
@@ -130,6 +135,7 @@ class LeaseDocumentStorageTest extends TestCase
         $this->assertGreaterThan(500, strlen($pdf), 'Rendered lease PDF looks suspiciously small.');
     }
 
+    #[Test]
     public function re_signing_replaces_the_document_rather_than_duplicating_it(): void
     {
         $lease = $this->makeLease();
@@ -138,6 +144,7 @@ class LeaseDocumentStorageTest extends TestCase
             'name' => 'Admin',
             'email' => 'admin2@example.test',
             'password' => bcrypt('secret1234'),
+            'role' => 'admin',
         ]));
 
         $this->postJson("/api/leases/{$lease->id}/sign")->assertOk();
