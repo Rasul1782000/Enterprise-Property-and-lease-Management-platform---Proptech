@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\RecordMetrics;
+use App\Http\Middleware\DebugMiddleware;
 use App\Http\Middleware\EnsureStaffRole;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -20,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->append(RecordMetrics::class);
+        $middleware->append(DebugMiddleware::class);
     })
     ->withExceptions(function (Exceptions $exceptions) {
     })->create();
