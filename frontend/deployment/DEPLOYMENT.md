@@ -85,27 +85,29 @@ docker compose -f frontend\deployment\monitoring\docker-compose.monitoring.yml d
 
 ## Optional local Jenkins/Floci CI
 
-Jenkins is bound to `127.0.0.1:8888`; set a unique `JENKINS_ADMIN_PASSWORD`
-in the current PowerShell session, build the Jenkins image, and start the
-stack:
+Jenkins runs in the monitoring stack and is bound to `127.0.0.1:8888`. Set a
+unique `JENKINS_ADMIN_PASSWORD` in `monitoring/.env` (or in the current
+PowerShell session), build the Jenkins image, and start it:
 
 ```powershell
 $env:JENKINS_ADMIN_PASSWORD = Read-Host "Jenkins administrator password"
-docker compose -f frontend\deployment\docker-compose.jenkins.yml build
-docker compose -f frontend\deployment\docker-compose.jenkins.yml up -d jenkins floci
+docker compose -f frontend\deployment\monitoring\docker-compose.monitoring.yml build jenkins
+docker compose -f frontend\deployment\monitoring\docker-compose.monitoring.yml up -d jenkins
 ```
 
 The Jenkins container mounts the host Docker socket to build the API image.
 Anyone controlling that Jenkins instance can effectively control the host.
 Keep it local-only, do not run untrusted jobs, and do not expose it to the
-internet. Floci does not require Docker socket access for this project's S3
-integration. OpenWA is optional and starts only with the `whatsapp` Compose
-profile.
+internet. Floci runs in the app stack
+(`frontend\deployment\docker-compose.local.yml`) and does not require Docker
+socket access for this project's S3 integration. OpenWA is optional and starts
+only with the `whatsapp` Compose profile of the app stack.
 
-Stop Jenkins and Floci with:
+Stop the stacks with:
 
 ```powershell
-docker compose -f frontend\deployment\docker-compose.jenkins.yml down
+docker compose -f frontend\deployment\monitoring\docker-compose.monitoring.yml down
+docker compose -f frontend\deployment\docker-compose.local.yml down
 ```
 
 Stop actions preserve data. Do not run `docker compose down -v` unless

@@ -78,18 +78,19 @@ Windows Task Scheduler: trigger `php.exe artisan schedule:run` every minute.
 
 | Component | Where | Notes |
 |---|---|---|
-| Jenkins | `frontend/deployment/docker-compose.jenkins.yml` | Web UI on http://localhost:8888 |
-| Floci | `floci/floci:latest` | Local AWS emulator, port 4566 |
+| Jenkins | `frontend/deployment/monitoring/docker-compose.monitoring.yml` | Web UI on http://localhost:8888 |
+| Floci | `frontend/deployment/docker-compose.local.yml` | Local AWS emulator, port 4566 |
 | Frontend | Angular 22 + PrimeNG | Vitest via `@angular/build:unit-test` |
 | Backend | Laravel 12 + MySQL | S3 access via `aws/aws-sdk-php` + Flysystem |
 
 Before starting Jenkins, set a unique administrator password in the
-`JENKINS_ADMIN_PASSWORD` environment variable. On Linux/macOS:
+`JENKINS_ADMIN_PASSWORD` environment variable, or set it in
+`frontend/deployment/monitoring/.env`. On Linux/macOS:
 
 ```bash
 read -s JENKINS_ADMIN_PASSWORD
 export JENKINS_ADMIN_PASSWORD
-docker compose -f frontend/deployment/docker-compose.jenkins.yml up -d --build
+docker compose -f frontend/deployment/monitoring/docker-compose.monitoring.yml up -d --build
 ```
 
 On PowerShell:
@@ -97,14 +98,15 @@ On PowerShell:
 ```powershell
 $secure = Read-Host "Jenkins administrator password" -AsSecureString
 $env:JENKINS_ADMIN_PASSWORD = [System.Net.NetworkCredential]::new("", $secure).Password
-docker compose -f frontend/deployment/docker-compose.jenkins.yml up -d --build
+docker compose -f frontend/deployment/monitoring/docker-compose.monitoring.yml up -d --build
 ```
 
 Jenkins is available on http://localhost:8888 and is bound to localhost only.
 Jenkins has access to the host Docker socket for image builds, which is
-effectively host-level control. Floci does not need that socket for this
-project's S3 use. Keep the CI stack local-only and do not run untrusted jobs.
-The Floci web console is on http://localhost:4500.
+effectively host-level control. Keep the CI stack local-only and do not run
+untrusted jobs. Floci runs in the app stack
+(`frontend/deployment/docker-compose.local.yml`) and its web console is on
+http://localhost:4500.
 
 ### Object storage: Floci in dev/CI, real S3 in production
 
@@ -137,7 +139,7 @@ Buckets the project expects on Floci:
 |---|---|
 | `property-lease-ci` | Jenkins builds (`AWS_STORAGE_BUCKET` in the `Jenkinsfile`) |
 | `property-lease-documents` | Local dev / `.env` default |
-| `openwa-media` | Optional local OpenWA profile (`frontend/deployment/docker-compose.jenkins.yml`) |
+| `openwa-media` | Optional local OpenWA profile (`frontend/deployment/docker-compose.local.yml`) |
 
 ```bash
 # Create the bucket if it does not exist (idempotent)
@@ -153,7 +155,7 @@ cd backend && php artisan test
    `frontend/deployment/Dockerfile.jenkins` (shared by the Jenkins and
    monitoring Compose stacks).
 2. Verify it still resolves — withdrawn plugins fail the image build.
-3. Rebuild: `docker compose -f frontend/deployment/docker-compose.jenkins.yml build`.
+3. Rebuild: `docker compose -f frontend/deployment/monitoring/docker-compose.monitoring.yml build jenkins`.
 
 ### Jenkinsfile defects this setup avoids
 

@@ -93,13 +93,42 @@ services:
       - floci-data:/app/data
     ports:
       - "127.0.0.1:4566:4566"
+      - "127.0.0.1:4500:4500"
     restart: unless-stopped
     deploy:
       resources:
         limits:
           memory: 256M
 
+  openwa:
+    profiles: ["whatsapp"]
+    image: rmyndharis/openwa:latest
+    container_name: openwa
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:2785:2785"
+    volumes:
+      - openwa-data:/app/data
+    environment:
+      NODE_ENV: development
+      DATABASE_TYPE: sqlite
+      STORAGE_TYPE: s3
+      S3_ENDPOINT: http://floci:4566
+      S3_BUCKET: openwa-media
+      S3_ACCESS_KEY_ID: local-floci-access-key
+      S3_SECRET_ACCESS_KEY: local-floci-secret-key-not-for-production
+      S3_REGION: us-east-1
+      ENGINE_TYPE: baileys
+    depends_on:
+      - floci
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:2785/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
 volumes:
   db-data:
   app-storage:
   floci-data:
+  openwa-data:
