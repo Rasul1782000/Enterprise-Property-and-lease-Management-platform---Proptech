@@ -1,0 +1,94 @@
+name: property-lease-monitoring
+
+services:
+  prometheus:
+    image: prom/prometheus:v3.15.0
+    container_name: property-lease-prometheus
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -eu
+        sed -e "s|__API_SCHEME__|${API_SCHEME:-http}|g" \
+            -e "s|__API_TARGET__|${API_TARGET:-app:8000}|g" \
+            /etc/prometheus/prometheus.yml.tmpl > /etc/prometheus/prometheus.yml
+        exec /bin/prometheus \
+          --config.file=/etc/prometheus/prometheus.yml \
+          --storage.tsdb.path=/prometheus \
+          --storage.tsdb.retention.time=${PROMETHEUS_RETENTION:-15d} \
+          --web.enable-lifecycle
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-local}
+    volumes:
+      - ./prometheus/prometheus.yml.tmpl:/etc/prometheus/prometheus.yml.tmpl:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "127.0.0.1:${PROMETHEUS_PORT:-9090}:9090"
+    networks:
+      - monitoring
+      - api
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  grafana:
+    image: grafana/grafana:13.2.3
+    container_name: property-lease-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?Set GRAFANA_ADMIN_PASSWORD in frontend/deployment/monitoring/.env}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL:-http://localhost:3000}
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/property-lease-api.json
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "127.0.0.1:${GRAFANA_PORT:-3000}:3000"
+    depends_on:
+      - prometheus
+    networks:
+      - monitoring
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+
+  jenkins:
+    image: property-lease-jenkins:local
+    build:
+      context: ..
+      dockerfile: Dockerfile.jenkins
+    container_name: jenkins-server
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${JENKINS_PORT:-8888}:8080"
+    volumes:
+      - jenkins-home:/var/jenkins_home
+      - //var/run/docker.sock:/var/run/docker.sock
+    environment:
+      JENKINS_ADMIN_PASSWORD: "${JENKINS_ADMIN_PASSWORD:?Set JENKINS_ADMIN_PASSWORD in frontend/deployment/monitoring/.env}"
+      JAVA_OPTS: "-Djenkins.install.runSetupWizard=false"
+      CASC_JENKINS_CONFIG: "/etc/jenkins/casc.yaml"
+      JENKINS_OPTS: "--httpPort=8080"
+    networks:
+      - monitoring
+      - api
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+
+networks:
+  monitoring:
+  api:
+    external: true
+    name: ${API_NETWORK:-deployment_default}
+
+volumes:
+  prometheus-data:
+  grafana-data:
+  jenkins-home:

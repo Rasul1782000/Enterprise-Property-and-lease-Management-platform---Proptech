@@ -206,7 +206,7 @@ pipeline {
                     sh "docker rm -f ${env.FLOCI_CONTAINER} || true"
                 }
             }
-            cleanWs()
+            deleteDir()
         }
         success { echo "Pipeline succeeded: ${env.JOB_NAME} #${env.BUILD_NUMBER}" }
         failure { echo "Pipeline failed: ${env.JOB_NAME} #${env.BUILD_NUMBER}" }

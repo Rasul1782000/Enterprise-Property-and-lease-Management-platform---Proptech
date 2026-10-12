@@ -1,0 +1,19 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: property-lease
+    environment: ${ENVIRONMENT}
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: property-lease-api
+    metrics_path: /metrics
+    scheme: __API_SCHEME__
+    static_configs:
+      - targets: ['__API_TARGET__']
+        labels:
+          service: property-lease-api

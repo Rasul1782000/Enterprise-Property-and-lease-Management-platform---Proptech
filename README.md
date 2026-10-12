@@ -149,9 +149,9 @@ cd backend && php artisan test
 
 ### Adding a service the pipeline needs
 
-1. Add the plugin ID to the `jenkins-plugin-cli --plugins` list in the
-   `build.dockerfile_inline` recipe in
-   `frontend/deployment/docker-compose.jenkins.yml`.
+1. Add the plugin ID to the `jenkins-plugin-cli --plugins` list in
+   `frontend/deployment/Dockerfile.jenkins` (shared by the Jenkins and
+   monitoring Compose stacks).
 2. Verify it still resolves — withdrawn plugins fail the image build.
 3. Rebuild: `docker compose -f frontend/deployment/docker-compose.jenkins.yml build`.
 

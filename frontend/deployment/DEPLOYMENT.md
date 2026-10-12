@@ -55,6 +55,34 @@ production and is never run automatically by migrations.
 Start the Angular development server separately from `frontend\` with
 `npm ci` and `npm start`. The demo credentials are for local development only.
 
+## Prometheus and Grafana monitoring
+
+The API exposes Prometheus text-format metrics at `http://localhost:8000/metrics`
+(`propertylease_*` namespace). A standalone Compose stack in
+[`monitoring/`](./monitoring/README.md) scrapes that endpoint and renders dashboards;
+it runs alongside the API and does not modify it. Start the API first, then create
+the monitoring `.env`, set a Grafana admin password, and start the stack:
+
+```powershell
+cd frontend\deployment\monitoring
+Copy-Item .env.example .env
+# Set GRAFANA_ADMIN_PASSWORD; adjust API_TARGET / API_NETWORK if needed
+docker compose -f docker-compose.monitoring.yml up -d
+```
+
+Prometheus is served on `http://localhost:9090` and Grafana on
+`http://localhost:3000`. Both bind to `127.0.0.1` only. By default Prometheus
+joins the API stack's Docker network (`API_NETWORK=deployment_default`) and
+scrapes the `app` service at `app:8000`. See
+[`monitoring/README.md`](./monitoring/README.md) for configuration, remote
+scraping, and operational commands.
+
+Stop the stack (data is kept in named volumes) with:
+
+```powershell
+docker compose -f frontend\deployment\monitoring\docker-compose.monitoring.yml down
+```
+
 ## Optional local Jenkins/Floci CI
 
 Jenkins is bound to `127.0.0.1:8888`; set a unique `JENKINS_ADMIN_PASSWORD`

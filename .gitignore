@@ -5,6 +5,7 @@ vendor/
 .env
 .env.backup
 .env.production
+credentials*
 *.log
 *.pid
 *.out
