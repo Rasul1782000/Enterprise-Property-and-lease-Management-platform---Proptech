@@ -1,4 +1,4 @@
-# Enterprise Property & Lease Management Portal
+# Gaarbejana
 
 Central platform for commercial / multi-family managers to manage **Property → Building → Unit → Lease → Tenant → Invoice → Payment** with automated invoicing, PDF generation, and Angular Material / AG-Grid data management.
 
@@ -137,8 +137,8 @@ Buckets the project expects on Floci:
 
 | Bucket | Used by |
 |---|---|
-| `property-lease-ci` | Jenkins builds (`AWS_STORAGE_BUCKET` in the `Jenkinsfile`) |
-| `property-lease-documents` | Local dev / `.env` default |
+| `gaarbejana-ci` | Jenkins builds (`AWS_STORAGE_BUCKET` in the `Jenkinsfile`) |
+| `gaarbejana-documents` | Local dev / `.env` default |
 | `openwa-media` | Optional local OpenWA profile (`frontend/deployment/docker-compose.local.yml`) |
 
 ```bash
@@ -180,6 +180,43 @@ Each of these was a real bug, worth remembering when editing the pipeline:
   unconditionally.
 - **Tearing down a shared container.** The `post` block only removes a Floci
   container the build itself created, so a long-running one survives.
+
+## PrimeNG / PrimeUI License (Free Community Edition)
+
+This project uses **PrimeNG v22.1.2** (by PrimeTek Informatics), which is now part of the **PrimeUI** commercial product family. PrimeNG v22+ requires a license key — even for the free Community Edition.
+
+### Free Community License
+
+You can obtain a **free** Community License key if your organization meets ALL of these criteria:
+- Less than $1,000,000 USD in annual gross revenue
+- Fewer than 5 developers
+- Fewer than 10 employees
+- Less than $3,000,000 USD in venture capital or outside funding
+
+Individuals, students, non-profits, and non-commercial open source projects also qualify.
+
+**Get your free key:** https://primeui.dev/licenses/community
+
+### How to Configure
+
+1. Get your free Community License key from the link above
+2. Open `frontend/src/app/app.module.ts`
+3. Replace the empty string in `providePrimeNG()` with your key:
+
+```typescript
+providePrimeNG({
+  ripple: true,
+  inputVariant: 'outlined',
+  theme: { preset: PortalPreset, options: { darkModeSelector: '.app-dark' } },
+  license: 'YOUR_FREE_COMMUNITY_KEY_HERE'
+}),
+```
+
+4. The Community License requires annual renewal by confirming continued eligibility.
+
+### Without a License Key
+
+If no key is configured, PrimeNG will display a license notice in the application but will otherwise function normally. All core components remain fully usable.
 
 ## Next Steps
 - Add payment gateway (Stripe) in `PaymentController@store`

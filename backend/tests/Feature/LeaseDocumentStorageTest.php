@@ -18,7 +18,7 @@ class LeaseDocumentStorageTest extends TestCase
 {
     use RefreshDatabase;
 
-    private const TEST_BUCKET = 'property-lease-doc-tests';
+    private const TEST_BUCKET = 'gaarbejana-doc-tests';
 
     protected function setUp(): void
     {

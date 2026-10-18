@@ -17,7 +17,7 @@ scrapes it.
 | `.env.example` | Configuration template (copy to `.env`) |
 | `prometheus/prometheus.yml.tmpl` | Scrape config template, rendered at container start |
 | `grafana/provisioning/` | Auto-provisioned Prometheus datasource + dashboard provider |
-| `grafana/dashboards/property-lease-api.json` | The provisioned API dashboard |
+| `grafana/dashboards/gaarbejana-api.json` | The provisioned API dashboard |
 
 ## Prerequisites
 
@@ -37,9 +37,9 @@ docker compose -f docker-compose.monitoring.yml up -d
 
 Then open:
 
-- Prometheus: <http://localhost:9090> (check **Status > Targets** for `property-lease-api`)
+- Prometheus: <http://localhost:9090> (check **Status > Targets** for `gaarbejana-api`)
 - Grafana: <http://localhost:3000> (log in with `GRAFANA_ADMIN_USER` /
-  `GRAFANA_ADMIN_PASSWORD`; the **PropertyLease API** dashboard is the home page)
+  `GRAFANA_ADMIN_PASSWORD`; the **Gaarbejana API** dashboard is the home page)
 
 ## Configuration
 

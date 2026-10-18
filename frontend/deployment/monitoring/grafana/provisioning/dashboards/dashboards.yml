@@ -1,9 +1,9 @@
 apiVersion: 1
 
 providers:
-  - name: Property Lease
+  - name: Gaarbejana
     orgId: 1
-    folder: Property Lease
+    folder: Gaarbejana
     type: file
     disableDeletion: false
     updateIntervalSeconds: 30

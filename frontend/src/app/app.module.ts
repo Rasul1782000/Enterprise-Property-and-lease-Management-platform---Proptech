@@ -13,7 +13,6 @@ import { routes } from './app.routes';
 import { authInterceptor } from './core/interceptors/auth.interceptor';
 import { errorInterceptor } from './core/interceptors/error.interceptor';
 import { debugInterceptor } from './core/interceptors/debug.interceptor';
-import { mockApiInterceptor } from './core/mock/mock-api.interceptor';
 import { SharedModule } from './shared/shared.module';
 import { AppComponent } from './app.component';
 
@@ -41,7 +40,7 @@ const PortalPreset = definePreset(Aura, {
   providers: [
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes, withComponentInputBinding()),
-    provideHttpClient(withInterceptors([debugInterceptor, authInterceptor, mockApiInterceptor, errorInterceptor])),
+    provideHttpClient(withInterceptors([debugInterceptor, authInterceptor, errorInterceptor])),
     provideAnimationsAsync(),
     providePrimeNG({
       ripple: true,

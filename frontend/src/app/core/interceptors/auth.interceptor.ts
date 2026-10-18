@@ -11,7 +11,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
       withCredentials: true
     });
   } else {
-    req = req.clone({ withCredentials: true });
+    req = req.clone({ setHeaders: { Accept: 'application/json' }, withCredentials: true });
   }
   return next(req);
 };

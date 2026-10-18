@@ -23,7 +23,7 @@ terraform {
   }
 
   backend "s3" {
-    bucket         = "property-lease-terraform-state"
+    bucket         = "gaarbejana-terraform-state"
     key            = "infrastructure/terraform.tfstate"
     region         = "me-south-1"
     encrypt        = true
@@ -36,7 +36,7 @@ provider "aws" {
 
   default_tags {
     tags = {
-      Project     = "property-lease-portal"
+      Project     = "gaarbejana"
       Environment = var.environment
       ManagedBy   = "terraform"
     }
@@ -75,7 +75,7 @@ variable "environment" {
 variable "project_name" {
   description = "Project name used for resource naming"
   type        = string
-  default     = "property-lease"
+  default     = "gaarbejana"
 }
 
 variable "app_domain" {
@@ -127,7 +127,7 @@ variable "database_subnet_cidrs" {
 variable "backend_image" {
   description = "Docker image URI for the Laravel backend"
   type        = string
-  default     = "property-lease-backend:latest"
+  default     = "gaarbejana-backend:latest"
 }
 
 variable "backend_cpu" {
@@ -235,19 +235,19 @@ variable "redis_engine_version" {
 variable "s3_document_bucket" {
   description = "S3 bucket name for documents"
   type        = string
-  default     = "property-lease-documents"
+  default     = "gaarbejana-documents"
 }
 
 variable "s3_media_bucket" {
   description = "S3 bucket name for media"
   type        = string
-  default     = "property-lease-media"
+  default     = "gaarbejana-media"
 }
 
 variable "s3_state_bucket" {
   description = "S3 bucket name for Terraform state"
   type        = string
-  default     = "property-lease-terraform-state"
+  default     = "gaarbejana-terraform-state"
 }
 
 variable "s3_versioning_enabled" {
@@ -296,6 +296,20 @@ variable "openwa_api_key" {
 
 variable "mail_password" {
   description = "SMTP password"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "aws_access_key_id" {
+  description = "AWS access key ID used by the backend to reach the documents bucket"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "aws_secret_access_key" {
+  description = "AWS secret access key used by the backend to reach the documents bucket"
   type        = string
   sensitive   = true
   default     = ""
@@ -1048,7 +1062,9 @@ resource "aws_iam_role_policy" "ecs_task_execution_secrets" {
           aws_secretsmanager_secret.db_password.arn,
           aws_secretsmanager_secret.app_key.arn,
           aws_secretsmanager_secret.openwa.arn,
-          aws_secretsmanager_secret.mail.arn
+          aws_secretsmanager_secret.mail.arn,
+          aws_secretsmanager_secret.aws_access_key_id.arn,
+          aws_secretsmanager_secret.aws_secret_access_key.arn
         ]
       },
       {
@@ -1173,7 +1189,9 @@ resource "aws_ecs_task_definition" "backend" {
         { name = "CACHE_DRIVER", value = "redis" },
         { name = "SESSION_DRIVER", value = "redis" },
         { name = "QUEUE_CONNECTION", value = "redis" },
-        { name = "AWS_BUCKET", value = aws_s3_bucket.documents.id },
+        { name = "FILESYSTEM_DISK", value = "documents" },
+        { name = "AWS_STORAGE_BUCKET", value = aws_s3_bucket.documents.id },
+        { name = "AWS_STORAGE_PREFIX", value = "portal" },
         { name = "AWS_DEFAULT_REGION", value = var.aws_region },
         { name = "AWS_USE_PATH_STYLE_ENDPOINT", value = "false" },
         { name = "PROMETHEUS_ENABLED", value = "true" },
@@ -1196,6 +1214,14 @@ resource "aws_ecs_task_definition" "backend" {
         {
           name      = "MAIL_PASSWORD"
           valueFrom = aws_secretsmanager_secret.mail.arn
+        },
+        {
+          name      = "AWS_ACCESS_KEY_ID"
+          valueFrom = aws_secretsmanager_secret.aws_access_key_id.arn
+        },
+        {
+          name      = "AWS_SECRET_ACCESS_KEY"
+          valueFrom = aws_secretsmanager_secret.aws_secret_access_key.arn
         }
       ]
 
@@ -1590,6 +1616,40 @@ resource "aws_secretsmanager_secret" "mail" {
 resource "aws_secretsmanager_secret_version" "mail" {
   secret_id     = aws_secretsmanager_secret.mail.id
   secret_string = var.mail_password
+}
+
+# ─── Secrets Manager: AWS Access Key ID ────────────────────────────────────────
+
+resource "aws_secretsmanager_secret" "aws_access_key_id" {
+  name                    = "${var.project_name}/${var.environment}/aws-access-key-id"
+  description             = "AWS access key ID for the documents bucket"
+  recovery_window_in_days = var.environment == "production" ? 30 : 7
+
+  tags = {
+    Name = "${var.project_name}-${var.environment}-aws-access-key-id"
+  }
+}
+
+resource "aws_secretsmanager_secret_version" "aws_access_key_id" {
+  secret_id     = aws_secretsmanager_secret.aws_access_key_id.id
+  secret_string = var.aws_access_key_id
+}
+
+# ─── Secrets Manager: AWS Secret Access Key ────────────────────────────────────
+
+resource "aws_secretsmanager_secret" "aws_secret_access_key" {
+  name                    = "${var.project_name}/${var.environment}/aws-secret-access-key"
+  description             = "AWS secret access key for the documents bucket"
+  recovery_window_in_days = var.environment == "production" ? 30 : 7
+
+  tags = {
+    Name = "${var.project_name}-${var.environment}-aws-secret-access-key"
+  }
+}
+
+resource "aws_secretsmanager_secret_version" "aws_secret_access_key" {
+  secret_id     = aws_secretsmanager_secret.aws_secret_access_key.id
+  secret_string = var.aws_secret_access_key
 }
 
 
@@ -2132,10 +2192,12 @@ output "root_fqdn" {
 output "secrets_manager_arns" {
   description = "Map of secret names to ARNs"
   value = {
-    app_key     = aws_secretsmanager_secret.app_key.arn
-    db_password = aws_secretsmanager_secret.db_password.arn
-    openwa      = aws_secretsmanager_secret.openwa.arn
-    mail        = aws_secretsmanager_secret.mail.arn
+    app_key               = aws_secretsmanager_secret.app_key.arn
+    db_password           = aws_secretsmanager_secret.db_password.arn
+    openwa                = aws_secretsmanager_secret.openwa.arn
+    mail                  = aws_secretsmanager_secret.mail.arn
+    aws_access_key_id     = aws_secretsmanager_secret.aws_access_key_id.arn
+    aws_secret_access_key = aws_secretsmanager_secret.aws_secret_access_key.arn
   }
 }
 

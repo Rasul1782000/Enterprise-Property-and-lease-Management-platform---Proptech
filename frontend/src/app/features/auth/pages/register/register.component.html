@@ -1,36 +1,174 @@
 <div class="auth-container">
   <div class="auth-card">
-    <h2>Create Account</h2>
-    <p class="auth-subtitle">Sign up for a new account</p>
+    <div class="card-header">
+      <div class="brand">
+        <i class="pi pi-building"></i>
+        <span>Gaarbejana</span>
+      </div>
+      <p class="brand-tagline">Enterprise Property &amp; Lease Management</p>
+      <h1>Create account</h1>
+      <p>Join Gaarbejana in under a minute</p>
+    </div>
 
-    <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="auth-form">
-      <div class="form-field">
-        <label for="name">Full Name</label>
-        <input id="name" type="text" formControlName="name" placeholder="Enter your name" />
+    @if (error()) {
+      <div class="error-banner" role="alert">
+        <i class="pi pi-exclamation-circle"></i>
+        <span>{{ error() }}</span>
+      </div>
+    }
+
+    <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="auth-form" novalidate>
+      <!-- Full Name -->
+      <div class="form-field" [class.focused]="focusedField() === 'name'">
+        <label class="form-label" for="regName">Full name</label>
+        <div class="input-wrapper">
+          <i class="pi pi-user input-icon"></i>
+          <input
+            pInputText
+            id="regName"
+            type="text"
+            formControlName="name"
+            autocomplete="name"
+            placeholder="John Smith"
+            (focus)="onFieldFocus('name')"
+            (blur)="onFieldBlur()"
+            [class.invalid]="registerForm.get('name')?.invalid && registerForm.get('name')?.touched" />
+        </div>
+        @if (registerForm.get('name')?.hasError('required') && registerForm.get('name')?.touched) {
+          <small class="form-error">Full name is required</small>
+        }
       </div>
 
-      <div class="form-field">
-        <label for="email">Email</label>
-        <input id="email" type="email" formControlName="email" placeholder="Enter your email" />
+      <!-- Email -->
+      <div class="form-field" [class.focused]="focusedField() === 'email'">
+        <label class="form-label" for="regEmail">Email address</label>
+        <div class="input-wrapper">
+          <i class="pi pi-envelope input-icon"></i>
+          <input
+            pInputText
+            id="regEmail"
+            type="email"
+            formControlName="email"
+            autocomplete="email"
+            placeholder="you@company.com"
+            (focus)="onFieldFocus('email')"
+            (blur)="onFieldBlur()"
+            [class.invalid]="registerForm.get('email')?.invalid && registerForm.get('email')?.touched" />
+        </div>
+        @if (registerForm.get('email')?.hasError('required') && registerForm.get('email')?.touched) {
+          <small class="form-error">Email is required</small>
+        } @else if (registerForm.get('email')?.hasError('email') && registerForm.get('email')?.touched) {
+          <small class="form-error">Please enter a valid email</small>
+        }
       </div>
 
-      <div class="form-field">
-        <label for="password">Password</label>
-        <input id="password" [type]="hidePassword() ? 'password' : 'text'" formControlName="password" placeholder="Enter password" />
+      <!-- Password -->
+      <div class="form-field" [class.focused]="focusedField() === 'password'">
+        <label class="form-label" for="regPassword">Password</label>
+        <div class="input-wrapper">
+          <i class="pi pi-lock input-icon"></i>
+          <input
+            pInputText
+            id="regPassword"
+            [type]="hidePassword() ? 'password' : 'text'"
+            formControlName="password"
+            autocomplete="new-password"
+            placeholder="Create a strong password"
+            (focus)="onFieldFocus('password')"
+            (blur)="onFieldBlur()"
+            (input)="checkPasswordStrength($event.target.value)"
+            [class.invalid]="registerForm.get('password')?.invalid && registerForm.get('password')?.touched" />
+          <button
+            type="button"
+            class="toggle-pwd"
+            (click)="hidePassword.set(!hidePassword())"
+            [attr.aria-label]="hidePassword() ? 'Show password' : 'Hide password'">
+            <i class="pi" [class]="hidePassword() ? 'pi-eye' : 'pi-eye-slash'"></i>
+          </button>
+        </div>
+        @if (registerForm.get('password')?.hasError('required') && registerForm.get('password')?.touched) {
+          <small class="form-error">Password is required</small>
+        } @else if (registerForm.get('password')?.hasError('minlength') && registerForm.get('password')?.touched) {
+          <small class="form-error">Password must be at least 8 characters</small>
+        }
+
+        <!-- Password strength checklist -->
+        @if (registerForm.get('password')?.value) {
+          <div class="strength-checklist">
+            <div class="strength-header">
+              <span class="strength-score" [style.color]="getStrengthColor()">{{ getStrengthLabel() }}</span>
+              <span class="strength-numeric">{{ passwordStrength().score }}/5</span>
+            </div>
+            <div class="strength-items">
+              @for (item of strengthItems; track item.key) {
+                <div class="strength-item" [class.met]="passwordStrength().checks[item.key]">
+                  <i class="pi" [class]="passwordStrength().checks[item.key] ? 'pi-check-circle' : 'pi-times-circle'"></i>
+                  <span>{{ item.label }}</span>
+                </div>
+              }
+            </div>
+          </div>
+        }
       </div>
 
-      <div class="form-field">
-        <label for="password_confirmation">Confirm Password</label>
-        <input id="password_confirmation" [type]="hidePassword() ? 'password' : 'text'" formControlName="password_confirmation" placeholder="Confirm password" />
+      <!-- Confirm Password -->
+      <div class="form-field" [class.focused]="focusedField() === 'password_confirmation'">
+        <label class="form-label" for="regConfirm">Confirm password</label>
+        <div class="input-wrapper">
+          <i class="pi pi-lock input-icon"></i>
+          <input
+            pInputText
+            id="regConfirm"
+            [type]="hidePassword() ? 'password' : 'text'"
+            formControlName="password_confirmation"
+            autocomplete="new-password"
+            placeholder="Re-enter your password"
+            (focus)="onFieldFocus('password_confirmation')"
+            (blur)="onFieldBlur()"
+            [class.invalid]="(registerForm.get('password_confirmation')?.invalid || registerForm.hasError('passwordMismatch')) && registerForm.get('password_confirmation')?.touched" />
+          @if (registerForm.get('password_confirmation')?.value && !registerForm.hasError('passwordMismatch')) {
+            <i class="pi pi-check-circle match-icon"></i>
+          }
+        </div>
+        @if (registerForm.get('password_confirmation')?.hasError('required') && registerForm.get('password_confirmation')?.touched) {
+          <small class="form-error">Please confirm your password</small>
+        } @else if (registerForm.hasError('passwordMismatch') && registerForm.get('password_confirmation')?.touched) {
+          <small class="form-error">Passwords do not match</small>
+        }
       </div>
 
-      @if (error()) { <div class="error-message">{{ error() }}</div> }
+      <!-- Terms -->
+      <div class="form-field terms-field">
+        <div class="checkbox-label terms-label">
+          <p-checkbox formControlName="terms" [binary]="true" inputId="regTerms" />
+          <span>
+            I agree to the <a routerLink="/terms" class="terms-link">Terms of Service</a> and
+            <a routerLink="/privacy" class="terms-link">Privacy Policy</a>
+          </span>
+        </div>
+        @if (registerForm.get('terms')?.invalid && registerForm.get('terms')?.touched) {
+          <small class="form-error">You must accept the terms to continue</small>
+        }
+      </div>
 
-      <button type="submit" class="btn-primary" [disabled]="loading()">
-        {{ loading() ? 'Creating account...' : 'Create Account' }}
+      <!-- Submit -->
+      <button
+        type="submit"
+        class="submit-btn"
+        [class.loading]="loading()"
+        [disabled]="registerForm.invalid || loading()">
+        @if (loading()) {
+          <i class="pi pi-spin pi-spinner"></i>
+          <span>Creating account</span>
+        } @else {
+          <i class="pi pi-user-plus"></i>
+          <span>Create account</span>
+        }
       </button>
     </form>
 
-    <p class="auth-link">Already have an account? <a routerLink="/login">Sign in</a></p>
+    <div class="card-footer">
+      <p>Already have an account? <a routerLink="/login">Sign in</a></p>
+    </div>
   </div>
 </div>

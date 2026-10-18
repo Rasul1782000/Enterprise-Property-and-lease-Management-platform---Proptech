@@ -1,4 +1,4 @@
-# Backend — PropertyLease API (Laravel 11)
+# Backend — Gaarbejana API (Laravel 11)
 
 ## Requirements
 PHP 8.2+, Composer, MySQL 8 / PostgreSQL, Node not needed

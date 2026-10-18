@@ -9,7 +9,7 @@ use PHPUnit\Framework\Attributes\Test;
 
 class FlociS3Test extends TestCase
 {
-    private const TEST_BUCKET = 'property-lease-ci-tests';
+    private const TEST_BUCKET = 'gaarbejana-ci-tests';
 
     public static function setUpBeforeClass(): void
     {

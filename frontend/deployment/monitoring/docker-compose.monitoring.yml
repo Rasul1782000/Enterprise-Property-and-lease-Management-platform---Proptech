@@ -1,9 +1,9 @@
-name: property-lease-monitoring
+name: gaarbejana-monitoring
 
 services:
   prometheus:
     image: prom/prometheus:v3.15.0
-    container_name: property-lease-prometheus
+    container_name: gaarbejana-prometheus
     restart: unless-stopped
     entrypoint: ["/bin/sh", "-c"]
     command:
@@ -34,14 +34,14 @@ services:
 
   grafana:
     image: grafana/grafana:13.2.3
-    container_name: property-lease-grafana
+    container_name: gaarbejana-grafana
     restart: unless-stopped
     environment:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?Set GRAFANA_ADMIN_PASSWORD in frontend/deployment/monitoring/.env}
       GF_USERS_ALLOW_SIGN_UP: "false"
       GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL:-http://localhost:3000}
-      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/property-lease-api.json
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/gaarbejana-api.json
     volumes:
       - grafana-data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
@@ -58,7 +58,7 @@ services:
           memory: 768M
 
   jenkins:
-    image: property-lease-jenkins:local
+    image: gaarbejana-jenkins:local
     build:
       context: ..
       dockerfile: Dockerfile.jenkins

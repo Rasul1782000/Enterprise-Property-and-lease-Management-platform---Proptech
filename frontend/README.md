@@ -1,4 +1,4 @@
-# Frontend — PropertyLease Portal (Angular 22 + PrimeNG 22)
+# Frontend — Gaarbejana (Angular 22 + PrimeNG 22)
 
 ## Requirements
 - **Node.js 22.22.3+ / 24.15+ / 26+** — Angular 22 hard-fails on older runtimes

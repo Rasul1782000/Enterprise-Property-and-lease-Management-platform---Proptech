@@ -1,6 +1,6 @@
 services:
   app:
-    image: property-lease-api:local
+    image: gaarbejana-api:local
     build:
       context: ../..
       dockerfile: frontend/deployment/Dockerfile.backend
@@ -30,7 +30,7 @@ services:
       AWS_SECRET_ACCESS_KEY: test
       AWS_DEFAULT_REGION: us-east-1
       AWS_ENDPOINT_URL: http://floci:4566
-      AWS_STORAGE_BUCKET: property-lease-documents
+      AWS_STORAGE_BUCKET: gaarbejana-documents
       AWS_STORAGE_PREFIX: portal
       AWS_USE_PATH_STYLE_ENDPOINT: "true"
       DEMO_SEED_ENABLED: ${DEMO_SEED_ENABLED:-false}
@@ -93,7 +93,69 @@ services:
       - floci-data:/app/data
     ports:
       - "127.0.0.1:4566:4566"
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  floci-ui:
+    image: floci/floci-ui:latest
+    environment:
+      FLOCI_ENDPOINT: http://floci:4566
+      FLOCI_AZ_ENDPOINT: http://floci-azure:4577
+      FLOCI_GCP_ENDPOINT: http://floci-gcp:4588
+      FLOCI_OCI_ENDPOINT: http://floci-oracle:4599
+    ports:
       - "127.0.0.1:4500:4500"
+    depends_on:
+      floci:
+        condition: service_started
+      floci-azure:
+        condition: service_started
+      floci-gcp:
+        condition: service_started
+      floci-oracle:
+        condition: service_started
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  floci-azure:
+    image: floci/floci-az:latest
+    container_name: floci-1-azure
+    volumes:
+      - floci-azure-data:/app/data
+    ports:
+      - "127.0.0.1:4577:4577"
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  floci-gcp:
+    image: floci/floci-gcp:latest
+    container_name: floci-1-gcp
+    volumes:
+      - floci-gcp-data:/app/data
+    ports:
+      - "127.0.0.1:4588:4588"
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  floci-oracle:
+    image: floci/floci-oci:latest
+    container_name: floci-1-oracle
+    volumes:
+      - floci-oracle-data:/app/data
+    ports:
+      - "127.0.0.1:4599:4599"
     restart: unless-stopped
     deploy:
       resources:
@@ -131,4 +193,7 @@ volumes:
   db-data:
   app-storage:
   floci-data:
+  floci-azure-data:
+  floci-gcp-data:
+  floci-oracle-data:
   openwa-data:

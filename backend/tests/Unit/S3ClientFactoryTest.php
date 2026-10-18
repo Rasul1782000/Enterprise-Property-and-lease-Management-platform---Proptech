@@ -19,7 +19,7 @@ class S3ClientFactoryTest extends TestCase
             'key' => 'test',
             'secret' => 'test',
             'region' => 'us-east-1',
-            'bucket' => 'property-lease-documents',
+            'bucket' => 'gaarbejana-documents',
             'endpoint' => 'http://floci:4566',
             'use_path_style_endpoint' => true,
         ]);

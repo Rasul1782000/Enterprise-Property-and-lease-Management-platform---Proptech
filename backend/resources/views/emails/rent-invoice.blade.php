@@ -12,6 +12,6 @@
 </table>
 <p>Please pay before the due date to avoid late fees ({{ $invoice->lease->late_fee_percent ?? 2.5 }}%).</p>
 <p><a href="{{ config('app.frontend_url', env('FRONTEND_URL')).'/invoices/'.$invoice->id }}">View Invoice</a></p>
-<p>Thank you,<br>PropertyLease Management</p>
+<p>Thank you,<br>Gaarbejana Management</p>
 </body>
 </html>

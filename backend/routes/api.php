@@ -31,10 +31,10 @@ Route::prefix('auth')->middleware('auth:sanctum')->group(function () {
 });
 
 Route::middleware(['auth:sanctum', 'staff'])->group(function () {
+    Route::get('/properties/export', [PropertyController::class, 'export']);
     Route::apiResource('properties', PropertyController::class);
     Route::get('/properties/{property}/occupancy', [PropertyController::class, 'occupancy']);
     Route::post('/properties/{property}/image', [PropertyController::class, 'uploadImage']);
-    Route::get('/properties/export', [PropertyController::class, 'export']);
 
     Route::apiResource('buildings', BuildingController::class);
 

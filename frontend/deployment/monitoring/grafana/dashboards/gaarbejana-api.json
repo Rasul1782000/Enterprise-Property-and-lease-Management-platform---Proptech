@@ -1,7 +1,7 @@
 {
-  "uid": "property-lease-api",
-  "title": "PropertyLease API",
-  "tags": ["propertylease", "laravel", "api"],
+  "uid": "gaarbejana-api",
+  "title": "Gaarbejana API",
+  "tags": ["gaarbejana", "laravel", "api"],
   "timezone": "browser",
   "schemaVersion": 39,
   "version": 1,

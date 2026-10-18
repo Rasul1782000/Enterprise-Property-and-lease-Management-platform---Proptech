@@ -1,5 +1,5 @@
 {
-    "name": "enterprise/property-lease-portal",
+    "name": "enterprise/gaarbejana",
     "type": "project",
     "description": "Enterprise Property & Lease Management Portal API",
     "keywords": ["laravel", "property", "lease", "invoicing", "dompdf"],

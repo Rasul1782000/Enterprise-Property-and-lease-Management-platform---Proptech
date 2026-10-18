@@ -15,7 +15,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        $middleware->statefulApi();
+        // Token-based (Bearer) auth: no CSRF protection on API routes.
+        // statefulApi() was removed because it applied VerifyCsrfToken to
+        // cookie-bearing requests and caused 419 CSRF token mismatches.
         $middleware->alias([
             'staff' => EnsureStaffRole::class,
         ]);

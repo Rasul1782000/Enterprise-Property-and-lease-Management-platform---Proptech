@@ -17,7 +17,7 @@
 <body>
 <div class="header">
   <h1>RENT RECEIPT</h1>
-  <p>{{ $invoice->unit->building->property->name ?? 'PropertyLease' }} | Invoice {{ $invoice->invoice_number }} | <span class="badge {{ $invoice->status=='paid'?'paid':($invoice->status=='overdue'?'overdue':'pending') }}">{{ strtoupper($invoice->status) }}</span></p>
+  <p>{{ $invoice->unit->building->property->name ?? 'Gaarbejana' }} | Invoice {{ $invoice->invoice_number }} | <span class="badge {{ $invoice->status=='paid'?'paid':($invoice->status=='overdue'?'overdue':'pending') }}">{{ strtoupper($invoice->status) }}</span></p>
 </div>
 
 <table style="margin-bottom:12px;">
@@ -49,7 +49,7 @@
 <p style="margin-top:14px;"><strong>Notes:</strong> {{ $invoice->notes ?? 'Thank you for your payment. Please keep this receipt for your records.' }}</p>
 
 <div class="footer">
-  Generated {{ now()->format('Y-m-d H:i') }} via PropertyLease Portal (DomPDF) | PropertyLease Enterprise, {{ $invoice->unit->building->property->address ?? '' }} {{ $invoice->unit->building->property->city ?? '' }}
+  Generated {{ now()->format('Y-m-d H:i') }} via Gaarbejana (DomPDF) | Gaarbejana Enterprise, {{ $invoice->unit->building->property->address ?? '' }} {{ $invoice->unit->building->property->city ?? '' }}
 </div>
 </body>
 </html>
