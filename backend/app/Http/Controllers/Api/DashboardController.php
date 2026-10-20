@@ -38,8 +38,10 @@ class DashboardController extends Controller
             ->whereBetween('paid_at', [now()->subMonthNoOverflow()->startOfMonth(), now()->subMonthNoOverflow()->endOfMonth()])
             ->sum('amount');
 
-        $outstanding = (float) Invoice::whereIn('status', ['sent', 'partial', 'overdue'])
-            ->selectRaw('coalesce(sum(total_amount), 0) - coalesce((select sum(amount) from payments where payments.invoice_id = invoices.id), 0) as due')
+        $outstanding = (float) DB::table('invoices')
+            ->whereIn('status', ['sent', 'partial', 'overdue'])
+            ->leftJoin('payments', 'payments.invoice_id', '=', 'invoices.id')
+            ->selectRaw('coalesce(sum(invoices.total_amount), 0) - coalesce(sum(payments.amount), 0) as due')
             ->value('due');
 
         return response()->json([

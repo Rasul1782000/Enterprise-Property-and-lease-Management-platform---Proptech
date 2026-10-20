@@ -85,7 +85,7 @@ Each requires: `standalone: true` → `standalone: false` in @Component decorato
 
 ```bash
 cd frontend/src/app
-find . -name "*.component.ts" -not -path "*/login/*" -not -path "*/dashboard/*" -not -path "*/lease-wizard/*" -not -path "*/properties-list/*" -not -path "*/confirm-dialog/*" -not -path "*/filter-bar/*" -not -path "*/main-layout/*" -not -path "*/invoice-form/*" -not -path "*/unit-form/*" -not -path "*/property-form/*" -exec sed -i 's/standalone: true/standalone: false/g' {} \;
+find . -name "*.component.ts" -not -path "*/dashboard/*" -not -path "*/lease-wizard/*" -not -path "*/properties-list/*" -not -path "*/confirm-dialog/*" -not -path "*/filter-bar/*" -not -path "*/main-layout/*" -not -path "*/invoice-form/*" -not -path "*/unit-form/*" -not -path "*/property-form/*" -exec sed -i 's/standalone: true/standalone: false/g' {} \;
 ```
 
 This will quickly make all remaining components non-standalone, addressing the primary requirement.

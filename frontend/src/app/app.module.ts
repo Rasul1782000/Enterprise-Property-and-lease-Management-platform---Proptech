@@ -10,7 +10,6 @@ import Aura from '@primeuix/themes/aura';
 import { definePreset } from '@primeuix/themes';
 
 import { routes } from './app.routes';
-import { authInterceptor } from './core/interceptors/auth.interceptor';
 import { errorInterceptor } from './core/interceptors/error.interceptor';
 import { debugInterceptor } from './core/interceptors/debug.interceptor';
 import { SharedModule } from './shared/shared.module';
@@ -40,7 +39,7 @@ const PortalPreset = definePreset(Aura, {
   providers: [
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes, withComponentInputBinding()),
-    provideHttpClient(withInterceptors([debugInterceptor, authInterceptor, errorInterceptor])),
+    provideHttpClient(withInterceptors([debugInterceptor, errorInterceptor])),
     provideAnimationsAsync(),
     providePrimeNG({
       ripple: true,

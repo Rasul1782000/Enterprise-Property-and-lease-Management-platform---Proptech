@@ -2,12 +2,10 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
 use App\Services\WhatsAppService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
-use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 use PHPUnit\Framework\Attributes\Test;
 
@@ -47,7 +45,7 @@ class WhatsAppTest extends TestCase
         ]);
 
         $service = new WhatsAppService();
-        $result = $service->sendText('+971501234567', 'Hello from Lottly!');
+        $result = $service->sendText('+971501234567', 'Hello from Gaarbejana!');
 
         $this->assertEquals('wamid-123', $result['messageId']);
         $this->assertEquals('sent', $result['status']);
@@ -55,7 +53,7 @@ class WhatsAppTest extends TestCase
         Http::assertSent(function ($request) {
             return $request->hasHeader('X-API-Key', 'test-api-key')
                 && $request['chatId'] === '971501234567@c.us'
-                && $request['text'] === 'Hello from Lottly!';
+                && $request['text'] === 'Hello from Gaarbejana!';
         });
     }
 
@@ -151,7 +149,6 @@ class WhatsAppTest extends TestCase
     {
         Http::fake(fn () => throw new ConnectionException('gateway down'));
 
-        $this->authenticateAsStaff();
         $response = $this->getJson('/api/whatsapp/status');
 
         $response->assertStatus(503);
@@ -165,7 +162,6 @@ class WhatsAppTest extends TestCase
             '*/api/sessions/*/messages/send-text' => Http::response(['message' => 'Session not ready'], 409),
         ]);
 
-        $this->authenticateAsStaff();
         $response = $this->postJson('/api/whatsapp/send', [
                 'phone' => '+971501234567',
                 'message' => 'Hello',
@@ -180,7 +176,6 @@ class WhatsAppTest extends TestCase
     {
         Http::fake();
 
-        $this->authenticateAsStaff();
         $response = $this->postJson('/api/whatsapp/send', [
                 'phone' => '+971501234567',
                 'message' => str_repeat('a', 4097),
@@ -193,22 +188,11 @@ class WhatsAppTest extends TestCase
     }
 
     #[Test]
-    public function the_stream_route_rejects_an_unauthenticated_caller(): void
+    public function the_stream_route_is_public(): void
     {
+        config(['services.openwa.stream_max_seconds' => 0]);
         $response = $this->getJson('/api/whatsapp/stream');
 
-        $response->assertStatus(401);
-    }
-
-    private function authenticateAsStaff(): void
-    {
-        $user = User::create([
-            'name' => 'Test Admin',
-            'email' => 'admin@example.test',
-            'password' => 'secret-password',
-            'role' => 'admin',
-        ]);
-
-        Sanctum::actingAs($user);
+        $response->assertOk();
     }
 }

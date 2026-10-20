@@ -1,7 +1,5 @@
 import { Component, DestroyRef, ElementRef, inject, viewChild } from '@angular/core';
 import { Router } from '@angular/router';
-import { ConfirmationService, MessageService } from 'primeng/api';
-import { AuthService } from '@core/services/auth.service';
 import { PropertyContextService } from '@core/services/property-context.service';
 
 interface NavItem {
@@ -25,11 +23,8 @@ interface NavSection {
   styleUrls: ['./main-layout.component.scss']
 })
 export class MainLayoutComponent {
-  auth = inject(AuthService);
   ctx = inject(PropertyContextService);
   private router = inject(Router);
-  private confirmation = inject(ConfirmationService);
-  private messages = inject(MessageService);
 
   navSections: NavSection[] = [
     {
@@ -73,11 +68,10 @@ export class MainLayoutComponent {
   profileMenu = [
     { label: 'Profile', icon: 'pi pi-user', command: () => this.router.navigate(['/tenants']) },
     { label: 'Units', icon: 'pi pi-th-large', command: () => this.router.navigate(['/units']) },
-    { label: 'Logout', icon: 'pi pi-sign-out', command: () => this.logout() }
   ];
 
   get initial(): string {
-    return (this.auth.user()?.name || 'J').charAt(0).toUpperCase();
+    return 'J';
   }
 
   navOpen = false;
@@ -135,22 +129,5 @@ export class MainLayoutComponent {
     this.openGroup = null;
     document.body.style.overflow = '';
     if (restoreFocus) this.navToggleRef()?.nativeElement.focus();
-  }
-
-  logout(): void {
-    this.confirmation.confirm({
-      header: 'Sign out',
-      message: 'You will be returned to the login screen.',
-      icon: 'pi pi-sign-out',
-      acceptLabel: 'Sign out',
-      rejectLabel: 'Stay',
-      accept: () => {
-        this.auth.logout().subscribe({
-          next: () => this.router.navigate(['/login']),
-          error: () => { this.auth.clear(); this.router.navigate(['/login']); }
-        });
-        this.messages.add({ severity: 'info', summary: 'Signed out', detail: 'See you soon.', life: 2000 });
-      }
-    });
   }
 }

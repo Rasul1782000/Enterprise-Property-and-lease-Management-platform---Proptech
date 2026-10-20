@@ -706,6 +706,74 @@
           "legendFormat": "Paid"
         }
       ]
+    },
+    {
+      "id": 101,
+      "type": "row",
+      "title": "MySQL database",
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 48 },
+      "panels": []
+    },
+    {
+      "id": 22,
+      "type": "stat",
+      "title": "Properties (MySQL)",
+      "datasource": { "type": "mysql", "uid": "property-lease-mysql" },
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 49 },
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0 }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "textMode": "auto" },
+      "targets": [{ "refId": "A", "datasource": { "type": "mysql", "uid": "property-lease-mysql" }, "rawSql": "SELECT COUNT(*) AS value FROM properties WHERE deleted_at IS NULL", "format": "table" }]
+    },
+    {
+      "id": 23,
+      "type": "stat",
+      "title": "Tenants (MySQL)",
+      "datasource": { "type": "mysql", "uid": "property-lease-mysql" },
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 49 },
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0 }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "textMode": "auto" },
+      "targets": [{ "refId": "A", "datasource": { "type": "mysql", "uid": "property-lease-mysql" }, "rawSql": "SELECT COUNT(*) AS value FROM tenants WHERE deleted_at IS NULL", "format": "table" }]
+    },
+    {
+      "id": 24,
+      "type": "stat",
+      "title": "Units (MySQL)",
+      "datasource": { "type": "mysql", "uid": "property-lease-mysql" },
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 49 },
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0 }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "textMode": "auto" },
+      "targets": [{ "refId": "A", "datasource": { "type": "mysql", "uid": "property-lease-mysql" }, "rawSql": "SELECT COUNT(*) AS value FROM units", "format": "table" }]
+    },
+    {
+      "id": 25,
+      "type": "stat",
+      "title": "Active leases (MySQL)",
+      "datasource": { "type": "mysql", "uid": "property-lease-mysql" },
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 49 },
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0 }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "textMode": "auto" },
+      "targets": [{ "refId": "A", "datasource": { "type": "mysql", "uid": "property-lease-mysql" }, "rawSql": "SELECT COUNT(*) AS value FROM leases WHERE status = 'active'", "format": "table" }]
+    },
+    {
+      "id": 26,
+      "type": "stat",
+      "title": "Invoices (MySQL)",
+      "datasource": { "type": "mysql", "uid": "property-lease-mysql" },
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 49 },
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0 }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "textMode": "auto" },
+      "targets": [{ "refId": "A", "datasource": { "type": "mysql", "uid": "property-lease-mysql" }, "rawSql": "SELECT COUNT(*) AS value FROM invoices", "format": "table" }]
+    },
+    {
+      "id": 27,
+      "type": "stat",
+      "title": "Payments (MySQL)",
+      "datasource": { "type": "mysql", "uid": "property-lease-mysql" },
+      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 49 },
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0 }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "textMode": "auto" },
+      "targets": [{ "refId": "A", "datasource": { "type": "mysql", "uid": "property-lease-mysql" }, "rawSql": "SELECT COUNT(*) AS value FROM payments", "format": "table" }]
     }
   ]
 }

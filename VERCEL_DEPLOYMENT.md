@@ -1,7 +1,7 @@
 # Deploying the frontend to Vercel
 
 The Angular frontend (`frontend/`) is deployed to **Vercel**. The Laravel API is
-**not** part of this deployment — it keeps running at `https://rasul17.indevs.in`,
+**not** part of this deployment — it runs at `https://api.rasul17.indevs.in`,
 which is the `apiUrl` compiled into `environment.prod.ts`. Jenkins deploys to
 Vercel and to nothing else (the Docker/Traefik production host is no longer a
 deploy target).
@@ -90,7 +90,26 @@ command ships that prebuilt output to the production domain.
 
 - Branches other than `main` stop after lint/test/build — they never deploy.
 - Configure the production API origin, CORS allowlist, TLS, and object storage
-  separately from Vercel. Vercel hosts only the Angular static frontend.
+  separately from Vercel. The API DNS record must point at the backend load
+  balancer, and Laravel CORS must allow the Vercel frontend origin. Vercel hosts
+  only the Angular static frontend.
+
+### Repairing the API DNS delegation
+
+Public DNS reports a lame delegation for `rasul17.indevs.in`. Route 53 records
+inside the child zone are not visible until the parent DNS zone delegates the
+child to the exact Route 53 name servers assigned to its hosted zone.
+
+From the initialized Terraform directory, retrieve those nameservers:
+
+```powershell
+terraform output -json route53_name_servers
+```
+
+At the DNS provider authoritative for `indevs.in`, replace the broken
+delegation for `rasul17.indevs.in` with the returned Route 53 name-server set.
+Allow DNS propagation, then verify that `rasul17.indevs.in` and
+`api.rasul17.indevs.in` resolve before retrying login.
 
 ## Manual deploy
 
@@ -114,7 +133,7 @@ Point the (sub)domain at the Vercel project, e.g. `app.rasul17.indevs.in`:
 
 1. Vercel → Project → **Settings → Domains → Add**.
 2. Add the `CNAME` Vercel shows at your DNS provider.
-3. Keep the API domain (`rasul17.indevs.in`) as-is.
+3. Keep the API domain (`api.rasul17.indevs.in`) as-is.
 
 If the frontend is served from a new origin, make sure the Laravel API's CORS
 config allows it (`config/cors.php` / `FRONTEND_URL` in the backend env).

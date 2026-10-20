@@ -67,7 +67,7 @@ Enterprise Property and lease Manaement Portal/
 - **PHP Version:** ^8.2
 - **Framework:** Laravel ^12.0
 - **Database:** MySQL (SQLite/PostgreSQL also supported)
-- **Authentication:** Sanctum tokens
+- **Access:** Dashboard and API routes are public; no authentication or authorization is configured.
 
 ### Frontend (Angular)
 - **Framework:** Angular 22.2.0

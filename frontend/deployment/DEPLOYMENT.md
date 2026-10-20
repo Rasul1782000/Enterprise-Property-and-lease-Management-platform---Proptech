@@ -8,18 +8,20 @@ configure or deploy those production services. Floci is a local/CI AWS emulator,
 not production storage. Do not use local Compose volumes as a production
 database or document backup.
 
-Before a production release, configure a TLS-protected API origin, restrict
-Laravel CORS/Sanctum to the real frontend origin, provision a managed MySQL
-database with backups, and use persistent S3-compatible storage with
-least-privilege credentials. Store production secrets in the chosen hosting
-provider's secret manager. Run migrations and smoke tests against that
-environment before directing users to it. See [`../../VERCEL_DEPLOYMENT.md`](../../VERCEL_DEPLOYMENT.md).
+The API and dashboard do not have authentication or authorization: every API
+endpoint is public, including data reads and management changes. Do not deploy
+this configuration with sensitive data on an untrusted network. Configure a
+TLS-protected API origin, provision a managed MySQL database with backups, and
+use persistent S3-compatible storage with least-privilege credentials. Store
+production secrets in the chosen hosting provider's secret manager. Run
+migrations and smoke tests against that environment before directing users to
+it. See [`../../VERCEL_DEPLOYMENT.md`](../../VERCEL_DEPLOYMENT.md).
 
 ## Local API, MySQL, Redis, and Floci
 
 Create `frontend\deployment\.env` and set `APP_KEY`, `DB_PASSWORD`, and
-`DB_ROOT_PASSWORD`, plus the optional `DEMO_SEED_ENABLED` / `DEMO_PASSWORD`
-values; the Compose file in `docker-compose.local.yml` lists the required
+`DB_ROOT_PASSWORD`, plus the optional `DEMO_SEED_ENABLED` value; the Compose
+file in `docker-compose.local.yml` lists the required
 names. Generate an application key with `php artisan key:generate --show` from
 `backend\` and put the returned `base64:...` value in `APP_KEY`. Compose loads
 that file automatically. Then build the one Laravel API image, start
@@ -33,31 +35,30 @@ docker compose -f frontend\deployment\docker-compose.local.yml run --rm app php 
 docker compose -f frontend\deployment\docker-compose.local.yml up -d app
 ```
 
-The API listens on `http://localhost:8000`. MySQL and object data persist in
-named volumes. Stop containers without deleting those volumes with:
+The API listens on `http://127.0.0.1:8000` by default; set `API_PORT` in
+`frontend/deployment/.env` if that host port is occupied. This workspace uses
+`http://127.0.0.1:18000`. MySQL and object data persist in named volumes.
+Stop containers without deleting those volumes with:
 
 ```powershell
 docker compose -f frontend\deployment\docker-compose.local.yml down
 ```
 
-To create local sample records and login accounts, first set
-`DEMO_SEED_ENABLED=true` and choose a unique `DEMO_PASSWORD` of at least 12
-characters in `.env`, then run:
+To create local sample records, set `DEMO_SEED_ENABLED=true` in `.env`, then run:
 
 ```powershell
 docker compose -f frontend\deployment\docker-compose.local.yml run --rm app php artisan db:seed --force
 ```
 
-The admin login is `admin@propertylease.test`; use the password from your local
-`.env`. Password hashes are stored in MySQL. Demo seeding is rejected in
-production and is never run automatically by migrations.
+The API and dashboard are public and require no login. Demo seeding is rejected
+in production and is never run automatically by migrations.
 
 Start the Angular development server separately from `frontend\` with
-`npm ci` and `npm start`. The demo credentials are for local development only.
+`npm ci` and `npm start`.
 
 ## Prometheus and Grafana monitoring
 
-The API exposes Prometheus text-format metrics at `http://localhost:8000/metrics`
+The API exposes Prometheus text-format metrics at `http://127.0.0.1:8000/metrics`
 (`propertylease_*` namespace). A standalone Compose stack in
 [`monitoring/`](./monitoring/README.md) scrapes that endpoint and renders dashboards;
 it runs alongside the API and does not modify it. Start the API first, then create

@@ -8,7 +8,7 @@
 ```powershell
 cd frontend
 npm ci            # deterministic install from package-lock.json
-npm start         # http://localhost:4200 (proxies /api, /sanctum -> https://rasul17.indevs.in)
+npm start         # http://localhost:4200 (proxies /api -> https://api.rasul17.indevs.in)
 ```
 
 ## Scripts
@@ -26,15 +26,19 @@ npm run build:prod  # production config (environment.prod.ts, hashed assets, bud
 - **Lazy chunks** per feature: properties, buildings, units, tenants, leases, invoices, dashboard
 - **Forms**: reactive forms + multi-step lease wizard with custom validators
 - **Charts**: chart.js (dashboard)
-- **Interceptors**: Sanctum bearer token, error toast, optional in-memory mock data source
+- **Interceptors**: API error toast and optional in-memory mock data source
 
 ## Environments
 | File | Used by | apiUrl | Mock data |
 |---|---|---|---|
-| `src/environments/environment.ts` | dev (`ng serve`, `ng test`) | `https://rasul17.indevs.in/api` | off |
-| `src/environments/environment.prod.ts` | `--configuration production` | `https://rasul17.indevs.in/api` | off |
+| `src/environments/environment.ts` | dev (`ng serve`, `ng test`) | `http://127.0.0.1:18000/api` | off |
+| `src/environments/environment.prod.ts` | `--configuration production` | `https://api.rasul17.indevs.in/api` | off |
 
-`angular.json` swaps them via `fileReplacements` in the `production` configuration — do not remove that block, or the production bundle ships the dev API URL and mock data.
+`angular.json` swaps them via `fileReplacements` in the `production` configuration — do not remove that block, or the production bundle ships the development API URL.
+
+The local Docker API defaults to port `8000`; configure `API_PORT` in
+`frontend/deployment/.env` to match the local `apiUrl` if that host port is
+occupied. This workspace uses port `18000`.
 
 ## Styling: Tailwind CSS v4
 
@@ -101,8 +105,8 @@ live in `vercel.json`:
 
 ## Frontend environment configurations
 
-- `npm start` / `ng serve`: `environment.ts` (development API at `localhost:8000`)
-- `npm run start:local`: `environment.local.ts` (local API at `127.0.0.1:8000`)
+- `npm start` / `ng serve`: `environment.ts` (development API at `127.0.0.1:18000`)
+- `npm run start:local`: `environment.local.ts` (local API at `127.0.0.1:18000`)
 - `npm run build:prod`: `environment.prod.ts` (production API; used by Vercel)
 - `npm run build:prod:local`: `environment.prod.local.ts` (optimized local API build)
 
@@ -123,16 +127,6 @@ CI runs the same commands (`npx vercel@latest`) in
 [`deployment/Jenkinsfile`](./deployment/Jenkinsfile). See
 [`../VERCEL_DEPLOYMENT.md`](../VERCEL_DEPLOYMENT.md).
 
-## Login
-Local demo data is opt-in. Set `DEMO_SEED_ENABLED=true` and a unique,
-12-character-or-longer `DEMO_PASSWORD` in
-[`deployment/.env`](./deployment/.env), then run the following from the
-repository root:
-
-```powershell
-docker compose -f frontend\deployment\docker-compose.local.yml run --rm app php artisan db:seed --force
-```
-
-The admin email is `admin@propertylease.test`; the password is never committed or
-stored in plaintext (Laravel stores its hash in MySQL). Do not seed demo
-accounts in production.
+## Access
+The dashboard opens directly without a login. All API endpoints are public;
+do not use this configuration with sensitive data on an untrusted network.

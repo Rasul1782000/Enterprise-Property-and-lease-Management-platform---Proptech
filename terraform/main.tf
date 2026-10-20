@@ -2182,6 +2182,11 @@ output "api_fqdn" {
   value       = "api.${var.app_domain}"
 }
 
+output "route53_name_servers" {
+  description = "Route 53 authoritative name servers to delegate for the application domain"
+  value       = data.aws_route53_zone.main.name_servers
+}
+
 output "root_fqdn" {
   description = "Root domain FQDN"
   value       = var.app_domain
@@ -2212,4 +2217,3 @@ output "sns_topic_arn" {
   description = "ARN of the SNS topic for alarms"
   value       = var.enable_monitoring && var.alarm_email != "" ? aws_sns_topic.alarms[0].arn : "No SNS topic configured"
 }
-

@@ -109,9 +109,8 @@ describe('DebugService', () => {
   it('records an explicit source when provided', () => {
     service.enabled.set(true);
 
-    service.log('with source', undefined, 'AuthService');
-
-    expect(service.entries()[0].source).toBe('AuthService');
+    service.log('with source', undefined, 'ApiClient');
+    expect(service.entries()[0].source).toBe('ApiClient');
   });
 
   // ─── HTTP logging ───────────────────────────────────────────────────────

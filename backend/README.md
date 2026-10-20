@@ -15,10 +15,12 @@ php artisan storage:link
 php artisan serve  # http://localhost:8000
 ```
 
-For local demo data only, set `DEMO_SEED_ENABLED=true` and a unique
-`DEMO_PASSWORD` (12+ characters) in `.env`, then run `php artisan db:seed`.
-The seeded admin login is `admin@propertylease.test` and uses that password.
-Passwords are stored hashed in MySQL; demo seeding is rejected in production.
+For local sample data only, set `DEMO_SEED_ENABLED=true` in `.env`, then run
+`php artisan db:seed`. Demo seeding is rejected in production.
+
+The dashboard and API do not use authentication or authorization; all API
+endpoints are public. Do not use this configuration with sensitive data on an
+untrusted network.
 
 ## Scheduler (Windows)
 ```powershell
@@ -36,7 +38,7 @@ Commands:
 GET /api/leases/{id}/pdf  +  GET /api/invoices/{id}/receipt  (DomPDF, streams A4)
 
 ## API Docs
-All routes under `/api` with Sanctum. See `routes/api.php` for full list.
+All routes under `/api` are public. See `routes/api.php` for the full list.
 
 ## Testing
 ```powershell

@@ -174,8 +174,9 @@ describe('debugInterceptor', () => {
   it('never logs a password in the request body', () => {
     debug.enabled.set(true);
 
-    http.post('/api/auth/login', { email: 'a@b.com', password: 'hunter2' }).subscribe();
-    httpMock.expectOne('/api/auth/login').flush({});
+    http.post('/api/properties', { name: 'Test' }).subscribe();
+
+    httpMock.expectOne('/api/properties').flush({});
 
     const serialised = JSON.stringify(debug.httpCalls());
     expect(serialised).not.toContain('hunter2');

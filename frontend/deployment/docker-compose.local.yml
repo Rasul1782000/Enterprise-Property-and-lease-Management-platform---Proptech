@@ -8,7 +8,7 @@ services:
       APP_ENV: local
       APP_DEBUG: "false"
       APP_KEY: ${APP_KEY:?Set APP_KEY in frontend/deployment/.env}
-      APP_URL: http://localhost:8000
+      APP_URL: http://127.0.0.1:${API_PORT:-8000}
       FRONTEND_URL: http://localhost:4200
       DB_CONNECTION: mysql
       DB_HOST: db
@@ -16,8 +16,6 @@ services:
       DB_DATABASE: property_lease
       DB_USERNAME: property_lease
       DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in frontend/deployment/.env}
-      SANCTUM_STATEFUL_DOMAINS: localhost:4200,127.0.0.1:4200
-      SESSION_DOMAIN: localhost
       MAIL_MAILER: log
       MAIL_FROM_ADDRESS: noreply@propertylease.test
       CACHE_DRIVER: redis
@@ -34,12 +32,11 @@ services:
       AWS_STORAGE_PREFIX: portal
       AWS_USE_PATH_STYLE_ENDPOINT: "true"
       DEMO_SEED_ENABLED: ${DEMO_SEED_ENABLED:-false}
-      DEMO_PASSWORD: ${DEMO_PASSWORD:-}
       LOG_CHANNEL: stderr
     volumes:
       - app-storage:/var/www/html/storage
     ports:
-      - "127.0.0.1:8000:8000"
+      - "127.0.0.1:${API_PORT:-8000}:8000"
     depends_on:
       db:
         condition: service_healthy
@@ -60,8 +57,10 @@ services:
       MYSQL_DATABASE: property_lease
       MYSQL_USER: property_lease
       MYSQL_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in frontend/deployment/.env}
+      GRAFANA_MYSQL_PASSWORD: ${GRAFANA_MYSQL_PASSWORD:?Set GRAFANA_MYSQL_PASSWORD in frontend/deployment/.env}
     volumes:
       - db-data:/var/lib/mysql
+      - ./monitoring/mysql/init-grafana-reader.sh:/docker-entrypoint-initdb.d/20-grafana-reader.sh:ro
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]

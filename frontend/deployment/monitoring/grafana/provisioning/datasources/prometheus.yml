@@ -10,3 +10,18 @@ datasources:
     editable: true
     jsonData:
       timeInterval: 15s
+  - name: Property Lease MySQL
+    uid: property-lease-mysql
+    type: mysql
+    access: proxy
+    url: db:3306
+    user: grafana_reader
+    database: property_lease
+    isDefault: false
+    editable: false
+    secureJsonData:
+      password: $__env{GRAFANA_MYSQL_PASSWORD}
+    jsonData:
+      maxOpenConns: 10
+      maxIdleConns: 2
+      connMaxLifetime: 14400

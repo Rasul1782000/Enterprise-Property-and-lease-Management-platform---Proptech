@@ -30,11 +30,8 @@ export class WhatsAppSseService {
 
     this.connectionStatus.set('connecting');
 
-    const token = this.readToken();
     const streamUrl = `${environment.apiUrl}/whatsapp/stream`;
-    const url = token ? `${streamUrl}?token=${encodeURIComponent(token)}` : streamUrl;
-
-    this.eventSource = new EventSource(url);
+    this.eventSource = new EventSource(streamUrl);
 
     this.eventSource.addEventListener('message', (event: MessageEvent) => {
       try {
@@ -72,11 +69,5 @@ export class WhatsAppSseService {
 
   clearMessages(): void {
     this.newMessages.set([]);
-  }
-
-  private readToken(): string | null {
-    return (
-      localStorage.getItem('token') || sessionStorage.getItem('token') || null
-    );
   }
 }

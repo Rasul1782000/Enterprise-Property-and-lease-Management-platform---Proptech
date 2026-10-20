@@ -2,36 +2,39 @@
 
 namespace Database\Seeders;
 
+use App\Models\BouncedCheque;
 use App\Models\Building;
+use App\Models\EjariContract;
+use App\Models\EscrowAccount;
+use App\Models\FitOutRequest;
 use App\Models\Invoice;
 use App\Models\InvoiceLineItem;
 use App\Models\Lease;
+use App\Models\LeaseAgreement;
+use App\Models\LeaseRenewal;
 use App\Models\Payment;
+use App\Models\PostDatedCheque;
 use App\Models\Property;
+use App\Models\ServiceCharge;
 use App\Models\Tenant;
 use App\Models\TenantDocument;
 use App\Models\Unit;
 use App\Models\User;
+use App\Models\VaultAsset;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use RuntimeException;
 
 class DemoDataSeeder extends Seeder
 {
-    private string $demoPassword = 'DemoPassword123!';
-
     public function run(): void
     {
         if (App::environment('production') || ! filter_var(env('DEMO_SEED_ENABLED', false), FILTER_VALIDATE_BOOLEAN)) {
             throw new RuntimeException('Demo seeding is disabled. Enable DEMO_SEED_ENABLED only for a non-production database.');
-        }
-
-        $demoPassword = env('DEMO_PASSWORD');
-        if (is_string($demoPassword) && strlen($demoPassword) >= 12) {
-            $this->demoPassword = $demoPassword;
         }
 
         $this->seedUsers();
@@ -44,9 +47,18 @@ class DemoDataSeeder extends Seeder
         $this->seedPayments();
         $this->seedTenantDocuments();
         $this->seedInvoiceLineItems();
+        $this->seedVaultAssets();
+        $this->seedPostDatedCheques();
+        $this->seedLeaseAgreements();
+        $this->seedLeaseRenewals();
+        $this->seedServiceCharges();
+        $this->seedEscrowAccounts();
+        $this->seedEjariContracts();
+        $this->seedFitOutRequests();
+        $this->seedBouncedCheques();
 
         $this->command->info(sprintf(
-            'Demo data seeded: %d users, %d properties, %d buildings, %d units, %d tenants, %d leases, %d invoices, %d payments, %d documents',
+            'Demo data seeded: %d users, %d properties, %d buildings, %d units, %d tenants, %d leases, %d invoices, %d payments, %d documents, %d vault assets, %d post-dated cheques, %d lease agreements, %d lease renewals, %d service charges, %d escrow accounts, %d ejari contracts, %d fit-out requests, %d bounced cheques',
             User::count(),
             Property::count(),
             Building::count(),
@@ -55,7 +67,16 @@ class DemoDataSeeder extends Seeder
             Lease::count(),
             Invoice::count(),
             Payment::count(),
-            TenantDocument::count()
+            TenantDocument::count(),
+            VaultAsset::count(),
+            PostDatedCheque::count(),
+            LeaseAgreement::count(),
+            LeaseRenewal::count(),
+            ServiceCharge::count(),
+            EscrowAccount::count(),
+            EjariContract::count(),
+            FitOutRequest::count(),
+            BouncedCheque::count()
         ));
     }
 
@@ -66,9 +87,9 @@ class DemoDataSeeder extends Seeder
     private function seedUsers(): void
     {
         $staff = [
-            ['name' => 'John Smith', 'email' => 'admin@lottly.com', 'role' => 'admin'],
-            ['name' => 'Maria Lopez', 'email' => 'manager@lottly.com', 'role' => 'manager'],
-            ['name' => 'Sam Carter', 'email' => 'agent@lottly.com', 'role' => 'agent'],
+            ['name' => 'John Smith', 'email' => 'admin@gaarbejana.com', 'role' => 'admin'],
+            ['name' => 'Maria Lopez', 'email' => 'manager@gaarbejana.com', 'role' => 'manager'],
+            ['name' => 'Sam Carter', 'email' => 'agent@gaarbejana.com', 'role' => 'agent'],
             ['name' => 'Sarah Johnson', 'email' => 'sarah@propertylease.com', 'role' => 'manager'],
             ['name' => 'David Kim', 'email' => 'david@propertylease.com', 'role' => 'accountant'],
             ['name' => 'Emma Wilson', 'email' => 'emma@propertylease.com', 'role' => 'agent'],
@@ -79,7 +100,7 @@ class DemoDataSeeder extends Seeder
         foreach ($staff as $u) {
             User::updateOrCreate(
                 ['email' => $u['email']],
-                ['name' => $u['name'], 'password' => Hash::make($this->demoPassword), 'role' => $u['role']]
+                ['name' => $u['name'], 'password' => Hash::make(Str::random(64)), 'role' => $u['role']]
             );
         }
     }
@@ -178,11 +199,6 @@ class DemoDataSeeder extends Seeder
 
     private function seedUnits(): void
     {
-        if (Unit::count() > 0) {
-            $this->command->info('Units already exist — skipping unit seed.');
-            return;
-        }
-
         $residentialTypes = ['apartment', 'apartment', 'apartment', 'studio'];
         $commercialTypes = ['office', 'retail', 'warehouse'];
 
@@ -226,11 +242,18 @@ class DemoDataSeeder extends Seeder
         ];
 
         $statuses = ['occupied', 'occupied', 'occupied', 'vacant', 'reserved', 'occupied', 'maintenance'];
+        $unitOffsets = [];
 
         foreach ($unitDefs as $def) {
             $building = Building::find($def['building_id']);
             if (! $building) continue;
 
+            $unitOffset = $unitOffsets[$def['building_id']] ?? 0;
+            $existingUnitIndexes = Unit::query()
+                ->where('building_id', $def['building_id'])
+                ->pluck('unit_number')
+                ->map(fn ($number) => (int) $number % 100)
+                ->all();
             $isResidential = in_array($def['type'], ['residential', 'studio'], true);
             $unitType = $isResidential
                 ? $residentialTypes[array_rand($residentialTypes)]
@@ -241,18 +264,25 @@ class DemoDataSeeder extends Seeder
                     ? 'vacant'
                     : ($building->status === 'under_maintenance' && $i <= 2 ? 'maintenance' : $statuses[array_rand($statuses)]);
 
+                $unitIndex = $unitOffset + $i;
+                if (in_array($unitIndex, $existingUnitIndexes, true)) {
+                    continue;
+                }
+
+                $unitFloor = $isResidential ? (($unitIndex % $building->floors) + 1) : 1;
                 $unitNumber = $building->floors > 1
-                    ? sprintf('%d%02d', rand(1, $building->floors), $i)
-                    : (100 + $i);
+                    ? sprintf('%d%02d', $unitFloor, $unitIndex)
+                    : (100 + $unitIndex);
 
                 $sqft = $def['base_sqft'] + ($i % 5) * ($isResidential ? 90 : 260);
                 $rent = $def['rent'] + ($i % 6) * ($isResidential ? 175 : 450);
 
-                Unit::create([
+                Unit::firstOrCreate([
                     'building_id' => $def['building_id'],
                     'unit_number' => $unitNumber,
+                ], [
                     'name' => $isResidential ? "Unit {$i}" : "Suite {$i}",
-                    'floor' => $isResidential ? (($i % $building->floors) + 1) : 1,
+                    'floor' => $unitFloor,
                     'sqft' => $sqft,
                     'bedrooms' => $isResidential ? (1 + ($i % 3)) : 0,
                     'bathrooms' => $isResidential ? (1 + ($i % 2)) : 2,
@@ -262,7 +292,10 @@ class DemoDataSeeder extends Seeder
                     'amenities' => $isResidential ? json_encode(['AC', 'Dishwasher', 'Balcony']) : json_encode(['Loading Dock', 'HVAC', 'Security']),
                     'description' => null,
                 ]);
+                $existingUnitIndexes[] = $unitIndex;
             }
+
+            $unitOffsets[$def['building_id']] = $unitOffset + $def['count'];
         }
     }
 
@@ -338,11 +371,11 @@ class DemoDataSeeder extends Seeder
                 'notes' => $i % 4 === 0 ? 'Prefers email communication. Renews early.' : null,
             ]);
 
-            // Create a login user for each tenant
+            // Create a user record for each tenant.
             User::create([
                 'name' => $tenant->full_name,
                 'email' => $email,
-                'password' => Hash::make($this->demoPassword),
+                'password' => Hash::make(Str::random(64)),
                 'role' => 'tenant',
                 'tenant_id' => $tenant->id,
             ]);
@@ -645,6 +678,454 @@ class DemoDataSeeder extends Seeder
                     'tax_amount' => 0,
                 ]);
             }
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Vault Assets
+    // ------------------------------------------------------------------
+
+    private function seedVaultAssets(): void
+    {
+        if (VaultAsset::count() > 0) {
+            $this->command->info('Vault assets already exist — skipping seed.');
+            return;
+        }
+
+        $assetTypes = ['deed', 'title', 'key', 'access_card', 'contract', 'certificate', 'license', 'permit'];
+        $properties = Property::all();
+        $holders = ['Property Manager', 'Legal Counsel', 'Bank Vault', 'Secure Storage Co.', 'Tenant Services', 'Facilities Team'];
+
+        foreach ($properties as $prop) {
+            $count = rand(2, 5);
+            for ($i = 1; $i <= $count; $i++) {
+                $type = $assetTypes[array_rand($assetTypes)];
+                $status = ['sealed', 'active', 'released', 'expired'][array_rand(['sealed', 'active', 'released', 'expired'])];
+
+                VaultAsset::create([
+                    'code' => 'VA-' . $prop->code . '-' . str_pad((string) $i, 3, '0', STR_PAD_LEFT),
+                    'asset_type' => $type,
+                    'title' => ucfirst($type) . ' - ' . $prop->name . ' #' . $i,
+                    'property_id' => $prop->id,
+                    'property_name' => $prop->name,
+                    'unit_code' => $i <= 2 ? 'UNIT-' . rand(100, 999) : null,
+                    'holder' => $holders[array_rand($holders)],
+                    'safe_id' => 'SAFE-' . rand(1000, 9999),
+                    'safe_location' => 'Vault Room ' . chr(65 + rand(0, 4)) . ', Level ' . rand(1, 3),
+                    'status' => $status,
+                    'deposited_on' => Carbon::now()->subDays(rand(30, 730))->toDateString(),
+                    'expires_on' => $status === 'expired' ? Carbon::now()->subDays(rand(1, 30))->toDateString() : Carbon::now()->addYears(rand(1, 5))->toDateString(),
+                    'value' => rand(5000, 500000) / 100 * 100,
+                    'document_count' => rand(1, 10),
+                    'notes' => $status === 'sealed' ? 'Original documents in secure storage' : ($status === 'active' ? 'Currently in use' : ($status === 'released' ? 'Released to authorized party' : 'Expired - renewal required')),
+                ]);
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Post Dated Cheques
+    // ------------------------------------------------------------------
+
+    private function seedPostDatedCheques(): void
+    {
+        if (PostDatedCheque::count() > 0) {
+            $this->command->info('Post-dated cheques already exist — skipping seed.');
+            return;
+        }
+
+        $leases = Lease::where('status', 'active')->get();
+        $banks = ['Emirates NBD', 'Mashreq Bank', 'ADCB', 'FAB', 'DIB', 'RAK Bank', 'CBD', 'HSBC'];
+        $statuses = ['pending', 'deposited', 'cleared', 'returned', 'replaced'];
+
+        foreach ($leases as $idx => $lease) {
+            $unit = $lease->unit;
+            $tenant = $lease->tenant;
+            $property = $unit?->building?->property;
+
+            if (! $unit || ! $tenant || ! $property) continue;
+
+            $chequeCount = rand(4, 12);
+            for ($i = 1; $i <= $chequeCount; $i++) {
+                $dueDate = Carbon::now()->addMonths($i - 1)->startOfMonth()->addDays(5);
+                $status = $dueDate->isPast() ? $statuses[array_rand(array_slice($statuses, 1))] : 'pending';
+
+                PostDatedCheque::create([
+                    'cheque_no' => 'CHQ-' . rand(100000, 999999),
+                    'bank' => $banks[array_rand($banks)],
+                    'branch' => 'Main Branch',
+                    'amount' => $lease->rent_amount,
+                    'currency' => 'USD',
+                    'payer' => $tenant->full_name,
+                    'payer_company' => $tenant->company_name,
+                    'payee' => $property->name,
+                    'lease_code' => $lease->lease_number,
+                    'unit_code' => $unit->unit_number,
+                    'property_name' => $property->name,
+                    'issued_on' => Carbon::now()->subMonths($chequeCount - $i + 1)->toDateString(),
+                    'due_on' => $dueDate->toDateString(),
+                    'deposited_on' => in_array($status, ['deposited', 'cleared']) ? $dueDate->copy()->addDays(rand(0, 2))->toDateString() : null,
+                    'status' => $status,
+                    'instalment_label' => 'Rent - ' . $dueDate->format('M Y'),
+                    'bounce_case_code' => $status === 'returned' ? 'BC-' . rand(1000, 9999) : null,
+                    'notes' => $status === 'returned' ? 'Insufficient funds' : null,
+                ]);
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Lease Agreements
+    // ------------------------------------------------------------------
+
+    private function seedLeaseAgreements(): void
+    {
+        if (LeaseAgreement::count() > 0) {
+            $this->command->info('Lease agreements already exist — skipping seed.');
+            return;
+        }
+
+        $leases = Lease::where('status', 'active')->get();
+        $templates = ['Standard Residential', 'Commercial Office', 'Retail', 'Industrial/Warehouse', 'Mixed Use'];
+        $statuses = ['draft', 'sent', 'partially_signed', 'executed', 'expired'];
+
+        foreach ($leases as $idx => $lease) {
+            $unit = $lease->unit;
+            $tenant = $lease->tenant;
+            $property = $unit?->building?->property;
+
+            if (! $unit || ! $tenant || ! $property) continue;
+
+            $status = $idx % 5 === 0 ? 'draft' : ($idx % 5 === 1 ? 'sent' : ($idx % 5 === 2 ? 'partially_signed' : 'executed'));
+            $hasEjari = $status === 'executed' && $idx % 3 !== 0;
+
+            LeaseAgreement::create([
+                'code' => 'LA-' . $lease->lease_number,
+                'lease_code' => $lease->lease_number,
+                'property_name' => $property->name,
+                'unit_code' => $unit->unit_number,
+                'tenant_name' => $tenant->full_name,
+                'tenant_company' => $tenant->company_name,
+                'type' => $templates[array_rand($templates)],
+                'start_date' => $lease->start_date,
+                'end_date' => $lease->end_date,
+                'rent_amount' => $lease->rent_amount,
+                'security_deposit' => $lease->deposit_amount,
+                'payment_frequency' => $lease->payment_frequency,
+                'template' => $templates[array_rand($templates)],
+                'version' => rand(1, 3),
+                'generated_on' => Carbon::parse($lease->start_date)->subDays(rand(5, 30))->toDateString(),
+                'status' => $status,
+                'landlord_signed_on' => in_array($status, ['partially_signed', 'executed']) ? Carbon::parse($lease->start_date)->subDays(rand(1, 10))->toDateString() : null,
+                'tenant_signed_on' => $status === 'executed' ? Carbon::parse($lease->start_date)->subDays(rand(0, 5))->toDateString() : null,
+                'witness_name' => $status === 'executed' ? 'Witness ' . ($idx + 1) : null,
+                'ejari_number' => $hasEjari ? 'EJARI-' . rand(100000, 999999) : null,
+                'document_size_kb' => rand(200, 2000),
+                'notes' => $status === 'draft' ? 'Pending review' : ($status === 'sent' ? 'Sent for signature' : null),
+            ]);
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Lease Renewals
+    // ------------------------------------------------------------------
+
+    private function seedLeaseRenewals(): void
+    {
+        if (LeaseRenewal::count() > 0) {
+            $this->command->info('Lease renewals already exist — skipping seed.');
+            return;
+        }
+
+        $leases = Lease::where('status', 'active')
+            ->where('end_date', '>=', Carbon::now())
+            ->where('end_date', '<=', Carbon::now()->addMonths(6))
+            ->get();
+
+        $statuses = ['draft', 'sent', 'under_negotiation', 'accepted', 'declined', 'expired'];
+
+        foreach ($leases as $idx => $lease) {
+            $unit = $lease->unit;
+            $tenant = $lease->tenant;
+            $property = $unit?->building?->property;
+
+            if (! $unit || ! $tenant || ! $property) continue;
+
+            $daysToExpiry = Carbon::parse($lease->end_date)->diffInDays(Carbon::now());
+            $status = $statuses[array_rand($statuses)];
+            $uplift = rand(3, 10);
+
+            LeaseRenewal::create([
+                'code' => 'LR-' . $lease->lease_number,
+                'lease_code' => $lease->lease_number,
+                'property_name' => $property->name,
+                'unit_code' => $unit->unit_number,
+                'tenant_name' => $tenant->full_name,
+                'tenant_company' => $tenant->company_name,
+                'current_rent' => $lease->rent_amount,
+                'proposed_rent' => round($lease->rent_amount * (1 + $uplift / 100), 2),
+                'uplift_percent' => $uplift,
+                'expiry_date' => $lease->end_date,
+                'days_to_expiry' => $daysToExpiry,
+                'offer_sent_on' => in_array($status, ['sent', 'under_negotiation', 'accepted', 'declined']) ? Carbon::now()->subDays(rand(5, 30))->toDateString() : null,
+                'response_due_on' => Carbon::now()->addDays(rand(15, 45))->toDateString(),
+                'responded_on' => in_array($status, ['accepted', 'declined']) ? Carbon::now()->subDays(rand(1, 10))->toDateString() : null,
+                'status' => $status,
+                'term_months' => 12,
+                'new_start_date' => Carbon::parse($lease->end_date)->addDay()->toDateString(),
+                'new_end_date' => Carbon::parse($lease->end_date)->addYear()->toDateString(),
+                'discount_percent' => $status === 'accepted' ? rand(0, 5) : 0,
+                'owner_note' => $status === 'under_negotiation' ? 'Negotiating terms' : null,
+                'notes' => $status === 'draft' ? 'Draft renewal offer' : null,
+            ]);
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Service Charges
+    // ------------------------------------------------------------------
+
+    private function seedServiceCharges(): void
+    {
+        if (ServiceCharge::count() > 0) {
+            $this->command->info('Service charges already exist — skipping seed.');
+            return;
+        }
+
+        $properties = Property::where('status', 'active')->get();
+        $categories = ['Maintenance', 'Cleaning', 'Security', 'Landscaping', 'Utilities', 'Insurance', 'Management Fee', 'Repairs', 'Common Area', 'Parking'];
+
+        foreach ($properties as $prop) {
+            $years = [date('Y'), date('Y') - 1];
+            foreach ($years as $year) {
+                foreach ($categories as $cat) {
+                    $budgeted = rand(5000, 100000);
+                    $actual = $budgeted + rand(-10000, 10000);
+                    $status = ['draft', 'issued', 'partially_paid', 'paid', 'closed'][array_rand(['draft', 'issued', 'partially_paid', 'paid', 'closed'])];
+
+                    ServiceCharge::create([
+                        'code' => 'SC-' . $prop->code . '-' . $year . '-' . strtoupper(substr($cat, 0, 3)),
+                        'property_id' => $prop->id,
+                        'property_name' => $prop->name,
+                        'period_year' => $year,
+                        'category' => $cat,
+                        'budgeted_amount' => $budgeted,
+                        'actual_amount' => $actual,
+                        'variance' => $actual - $budgeted,
+                        'total_area_sqft' => $prop->total_area_sqft,
+                        'rate_per_sqft' => $prop->total_area_sqft > 0 ? round($budgeted / $prop->total_area_sqft, 4) : 0,
+                        'units_charged' => $prop->units()->count(),
+                        'amount_collected' => $status === 'paid' ? $actual : ($status === 'partially_paid' ? round($actual * 0.6) : 0),
+                        'outstanding' => $status === 'paid' ? 0 : ($status === 'partially_paid' ? round($actual * 0.4) : $actual),
+                        'issued_on' => Carbon::create($year, 1, 1)->toDateString(),
+                        'due_date' => Carbon::create($year, 3, 31)->toDateString(),
+                        'status' => $status,
+                        'approved_by' => $status !== 'draft' ? 'Property Manager' : null,
+                        'notes' => $status === 'draft' ? 'Pending approval' : null,
+                    ]);
+                }
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Escrow Accounts
+    // ------------------------------------------------------------------
+
+    private function seedEscrowAccounts(): void
+    {
+        if (EscrowAccount::count() > 0) {
+            $this->command->info('Escrow accounts already exist — skipping seed.');
+            return;
+        }
+
+        $properties = Property::where('status', 'active')->get();
+        $banks = ['Emirates NBD', 'Mashreq Bank', 'ADCB', 'FAB', 'DIB', 'HSBC', 'Standard Chartered'];
+
+        foreach ($properties as $prop) {
+            $count = rand(1, 3);
+            for ($i = 1; $i <= $count; $i++) {
+                $opening = rand(50000, 500000);
+                $deposits = rand(10000, 200000);
+                $withdrawals = rand(5000, 150000);
+                $status = ['active', 'frozen', 'closed'][array_rand(['active', 'frozen', 'closed'])];
+
+                EscrowAccount::create([
+                    'code' => 'ESC-' . $prop->code . '-' . $i,
+                    'property_id' => $prop->id,
+                    'property_name' => $prop->name,
+                    'bank' => $banks[array_rand($banks)],
+                    'iban' => 'AE' . rand(10, 99) . ' ' . rand(1000, 9999) . ' ' . rand(1000000000, 9999999999),
+                    'account_number' => 'ACC-' . rand(10000000, 99999999),
+                    'opening_balance' => $opening,
+                    'deposits' => $deposits,
+                    'withdrawals' => $withdrawals,
+                    'closing_balance' => $opening + $deposits - $withdrawals,
+                    'currency' => 'USD',
+                    'authority_limit' => rand(50000, 1000000),
+                    'status' => $status,
+                    'opened_on' => Carbon::now()->subYears(rand(1, 5))->toDateString(),
+                    'last_reconciled_on' => $status === 'active' ? Carbon::now()->subDays(rand(1, 30))->toDateString() : Carbon::now()->subMonths(rand(1, 6))->toDateString(),
+                    'manager_name' => 'Escrow Manager ' . ($i + 1),
+                    'notes' => $status === 'frozen' ? 'Account frozen pending audit' : ($status === 'closed' ? 'Property sold' : 'Active escrow account'),
+                ]);
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Ejari Contracts
+    // ------------------------------------------------------------------
+
+    private function seedEjariContracts(): void
+    {
+        if (EjariContract::count() > 0) {
+            $this->command->info('Ejari contracts already exist — skipping seed.');
+            return;
+        }
+
+        $leases = Lease::where('status', 'active')->get();
+        $ejariTypes = ['residential', 'commercial', 'industrial', 'retail', 'mixed_use'];
+        $statuses = ['draft', 'submitted', 'registered', 'rejected', 'cancelled'];
+
+        foreach ($leases as $idx => $lease) {
+            $unit = $lease->unit;
+            $tenant = $lease->tenant;
+            $property = $unit?->building?->property;
+
+            if (! $unit || ! $tenant || ! $property) continue;
+
+            // 60% chance of having an Ejari contract
+            if ($idx % 5 >= 3) continue;
+
+            $status = $idx % 7 === 0 ? 'draft' : ($idx % 7 === 1 ? 'submitted' : ($idx % 7 === 2 ? 'rejected' : 'registered'));
+            $hasNumber = in_array($status, ['registered']);
+
+            EjariContract::create([
+                'code' => 'EJC-' . $lease->lease_number,
+                'ejari_number' => $hasNumber ? 'EJARI-' . rand(1000000, 9999999) : null,
+                'lease_code' => $lease->lease_number,
+                'property_name' => $property->name,
+                'unit_code' => $unit->unit_number,
+                'landlord_name' => $property->name . ' LLC',
+                'tenant_name' => $tenant->full_name,
+                'tenant_company' => $tenant->company_name,
+                'ejari_type' => $ejariTypes[array_rand($ejariTypes)],
+                'registration_date' => in_array($status, ['submitted', 'registered', 'rejected']) ? Carbon::now()->subDays(rand(1, 60))->toDateString() : null,
+                'certificate_issued_on' => $status === 'registered' ? Carbon::now()->subDays(rand(1, 30))->toDateString() : null,
+                'expiry_date' => Carbon::parse($lease->end_date)->toDateString(),
+                'status' => $status,
+                'registration_fee' => rand(1000, 5000),
+                'penalty_amount' => $status === 'rejected' ? rand(500, 2000) : 0,
+                'deed_reference' => $status === 'registered' ? 'DEED-' . rand(10000, 99999) : null,
+                'free_zone_property' => false,
+                'attempts' => $status === 'rejected' ? rand(1, 3) : 1,
+                'last_error' => $status === 'rejected' ? 'Document mismatch - tenancy contract not attested' : null,
+                'notes' => $status === 'draft' ? 'Awaiting document preparation' : ($status === 'submitted' ? 'Submitted to Ejari portal' : ($status === 'rejected' ? 'Rejected - resubmission required' : 'Registered successfully')),
+            ]);
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Fit Out Requests
+    // ------------------------------------------------------------------
+
+    private function seedFitOutRequests(): void
+    {
+        if (FitOutRequest::count() > 0) {
+            $this->command->info('Fit-out requests already exist — skipping seed.');
+            return;
+        }
+
+        $leases = Lease::where('status', 'active')->get();
+        $permitStatuses = ['not_submitted', 'under_review', 'approved', 'rejected', 'expired'];
+        $nocStatuses = ['pending', 'inspection_scheduled', 'noc_issued', 'noc_rejected'];
+        $priorities = ['low', 'normal', 'high'];
+
+        foreach ($leases as $idx => $lease) {
+            $unit = $lease->unit;
+            $tenant = $lease->tenant;
+            $property = $unit?->building?->property;
+
+            if (! $unit || ! $tenant || ! $property) continue;
+
+            // 30% chance of having a fit-out request
+            if ($idx % 10 >= 3) continue;
+
+            $permitStatus = $permitStatuses[array_rand($permitStatuses)];
+            $nocStatus = $permitStatus === 'approved' ? $nocStatuses[array_rand($nocStatuses)] : 'pending';
+
+            FitOutRequest::create([
+                'code' => 'FOR-' . $lease->lease_number,
+                'property_name' => $property->name,
+                'unit_code' => $unit->unit_number,
+                'tenant_name' => $tenant->full_name,
+                'tenant_company' => $tenant->company_name,
+                'contractor_name' => 'Contractor ' . chr(65 + ($idx % 26)) . ' Construction',
+                'contractor_trn' => 'TRN-' . rand(100000000, 999999999),
+                'scope' => 'Interior fit-out including partitioning, electrical, plumbing, HVAC, and finishes.',
+                'permit_status' => $permitStatus,
+                'noc_status' => $nocStatus,
+                'deposit_amount' => rand(10000, 100000),
+                'deposit_status' => $permitStatus === 'approved' ? 'paid' : 'pending',
+                'requested_on' => Carbon::now()->subDays(rand(10, 120))->toDateString(),
+                'expected_completion' => Carbon::now()->addDays(rand(30, 180))->toDateString(),
+                'inspection_date' => $nocStatus === 'inspection_scheduled' ? Carbon::now()->addDays(rand(1, 14))->toDateString() : null,
+                'progress_percent' => $permitStatus === 'approved' ? rand(10, 90) : 0,
+                'priority' => $priorities[array_rand($priorities)],
+                'estimated_cost' => rand(50000, 500000),
+                'owner_name' => $property->name . ' Management',
+                'notes' => $permitStatus === 'not_submitted' ? 'Awaiting tenant submission' : ($permitStatus === 'under_review' ? 'Under authority review' : null),
+            ]);
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Bounced Cheques
+    // ------------------------------------------------------------------
+
+    private function seedBouncedCheques(): void
+    {
+        if (BouncedCheque::count() > 0) {
+            $this->command->info('Bounced cheques already exist — skipping seed.');
+            return;
+        }
+
+        $returnedCheques = PostDatedCheque::where('status', 'returned')->get();
+        $stages = ['new', 'notified', 'promise_to_pay', 'partially_recovered', 'recovered', 'escalated', 'legal_action', 'written_off'];
+        $priorities = ['low', 'normal', 'high', 'critical'];
+        $reasons = ['Insufficient funds', 'Account closed', 'Signature mismatch', 'Post-dated', 'Stop payment', 'Refer to drawer'];
+
+        foreach ($returnedCheques as $idx => $cheque) {
+            $stage = $stages[array_rand($stages)];
+            $amount = (float) $cheque->amount;
+            $recovered = in_array($stage, ['partially_recovered', 'recovered']) ? rand(1, (int)$amount) : 0;
+
+            BouncedCheque::create([
+                'code' => 'BC-' . $cheque->cheque_no,
+                'cheque_no' => $cheque->cheque_no,
+                'bank' => $cheque->bank,
+                'amount' => $amount,
+                'currency' => 'USD',
+                'tenant_name' => $cheque->payer,
+                'tenant_company' => $cheque->payer_company,
+                'lease_code' => $cheque->lease_code,
+                'unit_code' => $cheque->unit_code,
+                'property_name' => $cheque->property_name,
+                'bounced_on' => $cheque->due_on,
+                'bounce_reason' => $reasons[array_rand($reasons)],
+                'stage' => $stage,
+                'recovered_amount' => $recovered,
+                'outstanding' => $amount - $recovered,
+                'recovery_percent' => $amount > 0 ? round(($recovered / $amount) * 100, 2) : 0,
+                'actions_taken' => rand(0, 5),
+                'next_action_due' => Carbon::now()->addDays(rand(1, 30))->toDateString(),
+                'aging_days' => Carbon::parse($cheque->due_on)->diffInDays(Carbon::now()),
+                'case_manager' => 'Collections Team ' . chr(65 + ($idx % 5)),
+                'priority' => $priorities[array_rand($priorities)],
+                'legal_notice_sent' => in_array($stage, ['escalated', 'legal_action', 'written_off']),
+                'notes' => $stage === 'new' ? 'Initial bounce recorded' : ($stage === 'notified' ? 'Tenant notified' : ($stage === 'legal_action' ? 'Legal proceedings initiated' : null)),
+            ]);
         }
     }
 }

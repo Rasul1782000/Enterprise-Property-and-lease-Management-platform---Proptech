@@ -50,7 +50,7 @@ class LeaseController extends Controller
     public function store(StoreLeaseRequest $request)
     {
         $data = $request->validated();
-        $data['created_by'] = $request->user()->id;
+        $data['created_by'] = $request->user()?->id;
         $data['status'] = $data['status'] ?? 'active';
         $data['payment_frequency'] = str_replace(
             'annually',
