@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use Aws\S3\S3Client;
+use App\Support\Storage\S3ClientFactory;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -25,6 +26,20 @@ class FlociFidelityTest extends TestCase
             'retries'                 => 0,
             'http'                    => ['connect_timeout' => 5, 'timeout' => 10],
         ]);
+    }
+
+    public static function setUpBeforeClass(): void
+    {
+        parent::setUpBeforeClass();
+
+        $endpoint = env('AWS_ENDPOINT_URL', 'http://localhost:4566');
+
+        if (! S3ClientFactory::probeEndpoint($endpoint)) {
+            self::markTestSkipped(
+                'No S3 endpoint reachable at ['.$endpoint.']. '
+                .'Start Floci (docker run -p 4566:4566 floci/floci:latest) to run these.'
+            );
+        }
     }
 
     protected function setUp(): void

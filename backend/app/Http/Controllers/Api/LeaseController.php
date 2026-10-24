@@ -141,7 +141,8 @@ class LeaseController extends Controller
 
         try {
             S3ClientFactory::ensureBucket();
-        } catch (Throwable) {
+        } catch (Throwable $e) {
+            \Log::warning('S3 bucket ensure failed: ' . $e->getMessage());
         }
 
         $pdf = Pdf::loadView('pdfs.lease-agreement', compact('lease'))
@@ -149,7 +150,8 @@ class LeaseController extends Controller
 
         try {
             $stored = Storage::disk('documents')->put($path, $pdf->output());
-        } catch (Throwable) {
+        } catch (\Throwable $e) {
+            \Log::error('Failed to store signed lease PDF: ' . $e->getMessage());
             $stored = false;
         }
 

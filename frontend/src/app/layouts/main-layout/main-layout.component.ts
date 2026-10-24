@@ -70,9 +70,7 @@ export class MainLayoutComponent {
     { label: 'Units', icon: 'pi pi-th-large', command: () => this.router.navigate(['/units']) },
   ];
 
-  get initial(): string {
-    return 'J';
-  }
+  readonly initial = 'J';
 
   navOpen = false;
 

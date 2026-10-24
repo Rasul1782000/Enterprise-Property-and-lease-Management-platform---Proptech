@@ -44,7 +44,8 @@ const PortalPreset = definePreset(Aura, {
     providePrimeNG({
       ripple: true,
       inputVariant: 'outlined',
-      theme: { preset: PortalPreset, options: { darkModeSelector: '.app-dark' } }
+      theme: { preset: PortalPreset, options: { darkModeSelector: '.app-dark' } },
+      license: ''
     }),
     MessageService,
     ConfirmationService
