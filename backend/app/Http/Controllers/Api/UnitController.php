@@ -14,7 +14,7 @@ class UnitController extends Controller
     public function index(Request $request)
     {
         $units = QueryBuilder::for(Unit::class)
-            ->with(['building', 'building.property', 'activeLease'])
+            ->with(['building', 'building.property', 'property', 'activeLease'])
             ->allowedFilters([
                 AllowedFilter::exact('status'),
                 AllowedFilter::exact('unit_type'),
@@ -24,7 +24,7 @@ class UnitController extends Controller
                 AllowedFilter::partial('code', 'unit_number'),
             ])
             ->allowedSorts(['rent_amount', 'sqft', 'floor', 'created_at'])
-            ->allowedIncludes(['building', 'building.property', 'activeLease', 'leases'])
+            ->allowedIncludes(['building', 'building.property', 'property', 'activeLease', 'leases'])
             ->paginate($request->get('per_page', 15))
             ->appends($request->query());
 
@@ -69,7 +69,7 @@ class UnitController extends Controller
     public function show(Unit $unit)
     {
         return new UnitResource(
-            $unit->load(['building.property', 'leases.tenant', 'activeLease'])
+            $unit->load(['building.property', 'property', 'leases.tenant', 'activeLease'])
         );
     }
 

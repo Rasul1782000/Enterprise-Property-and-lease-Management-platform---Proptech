@@ -8,7 +8,7 @@
 ```powershell
 cd frontend
 npm ci            # deterministic install from package-lock.json
-npm start         # http://localhost:4200 (proxies /api -> https://api.rasul17.indevs.in)
+npm start         # http://localhost:4200 (proxies /api -> http://127.0.0.1:8000)
 ```
 
 ## Scripts
@@ -31,14 +31,14 @@ npm run build:prod  # production config (environment.prod.ts, hashed assets, bud
 ## Environments
 | File | Used by | apiUrl | Mock data |
 |---|---|---|---|
-| `src/environments/environment.ts` | dev (`ng serve`, `ng test`) | `http://127.0.0.1:18000/api` | off |
+| `src/environments/environment.ts` | dev (`ng serve`, `ng test`) | `/api` (dev proxy to `127.0.0.1:8000`) | off |
 | `src/environments/environment.prod.ts` | `--configuration production` | `https://api.rasul17.indevs.in/api` | off |
 
 `angular.json` swaps them via `fileReplacements` in the `production` configuration — do not remove that block, or the production bundle ships the development API URL.
 
-The local Docker API defaults to port `8000`; configure `API_PORT` in
-`frontend/deployment/.env` to match the local `apiUrl` if that host port is
-occupied. This workspace uses port `18000`.
+The Angular dev proxy targets port `8000`. If the local Docker API uses a
+different host port, update `frontend/proxy.conf.json` to match `API_PORT` in
+`frontend/deployment/.env`.
 
 ## Styling: Tailwind CSS v4
 
@@ -105,10 +105,10 @@ live in `vercel.json`:
 
 ## Frontend environment configurations
 
-- `npm start` / `ng serve`: `environment.ts` (development API at `127.0.0.1:18000`)
-- `npm run start:local`: `environment.local.ts` (local API at `127.0.0.1:18000`)
+- `npm start` / `ng serve`: `environment.ts` (development API proxied to `127.0.0.1:8000`)
+- `npm run start:local`: `environment.local.ts` (local API proxied to `127.0.0.1:8000`)
 - `npm run build:prod`: `environment.prod.ts` (production API; used by Vercel)
-- `npm run build:prod:local`: `environment.prod.local.ts` (optimized local API build)
+- `npm run build:prod:local`: `environment.prod.local.ts` (optimized build targeting `127.0.0.1:8000`)
 
 These are public frontend settings, not secret environment files. Configure
 production API CORS to allow the Vercel site origin.

@@ -23,7 +23,7 @@ php artisan migrate
 # Optional local-only sample data: set DEMO_SEED_ENABLED=true in backend/.env
 # before php artisan db:seed.
 php artisan storage:link
-php artisan serve --port=18000  # http://127.0.0.1:18000
+php artisan serve --port=8000  # http://127.0.0.1:8000
 # in another terminal for scheduler:
 php artisan schedule:work
 ```
@@ -42,11 +42,11 @@ PDF test: `GET http://localhost:8000/api/leases/1/pdf` (with Bearer token)
 ```powershell
 cd frontend
 npm install
-npm start    # http://localhost:4200  (API -> :18000)
+npm start    # http://localhost:4200  (API proxied to :8000)
 # or: ng serve --proxy-config proxy.conf.json --open
 ```
 
-Environment: `frontend/src/environments/environment.ts` -> `apiUrl: http://127.0.0.1:18000/api`
+Environment: `frontend/src/environments/environment.ts` -> `apiUrl: /api` (dev proxy)
 
 ### 3) Access
 The dashboard and API do not require sign-in. All API endpoints are public; do

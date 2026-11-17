@@ -1,20 +1,47 @@
 :host { display: block; }
 
 .dashboard {
+  position: relative;
+  isolation: isolate;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
   --dashboard-violet: #7562d9;
 }
 
-.page-header { margin-bottom: 0; }
-.page-header > :first-child { flex: 1 1 auto; min-width: 0; }
+.dashboard::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    linear-gradient(120deg, rgba(77, 50, 31, 0.34), rgba(148, 99, 58, 0.2)),
+    url('/img/dashboard-background.jpg') center / cover no-repeat;
+}
+
+.page-header {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0;
+  text-align: center;
+}
+.page-header > :first-child { flex: 0 1 auto; min-width: 0; }
+.page-actions { justify-content: center; }
 .page-title {
-  background: linear-gradient(110deg, var(--coral-700), #8a59bd 55%, var(--teal-800));
+  background: linear-gradient(110deg, #553522, #8b5e3c);
   background-clip: text;
   color: transparent;
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 700;
+  text-shadow: 0 2px 12px rgba(255, 250, 242, 0.6);
 }
-.page-subtitle { color: var(--ink-600); }
+.page-subtitle {
+  color: #4f3422;
+  font-weight: 700;
+  text-shadow: 0 1px 6px rgba(255, 250, 242, 0.95);
+}
 
 .updated-stamp {
   display: inline-flex;

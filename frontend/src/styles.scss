@@ -403,9 +403,38 @@ summary:focus-visible,
   box-shadow: var(--shadow-md);
 }
 
-.p-datatable { font-size: 1rem; }
+.p-datatable {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  font-size: 1rem;
+}
 .p-datatable .p-datatable-tbody > tr { transition: background 0.12s ease; }
-.p-datatable .p-datatable-table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.p-datatable .p-datatable-table-container {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-color: var(--coral-500) var(--ink-100);
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+.p-datatable .p-datatable-table-container::-webkit-scrollbar { height: 0.625rem; }
+.p-datatable .p-datatable-table-container::-webkit-scrollbar-track {
+  background: var(--ink-100);
+  border-radius: var(--radius-pill);
+}
+.p-datatable .p-datatable-table-container::-webkit-scrollbar-thumb {
+  background: var(--coral-400);
+  border: 2px solid var(--ink-100);
+  border-radius: var(--radius-pill);
+}
+.p-datatable .p-datatable-table-container::-webkit-scrollbar-thumb:hover {
+  background: var(--coral-600);
+}
 .p-datatable .p-datatable-thead > tr > th {
   background: var(--surface-sunken);
   color: var(--ink-500);
@@ -690,6 +719,11 @@ label {
 .p-drawer.p-drawer-bottom { max-height: 90dvh; }
 
 @media (max-width: 640px) {
+  .portal-main { padding: 1.25rem 1rem 2rem; }
+  .section-card { padding: 1rem; }
+  p-card:has(.p-datatable) .p-card-content { padding: 1rem; }
+  .p-datatable .p-datatable-thead > tr > th,
+  .p-datatable .p-datatable-tbody > tr > td { padding: 0.75rem 0.875rem; }
   .p-dialog { max-width: calc(100vw - 1rem); max-height: calc(100dvh - 1rem); }
   .p-dialog .p-dialog-footer { flex-direction: column-reverse; }
   .p-dialog .p-dialog-footer .p-button { width: 100%; justify-content: center; }

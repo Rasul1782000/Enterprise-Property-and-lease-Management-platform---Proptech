@@ -1,6 +1,6 @@
 export const environment = {
   production: false,
-  apiUrl: 'http://127.0.0.1:18000/api',
+  apiUrl: '/api',
   appName: 'Gaarbejana',
   useMockData: false,
   debug: true

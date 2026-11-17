@@ -23,6 +23,12 @@ class PublicApiAccessTest extends TestCase
             ->assertHeader('Access-Control-Allow-Origin', 'http://localhost:55508');
     }
 
+    public function test_unit_list_accepts_frontend_relationship_includes(): void
+    {
+        $this->getJson('/api/units?include=building,building.property,property,activeLease')
+            ->assertOk();
+    }
+
     public function test_management_changes_are_allowed_without_a_login(): void
     {
         $this->postJson('/api/properties', [

@@ -45,11 +45,16 @@ export class UnitsApiService {
   constructor(private api: ApiService) {}
 
   list(params?: ApiParams): Observable<PaginatedResponse<Unit>> {
-    return this.api.getPaginated<Unit>(this.endpoint, { ...params, include: 'building,property,tenant,lease' });
+    return this.api.getPaginated<Unit>(this.endpoint, {
+      ...params,
+      include: 'building,building.property,property,activeLease'
+    });
   }
 
   get(id: number): Observable<Unit> {
-    return this.api.get<Unit>(`${this.endpoint}/${id}`, { include: 'building,property,tenant,lease' });
+    return this.api.get<Unit>(`${this.endpoint}/${id}`, {
+      include: 'building,building.property,property,activeLease'
+    });
   }
 
   getByBuilding(buildingId: number, params?: ApiParams): Observable<PaginatedResponse<Unit>> {
