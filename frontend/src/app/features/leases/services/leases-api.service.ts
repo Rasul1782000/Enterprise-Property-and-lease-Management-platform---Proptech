@@ -112,8 +112,8 @@ export class LeasesApiService {
     return this.api.post<Lease>(`${this.endpoint}/${id}/terminate`, { terminated_at: terminatedAt, reason });
   }
 
-  renew(id: number, newEndDate: string, newRentAmount: number): Observable<Lease> {
-    return this.api.post<Lease>(`${this.endpoint}/${id}/renew`, { end_date: newEndDate, rent_amount: newRentAmount });
+  renew(id: number, newStartDate: string, newEndDate: string, newRentAmount: number): Observable<Lease> {
+    return this.api.post<Lease>(`${this.endpoint}/${id}/renew`, { start_date: newStartDate, end_date: newEndDate, rent_amount: newRentAmount });
   }
 
   generateDocument(id: number, template: string): Observable<Blob> {

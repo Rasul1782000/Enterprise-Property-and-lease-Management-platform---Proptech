@@ -25,10 +25,10 @@ class StoreLeaseRequest extends FormRequest
             'late_fee_percent' => 'nullable|numeric|min:0|max:100',
             'due_day' => 'nullable|integer|min:1|max:28',
             'status' => 'sometimes|in:draft,active,expired,terminated,renewed',
-            'payment_frequency' => 'sometimes|in:monthly,quarterly,yearly',
+            'payment_frequency' => 'sometimes|in:monthly,quarterly,yearly,annually',
             'escalation_clause' => 'nullable|string',
             'renewal_options' => 'nullable|integer|min:0',
-            'terms' => 'nullable|array',
+            'terms' => 'nullable|string',
             'notes' => 'nullable|string',
         ];
     }

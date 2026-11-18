@@ -1,0 +1,54 @@
+# Copy this file to terraform.tfvars and adjust as needed.
+# terraform.tfvars is gitignored and may contain secrets.
+
+# ─── General ─────────────────────────────────────────────────────────────────
+aws_region   = "me-south-1"
+environment  = "production"
+project_name = "gaarbejana"
+app_domain   = "rasul17.indevs.in"
+
+# ─── Frontend / CloudFront ───────────────────────────────────────────────────
+# Leave frontend_domain empty when using the Vercel-assigned URL.
+# CloudFront is optional; when enabled, frontend_domain must be a subdomain of
+# app_domain and frontend_origin must be the Vercel hostname (no scheme).
+frontend_domain   = ""
+frontend_origin   = ""
+frontend_url      = "https://frontend-gamma-hazel-80.vercel.app"
+enable_cloudfront = false
+
+# Leave false when the apex is served by Vercel; set true to alias the apex to
+# the ALB instead.
+manage_root_record = false
+
+# ─── ECS / backend ───────────────────────────────────────────────────────────
+# Leave empty to use the ECR repository created by the stack (:latest).
+backend_image           = ""
+backend_desired_count   = 2
+backend_min_count       = 2
+backend_max_count       = 6
+worker_desired_count    = 1
+scheduler_desired_count = 1
+
+# ─── RDS / ElastiCache ───────────────────────────────────────────────────────
+db_engine_version     = "8.4.9"
+db_instance_class     = "db.t3.micro"
+db_allocated_storage  = 20
+db_multi_az           = true
+redis_node_type       = "cache.t3.micro"
+redis_num_cache_nodes = 1
+redis_engine_version  = "7.1"
+
+# ─── S3 ──────────────────────────────────────────────────────────────────────
+s3_document_bucket = "gaarbejana-documents"
+s3_media_bucket    = "gaarbejana-media"
+
+# ─── Monitoring ──────────────────────────────────────────────────────────────
+enable_monitoring = true
+alarm_email       = ""
+
+# ─── Secrets ─────────────────────────────────────────────────────────────────
+# Leave app_key empty to generate a Laravel APP_KEY once and store it in
+# Secrets Manager. Optional integration secrets are omitted when empty.
+app_key        = ""
+openwa_api_key = ""
+mail_password  = ""

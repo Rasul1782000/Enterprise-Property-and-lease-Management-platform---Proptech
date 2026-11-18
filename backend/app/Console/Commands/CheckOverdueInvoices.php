@@ -13,10 +13,10 @@ class CheckOverdueInvoices extends Command
 
     public function handle(): int
     {
-        $graceDays = (int) env('INVOICE_OVERDUE_GRACE_DAYS', 3);
+        $graceDays = (int) config('app.invoice_overdue_grace_days', 3);
         $cutoff = now()->subDays($graceDays)->toDateString();
 
-        $invoices = Invoice::where('status', 'pending')
+        $invoices = Invoice::whereIn('status', ['pending', 'sent', 'partial'])
             ->where('due_date', '<', $cutoff)
             ->with('lease')
             ->get();

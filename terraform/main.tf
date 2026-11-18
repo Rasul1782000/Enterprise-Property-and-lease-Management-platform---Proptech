@@ -1,6 +1,6 @@
 # ------------------------------------------------------------------------------
 # Enterprise Property & Lease Management Portal
-# AWS Infrastructure � Single-file Terraform Configuration
+# AWS Infrastructure - Single-file Terraform Configuration
 # ------------------------------------------------------------------------------
 
 
@@ -36,7 +36,7 @@ provider "aws" {
 
   default_tags {
     tags = {
-      Project     = "gaarbejana"
+      Project     = var.project_name
       Environment = var.environment
       ManagedBy   = "terraform"
     }
@@ -46,6 +46,14 @@ provider "aws" {
 provider "aws" {
   alias  = "us_east_1"
   region = "us-east-1"
+
+  default_tags {
+    tags = {
+      Project     = var.project_name
+      Environment = var.environment
+      ManagedBy   = "terraform"
+    }
+  }
 }
 
 
@@ -85,9 +93,27 @@ variable "app_domain" {
 }
 
 variable "frontend_domain" {
-  description = "Frontend domain (if not using Vercel)"
+  description = "Custom frontend domain (used for S3 CORS and as the optional CloudFront alias). Leave empty when the Vercel-assigned URL is used."
   type        = string
   default     = ""
+}
+
+variable "frontend_origin" {
+  description = "Origin hostname CloudFront pulls the static frontend from when enable_cloudfront is true (for example the Vercel deployment hostname). Must differ from frontend_domain to avoid an origin loop."
+  type        = string
+  default     = ""
+}
+
+variable "frontend_url" {
+  description = "Public URL of the frontend used for FRONTEND_URL and generated links. Defaults to the Vercel production URL; ignored when frontend_domain is set."
+  type        = string
+  default     = "https://frontend-gamma-hazel-80.vercel.app"
+}
+
+variable "manage_root_record" {
+  description = "Create an apex A alias from app_domain to the ALB. Leave false when the apex is served by Vercel or another provider."
+  type        = bool
+  default     = false
 }
 
 # ─── Networking ───────────────────────────────────────────────────────────────
@@ -125,9 +151,9 @@ variable "database_subnet_cidrs" {
 # ─── ECS / Backend ────────────────────────────────────────────────────────────
 
 variable "backend_image" {
-  description = "Docker image URI for the Laravel backend"
+  description = "Docker image URI for the Laravel backend. Leave empty to use the ECR repository created by this configuration."
   type        = string
-  default     = "gaarbejana-backend:latest"
+  default     = ""
 }
 
 variable "backend_cpu" {
@@ -160,6 +186,23 @@ variable "backend_max_count" {
   default     = 6
 }
 
+variable "worker_desired_count" {
+  description = "Number of Laravel queue worker tasks (set to 0 to disable)"
+  type        = number
+  default     = 1
+}
+
+variable "scheduler_desired_count" {
+  description = "Number of Laravel scheduler tasks (keep at 1 to avoid duplicate scheduled jobs)"
+  type        = number
+  default     = 1
+
+  validation {
+    condition     = var.scheduler_desired_count >= 0 && var.scheduler_desired_count <= 1
+    error_message = "scheduler_desired_count must be 0 or 1; multiple schedulers can run the same scheduled command."
+  }
+}
+
 # ─── RDS (MySQL) ──────────────────────────────────────────────────────────────
 
 variable "db_instance_class" {
@@ -169,9 +212,9 @@ variable "db_instance_class" {
 }
 
 variable "db_engine_version" {
-  description = "MySQL engine version"
+  description = "MySQL engine version (MySQL 8.4 LTS is the supported default)"
   type        = string
-  default     = "8.0.35"
+  default     = "8.4.9"
 }
 
 variable "db_allocated_storage" {
@@ -244,12 +287,6 @@ variable "s3_media_bucket" {
   default     = "gaarbejana-media"
 }
 
-variable "s3_state_bucket" {
-  description = "S3 bucket name for Terraform state"
-  type        = string
-  default     = "gaarbejana-terraform-state"
-}
-
 variable "s3_versioning_enabled" {
   description = "Enable S3 versioning"
   type        = bool
@@ -281,7 +318,7 @@ variable "alarm_email" {
 # ─── Secrets ──────────────────────────────────────────────────────────────────
 
 variable "app_key" {
-  description = "Laravel APP_KEY"
+  description = "Laravel APP_KEY. Leave empty to generate a valid key automatically."
   type        = string
   sensitive   = true
   default     = ""
@@ -295,24 +332,87 @@ variable "openwa_api_key" {
 }
 
 variable "mail_password" {
-  description = "SMTP password"
+  description = "SMTP password. Leave empty to omit MAIL_PASSWORD from the task."
   type        = string
   sensitive   = true
   default     = ""
 }
 
-variable "aws_access_key_id" {
-  description = "AWS access key ID used by the backend to reach the documents bucket"
-  type        = string
-  sensitive   = true
-  default     = ""
-}
 
-variable "aws_secret_access_key" {
-  description = "AWS secret access key used by the backend to reach the documents bucket"
-  type        = string
-  sensitive   = true
-  default     = ""
+# -----------------------------------------------------------------------------
+# SECTION: locals
+# -----------------------------------------------------------------------------
+
+locals {
+  # APP_KEY: use the supplied value, or generate a valid Laravel key once.
+  app_key = var.app_key != "" ? var.app_key : "base64:${random_id.app_key.b64_std}"
+
+  # If no explicit image is supplied, use the ECR repository created below.
+  backend_image = var.backend_image != "" ? var.backend_image : "${aws_ecr_repository.backend.repository_url}:latest"
+
+  # Performance Insights is not available on the smallest burstable classes.
+  # Keeping this conditional lets the default db.t3.micro plan succeed.
+  performance_insights_supported = !contains([
+    "db.t2.micro",
+    "db.t2.small",
+    "db.t3.micro",
+    "db.t3.small",
+    "db.t4g.micro",
+    "db.t4g.small",
+  ], var.db_instance_class)
+
+  # ElastiCache has in-transit encryption enabled, so phpredis must use TLS.
+  redis_host = "tls://${aws_elasticache_replication_group.main.primary_endpoint_address}"
+
+  # The browser-facing frontend origin. A custom frontend domain (including a
+  # CloudFront alias) wins; otherwise use the Vercel production URL.
+  frontend_app_url = var.frontend_domain != "" ? "https://${var.frontend_domain}" : var.frontend_url
+
+  backend_environment = [
+    { name = "APP_ENV", value = var.environment },
+    { name = "APP_DEBUG", value = "false" },
+    { name = "APP_URL", value = "https://api.${var.app_domain}" },
+    { name = "FRONTEND_URL", value = local.frontend_app_url },
+    { name = "DB_CONNECTION", value = "mysql" },
+    { name = "DB_HOST", value = aws_db_instance.main.address },
+    { name = "DB_PORT", value = "3306" },
+    { name = "DB_DATABASE", value = var.db_name },
+    { name = "DB_USERNAME", value = var.db_username },
+    { name = "REDIS_HOST", value = local.redis_host },
+    { name = "REDIS_PORT", value = "6379" },
+    { name = "REDIS_CLIENT", value = "phpredis" },
+    { name = "CACHE_STORE", value = "redis" },
+    { name = "SESSION_DRIVER", value = "redis" },
+    { name = "SESSION_SECURE_COOKIE", value = "true" },
+    { name = "QUEUE_CONNECTION", value = "redis" },
+    { name = "FILESYSTEM_DISK", value = "documents" },
+    { name = "AWS_STORAGE_BUCKET", value = aws_s3_bucket.documents.id },
+    { name = "AWS_STORAGE_PREFIX", value = "portal" },
+    { name = "AWS_DEFAULT_REGION", value = var.aws_region },
+    { name = "AWS_USE_PATH_STYLE_ENDPOINT", value = "false" },
+    { name = "PROMETHEUS_ENABLED", value = "true" },
+    { name = "PROMETHEUS_NAMESPACE", value = "propertylease_api" }
+  ]
+
+  backend_secrets = concat(
+    [
+      { name = "APP_KEY", valueFrom = aws_secretsmanager_secret.app_key.arn },
+      { name = "DB_PASSWORD", valueFrom = aws_secretsmanager_secret.db_password.arn },
+    ],
+    var.openwa_api_key != "" ? [
+      { name = "OPENWA_API_KEY", valueFrom = aws_secretsmanager_secret.openwa.arn },
+    ] : [],
+    var.mail_password != "" ? [
+      { name = "MAIL_PASSWORD", valueFrom = aws_secretsmanager_secret.mail.arn },
+    ] : []
+  )
+
+  secret_arns = [
+    aws_secretsmanager_secret.db_password.arn,
+    aws_secretsmanager_secret.app_key.arn,
+    aws_secretsmanager_secret.openwa.arn,
+    aws_secretsmanager_secret.mail.arn,
+  ]
 }
 
 
@@ -567,14 +667,6 @@ resource "aws_security_group" "database" {
     security_groups = [aws_security_group.backend.id]
   }
 
-  ingress {
-    description = "MySQL from bastion (if needed)"
-    from_port   = 3306
-    to_port     = 3306
-    protocol    = "tcp"
-    cidr_blocks = [var.vpc_cidr]
-  }
-
   egress {
     description = "Allow all outbound"
     from_port   = 0
@@ -632,8 +724,10 @@ resource "aws_security_group" "redis" {
 # ─── RDS Parameter Group ──────────────────────────────────────────────────────
 
 resource "aws_db_parameter_group" "main" {
-  name   = "${var.project_name}-${var.environment}-mysql8"
-  family = "mysql8.0"
+  # Keep the family in the name: changing `family` forces replacement, and a
+  # fixed name would collide with the old parameter group during the upgrade.
+  name   = "${var.project_name}-${var.environment}-mysql84"
+  family = "mysql8.4"
 
   parameter {
     name  = "character_set_server"
@@ -662,7 +756,7 @@ resource "aws_db_parameter_group" "main" {
   }
 
   tags = {
-    Name = "${var.project_name}-${var.environment}-mysql8-params"
+    Name = "${var.project_name}-${var.environment}-mysql84-params"
   }
 
   lifecycle {
@@ -676,6 +770,16 @@ resource "random_password" "db_password" {
   length           = 32
   special          = true
   override_special = "!#$%&*()-_=+[]{}<>:?"
+}
+
+resource "random_id" "app_key" {
+  byte_length = 32
+}
+
+# A stable suffix keeps the production final snapshot name unique across
+# destroy/recreate cycles (RDS snapshot identifiers must be unique).
+resource "random_id" "final_snapshot" {
+  byte_length = 4
 }
 
 resource "aws_db_instance" "main" {
@@ -707,12 +811,17 @@ resource "aws_db_instance" "main" {
 
   deletion_protection       = var.environment == "production" ? true : false
   skip_final_snapshot       = var.environment == "production" ? false : true
-  final_snapshot_identifier = var.environment == "production" ? "${var.project_name}-${var.environment}-final-snapshot" : null
+  final_snapshot_identifier = var.environment == "production" ? "${var.project_name}-${var.environment}-final-${random_id.final_snapshot.hex}" : null
 
-  performance_insights_enabled          = true
-  performance_insights_retention_period = 7
+  performance_insights_enabled          = local.performance_insights_supported
+  performance_insights_retention_period = local.performance_insights_supported ? 7 : null
 
   auto_minor_version_upgrade = true
+
+  # Allows moving an existing instance from MySQL 8.0 to 8.4 in place. It does
+  # not force an upgrade; a fresh instance is created with the configured
+  # engine_version directly.
+  allow_major_version_upgrade = true
 
   tags = {
     Name = "${var.project_name}-${var.environment}-mysql"
@@ -835,7 +944,11 @@ resource "aws_s3_bucket_cors_configuration" "documents" {
   cors_rule {
     allowed_headers = ["*"]
     allowed_methods = ["GET", "PUT", "POST", "DELETE"]
-    allowed_origins = var.frontend_domain != "" ? ["https://${var.frontend_domain}", "https://${var.app_domain}"] : ["https://${var.app_domain}"]
+    allowed_origins = distinct(compact([
+      "https://${var.app_domain}",
+      var.frontend_domain != "" ? "https://${var.frontend_domain}" : "",
+      var.frontend_url,
+    ]))
     expose_headers  = ["ETag"]
     max_age_seconds = 3000
   }
@@ -900,64 +1013,13 @@ resource "aws_s3_bucket_public_access_block" "media" {
   restrict_public_buckets = true
 }
 
-# ─── S3 Bucket: Terraform State ───────────────────────────────────────────────
-
-resource "aws_s3_bucket" "terraform_state" {
-  bucket = "${var.s3_state_bucket}-${var.environment}"
-
-  tags = {
-    Name = "${var.project_name}-${var.environment}-tfstate"
-  }
-}
-
-resource "aws_s3_bucket_versioning" "terraform_state" {
-  bucket = aws_s3_bucket.terraform_state.id
-
-  versioning_configuration {
-    status = "Enabled"
-  }
-}
-
-resource "aws_s3_bucket_server_side_encryption_configuration" "terraform_state" {
-  bucket = aws_s3_bucket.terraform_state.id
-
-  rule {
-    apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"
-    }
-    bucket_key_enabled = true
-  }
-}
-
-resource "aws_s3_bucket_public_access_block" "terraform_state" {
-  bucket = aws_s3_bucket.terraform_state.id
-
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
-}
-
-# ─── DynamoDB Table for Terraform State Locking ───────────────────────────────
-
-resource "aws_dynamodb_table" "terraform_locks" {
-  name         = "terraform-state-lock-${var.environment}"
-  billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "LockID"
-
-  attribute {
-    name = "LockID"
-    type = "S"
-  }
-
-  point_in_time_recovery {
-    enabled = true
-  }
-
-  tags = {
-    Name = "${var.project_name}-${var.environment}-tf-locks"
-  }
-}
+# ─── Terraform State Backend ──────────────────────────────────────────────────
+#
+# The S3 bucket and DynamoDB lock table used by the `backend "s3"` block above
+# are created separately in terraform/bootstrap. Terraform cannot create the
+# backend it is initialized against, so this must be a one-time bootstrap step.
+#
+# See terraform/README.md for the bootstrap procedure.
 
 
 # -----------------------------------------------------------------------------
@@ -974,48 +1036,10 @@ resource "aws_ecs_cluster" "main" {
     value = "enabled"
   }
 
-  configuration {
-    execute_command_configuration {
-      logging = "OVERRIDE"
-
-      log_configuration {
-        cloud_watch_encryption_enabled = true
-        cloud_watch_log_group_name     = aws_cloudwatch_log_group.ecs_exec.name
-      }
-    }
-  }
-
   tags = {
     Name = "${var.project_name}-${var.environment}-cluster"
   }
 }
-
-resource "aws_cloudwatch_log_group" "ecs_exec" {
-  name              = "/ecs/${var.project_name}-${var.environment}/exec"
-  retention_in_days = 7
-}
-
-# ─── ECS Cluster Capacity Providers ───────────────────────────────────────────
-
-resource "aws_ecs_cluster_capacity_providers" "main" {
-  cluster_name = aws_ecs_cluster.main.name
-
-  capacity_providers = ["FARGATE", "FARGATE_SPOT"]
-
-  default_capacity_provider_strategy {
-    base              = 1
-    weight            = 1
-    capacity_provider = "FARGATE"
-  }
-
-  default_capacity_provider_strategy {
-    weight            = 3
-    capacity_provider = "FARGATE_SPOT"
-  }
-}
-
-# ─── CloudWatch Log Group for Backend ─────────────────────────────────────────
-
 
 # ─── IAM Role for ECS Task Execution ──────────────────────────────────────────
 
@@ -1055,32 +1079,9 @@ resource "aws_iam_role_policy" "ecs_task_execution_secrets" {
       {
         Effect = "Allow"
         Action = [
-          "secretsmanager:GetSecretValue",
-          "kms:Decrypt"
+          "secretsmanager:GetSecretValue"
         ]
-        Resource = [
-          aws_secretsmanager_secret.db_password.arn,
-          aws_secretsmanager_secret.app_key.arn,
-          aws_secretsmanager_secret.openwa.arn,
-          aws_secretsmanager_secret.mail.arn,
-          aws_secretsmanager_secret.aws_access_key_id.arn,
-          aws_secretsmanager_secret.aws_secret_access_key.arn
-        ]
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "s3:GetObject",
-          "s3:PutObject",
-          "s3:DeleteObject",
-          "s3:ListBucket"
-        ]
-        Resource = [
-          aws_s3_bucket.documents.arn,
-          "${aws_s3_bucket.documents.arn}/*",
-          aws_s3_bucket.media.arn,
-          "${aws_s3_bucket.media.arn}/*"
-        ]
+        Resource = local.secret_arns
       },
       {
         Effect = "Allow"
@@ -1151,7 +1152,47 @@ resource "aws_iam_role_policy" "ecs_task_s3" {
   })
 }
 
-# ─── ECS Task Definition ──────────────────────────────────────────────────────
+# ─── ECR Repository ───────────────────────────────────────────────────────────
+
+resource "aws_ecr_repository" "backend" {
+  name                 = "${var.project_name}/${var.environment}/backend"
+  image_tag_mutability = "MUTABLE"
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+
+  encryption_configuration {
+    encryption_type = "AES256"
+  }
+
+  tags = {
+    Name = "${var.project_name}-${var.environment}-backend-ecr"
+  }
+}
+
+resource "aws_ecr_lifecycle_policy" "backend" {
+  repository = aws_ecr_repository.backend.name
+
+  policy = jsonencode({
+    rules = [
+      {
+        rulePriority = 1
+        description  = "Keep the 10 most recent untagged images"
+        selection = {
+          tagStatus   = "untagged"
+          countType   = "imageCountMoreThan"
+          countNumber = 10
+        }
+        action = {
+          type = "expire"
+        }
+      }
+    ]
+  })
+}
+
+# ─── ECS Task Definition (Web) ────────────────────────────────────────────────
 
 resource "aws_ecs_task_definition" "backend" {
   family                   = "${var.project_name}-${var.environment}-backend"
@@ -1165,7 +1206,7 @@ resource "aws_ecs_task_definition" "backend" {
   container_definitions = jsonencode([
     {
       name      = "backend"
-      image     = var.backend_image
+      image     = local.backend_image
       essential = true
 
       portMappings = [
@@ -1175,55 +1216,8 @@ resource "aws_ecs_task_definition" "backend" {
         }
       ]
 
-      environment = [
-        { name = "APP_ENV", value = var.environment },
-        { name = "APP_URL", value = "https://${var.app_domain}" },
-        { name = "DB_CONNECTION", value = "mysql" },
-        { name = "DB_HOST", value = aws_db_instance.main.address },
-        { name = "DB_PORT", value = "3306" },
-        { name = "DB_DATABASE", value = var.db_name },
-        { name = "DB_USERNAME", value = var.db_username },
-        { name = "REDIS_HOST", value = aws_elasticache_replication_group.main.primary_endpoint_address },
-        { name = "REDIS_PORT", value = "6379" },
-        { name = "REDIS_CLIENT", value = "phpredis" },
-        { name = "CACHE_DRIVER", value = "redis" },
-        { name = "SESSION_DRIVER", value = "redis" },
-        { name = "QUEUE_CONNECTION", value = "redis" },
-        { name = "FILESYSTEM_DISK", value = "documents" },
-        { name = "AWS_STORAGE_BUCKET", value = aws_s3_bucket.documents.id },
-        { name = "AWS_STORAGE_PREFIX", value = "portal" },
-        { name = "AWS_DEFAULT_REGION", value = var.aws_region },
-        { name = "AWS_USE_PATH_STYLE_ENDPOINT", value = "false" },
-        { name = "PROMETHEUS_ENABLED", value = "true" },
-        { name = "PROMETHEUS_NAMESPACE", value = "propertylease_api" }
-      ]
-
-      secrets = [
-        {
-          name      = "APP_KEY"
-          valueFrom = aws_secretsmanager_secret.app_key.arn
-        },
-        {
-          name      = "DB_PASSWORD"
-          valueFrom = aws_secretsmanager_secret.db_password.arn
-        },
-        {
-          name      = "OPENWA_API_KEY"
-          valueFrom = aws_secretsmanager_secret.openwa.arn
-        },
-        {
-          name      = "MAIL_PASSWORD"
-          valueFrom = aws_secretsmanager_secret.mail.arn
-        },
-        {
-          name      = "AWS_ACCESS_KEY_ID"
-          valueFrom = aws_secretsmanager_secret.aws_access_key_id.arn
-        },
-        {
-          name      = "AWS_SECRET_ACCESS_KEY"
-          valueFrom = aws_secretsmanager_secret.aws_secret_access_key.arn
-        }
-      ]
+      environment = local.backend_environment
+      secrets     = local.backend_secrets
 
       logConfiguration = {
         logDriver = "awslogs"
@@ -1245,8 +1239,8 @@ resource "aws_ecs_task_definition" "backend" {
       ulimits = [
         {
           name      = "nofile"
-          softLimit = 65536
-          hardLimit = 65536
+          softLimit = 65535
+          hardLimit = 65535
         }
       ]
     }
@@ -1255,9 +1249,174 @@ resource "aws_ecs_task_definition" "backend" {
   tags = {
     Name = "${var.project_name}-${var.environment}-backend-task"
   }
+
+  depends_on = [
+    aws_secretsmanager_secret_version.app_key,
+    aws_secretsmanager_secret_version.db_password,
+    aws_secretsmanager_secret_version.openwa,
+    aws_secretsmanager_secret_version.mail,
+  ]
 }
 
-# ─── ECS Service ──────────────────────────────────────────────────────────────
+# ─── ECS Task Definition (Queue Worker) ───────────────────────────────────────
+
+resource "aws_ecs_task_definition" "worker" {
+  family                   = "${var.project_name}-${var.environment}-worker"
+  requires_compatibilities = ["FARGATE"]
+  network_mode             = "awsvpc"
+  cpu                      = var.backend_cpu
+  memory                   = var.backend_memory
+  execution_role_arn       = aws_iam_role.ecs_task_execution.arn
+  task_role_arn            = aws_iam_role.ecs_task.arn
+
+  container_definitions = jsonencode([
+    {
+      name      = "worker"
+      image     = local.backend_image
+      essential = true
+      command   = ["php", "artisan", "queue:work", "--sleep=3", "--tries=3", "--timeout=90"]
+      # Give the current job time to finish after ECS sends SIGTERM (max 120).
+      stopTimeout = 120
+
+      environment = local.backend_environment
+      secrets     = local.backend_secrets
+
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = aws_cloudwatch_log_group.backend.name
+          "awslogs-region"        = var.aws_region
+          "awslogs-stream-prefix" = "worker"
+        }
+      }
+
+      ulimits = [
+        {
+          name      = "nofile"
+          softLimit = 65535
+          hardLimit = 65535
+        }
+      ]
+    }
+  ])
+
+  tags = {
+    Name = "${var.project_name}-${var.environment}-worker-task"
+  }
+
+  depends_on = [
+    aws_secretsmanager_secret_version.app_key,
+    aws_secretsmanager_secret_version.db_password,
+    aws_secretsmanager_secret_version.openwa,
+    aws_secretsmanager_secret_version.mail,
+  ]
+}
+
+# ─── ECS Task Definition (Scheduler) ──────────────────────────────────────────
+
+resource "aws_ecs_task_definition" "scheduler" {
+  family                   = "${var.project_name}-${var.environment}-scheduler"
+  requires_compatibilities = ["FARGATE"]
+  network_mode             = "awsvpc"
+  cpu                      = var.backend_cpu
+  memory                   = var.backend_memory
+  execution_role_arn       = aws_iam_role.ecs_task_execution.arn
+  task_role_arn            = aws_iam_role.ecs_task.arn
+
+  container_definitions = jsonencode([
+    {
+      name      = "scheduler"
+      image     = local.backend_image
+      essential = true
+      command   = ["php", "artisan", "schedule:work"]
+
+      environment = local.backend_environment
+      secrets     = local.backend_secrets
+
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = aws_cloudwatch_log_group.backend.name
+          "awslogs-region"        = var.aws_region
+          "awslogs-stream-prefix" = "scheduler"
+        }
+      }
+
+      ulimits = [
+        {
+          name      = "nofile"
+          softLimit = 65535
+          hardLimit = 65535
+        }
+      ]
+    }
+  ])
+
+  tags = {
+    Name = "${var.project_name}-${var.environment}-scheduler-task"
+  }
+
+  depends_on = [
+    aws_secretsmanager_secret_version.app_key,
+    aws_secretsmanager_secret_version.db_password,
+    aws_secretsmanager_secret_version.openwa,
+    aws_secretsmanager_secret_version.mail,
+  ]
+}
+
+# ─── ECS Task Definition (One-off Migrations) ─────────────────────────────────
+
+resource "aws_ecs_task_definition" "migrate" {
+  family                   = "${var.project_name}-${var.environment}-migrate"
+  requires_compatibilities = ["FARGATE"]
+  network_mode             = "awsvpc"
+  cpu                      = var.backend_cpu
+  memory                   = var.backend_memory
+  execution_role_arn       = aws_iam_role.ecs_task_execution.arn
+  task_role_arn            = aws_iam_role.ecs_task.arn
+
+  container_definitions = jsonencode([
+    {
+      name      = "migrate"
+      image     = local.backend_image
+      essential = true
+      command   = ["php", "artisan", "migrate", "--force"]
+
+      environment = local.backend_environment
+      secrets     = local.backend_secrets
+
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = aws_cloudwatch_log_group.backend.name
+          "awslogs-region"        = var.aws_region
+          "awslogs-stream-prefix" = "migrate"
+        }
+      }
+
+      ulimits = [
+        {
+          name      = "nofile"
+          softLimit = 65535
+          hardLimit = 65535
+        }
+      ]
+    }
+  ])
+
+  tags = {
+    Name = "${var.project_name}-${var.environment}-migrate-task"
+  }
+
+  depends_on = [
+    aws_secretsmanager_secret_version.app_key,
+    aws_secretsmanager_secret_version.db_password,
+    aws_secretsmanager_secret_version.openwa,
+    aws_secretsmanager_secret_version.mail,
+  ]
+}
+
+# ─── ECS Service (Web) ────────────────────────────────────────────────────────
 
 resource "aws_ecs_service" "backend" {
   name            = "${var.project_name}-${var.environment}-backend"
@@ -1278,6 +1437,8 @@ resource "aws_ecs_service" "backend" {
     container_port   = 80
   }
 
+  health_check_grace_period_seconds = 120
+
   deployment_circuit_breaker {
     enable   = true
     rollback = true
@@ -1292,7 +1453,91 @@ resource "aws_ecs_service" "backend" {
     Name = "${var.project_name}-${var.environment}-backend-service"
   }
 
-  depends_on = [aws_lb_listener.https, aws_iam_role_policy_attachment.ecs_task_execution]
+  depends_on = [
+    aws_lb_listener.https,
+    aws_iam_role_policy_attachment.ecs_task_execution,
+    aws_iam_role_policy.ecs_task_execution_secrets,
+    aws_iam_role_policy.ecs_task_s3,
+  ]
+
+  lifecycle {
+    # The autoscaling policies own the task count after creation.
+    ignore_changes = [desired_count]
+  }
+}
+
+# ─── ECS Service (Queue Worker) ───────────────────────────────────────────────
+
+resource "aws_ecs_service" "worker" {
+  name            = "${var.project_name}-${var.environment}-worker"
+  cluster         = aws_ecs_cluster.main.id
+  task_definition = aws_ecs_task_definition.worker.arn
+  desired_count   = var.worker_desired_count
+  launch_type     = "FARGATE"
+
+  network_configuration {
+    subnets          = aws_subnet.private[*].id
+    security_groups  = [aws_security_group.backend.id]
+    assign_public_ip = false
+  }
+
+  deployment_circuit_breaker {
+    enable   = true
+    rollback = true
+  }
+
+  deployment_maximum_percent         = 200
+  deployment_minimum_healthy_percent = 100
+
+  propagate_tags = "SERVICE"
+
+  tags = {
+    Name = "${var.project_name}-${var.environment}-worker-service"
+  }
+
+  depends_on = [
+    aws_iam_role_policy_attachment.ecs_task_execution,
+    aws_iam_role_policy.ecs_task_execution_secrets,
+    aws_iam_role_policy.ecs_task_s3,
+  ]
+}
+
+# ─── ECS Service (Scheduler) ──────────────────────────────────────────────────
+
+resource "aws_ecs_service" "scheduler" {
+  name            = "${var.project_name}-${var.environment}-scheduler"
+  cluster         = aws_ecs_cluster.main.id
+  task_definition = aws_ecs_task_definition.scheduler.arn
+  desired_count   = var.scheduler_desired_count
+  launch_type     = "FARGATE"
+
+  network_configuration {
+    subnets          = aws_subnet.private[*].id
+    security_groups  = [aws_security_group.backend.id]
+    assign_public_ip = false
+  }
+
+  deployment_circuit_breaker {
+    enable   = true
+    rollback = true
+  }
+
+  # Replace the single scheduler task instead of briefly running two of them.
+  # Duplicate `schedule:work` containers can run the same scheduled command.
+  deployment_maximum_percent         = 100
+  deployment_minimum_healthy_percent = 0
+
+  propagate_tags = "SERVICE"
+
+  tags = {
+    Name = "${var.project_name}-${var.environment}-scheduler-service"
+  }
+
+  depends_on = [
+    aws_iam_role_policy_attachment.ecs_task_execution,
+    aws_iam_role_policy.ecs_task_execution_secrets,
+    aws_iam_role_policy.ecs_task_s3,
+  ]
 }
 
 # ─── ECS Auto Scaling ─────────────────────────────────────────────────────────
@@ -1346,6 +1591,8 @@ resource "aws_appautoscaling_policy" "backend_memory" {
 
 # ─── Application Load Balancer ────────────────────────────────────────────────
 
+data "aws_caller_identity" "current" {}
+
 resource "aws_lb" "main" {
   name               = "${var.project_name}-${var.environment}-alb"
   internal           = false
@@ -1366,6 +1613,13 @@ resource "aws_lb" "main" {
   tags = {
     Name = "${var.project_name}-${var.environment}-alb"
   }
+
+  # The bucket policy (and SSE-S3 configuration) must exist before the ALB
+  # validates access logging, otherwise AWS returns "Access Denied for bucket".
+  depends_on = [
+    aws_s3_bucket_policy.logs,
+    aws_s3_bucket_server_side_encryption_configuration.logs,
+  ]
 }
 
 # ─── S3 Bucket for ALB Logs ──────────────────────────────────────────────────
@@ -1376,6 +1630,51 @@ resource "aws_s3_bucket" "logs" {
   tags = {
     Name = "${var.project_name}-${var.environment}-alb-logs"
   }
+}
+
+# ALB access logs support SSE-S3 only (not SSE-KMS).
+resource "aws_s3_bucket_server_side_encryption_configuration" "logs" {
+  bucket = aws_s3_bucket.logs.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
+resource "aws_s3_bucket_public_access_block" "logs" {
+  bucket = aws_s3_bucket.logs.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+# Elastic Load Balancing validates this policy when access logging is enabled.
+resource "aws_s3_bucket_policy" "logs" {
+  bucket = aws_s3_bucket.logs.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "AllowELBLogDelivery"
+        Effect = "Allow"
+        Principal = {
+          Service = "logdelivery.elasticloadbalancing.amazonaws.com"
+        }
+        Action   = "s3:PutObject"
+        Resource = "${aws_s3_bucket.logs.arn}/alb-logs/AWSLogs/${data.aws_caller_identity.current.account_id}/*"
+        Condition = {
+          ArnLike = {
+            "aws:SourceArn" = "arn:aws:elasticloadbalancing:${var.aws_region}:${data.aws_caller_identity.current.account_id}:loadbalancer/*"
+          }
+        }
+      }
+    ]
+  })
 }
 
 resource "aws_s3_bucket_lifecycle_configuration" "logs" {
@@ -1408,7 +1707,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "logs" {
 # ─── Target Group ─────────────────────────────────────────────────────────────
 
 resource "aws_lb_target_group" "backend" {
-  name        = "${var.project_name}-${var.environment}-backend-tg"
+  name        = "${var.project_name}-${var.environment}-tg"
   port        = 80
   protocol    = "HTTP"
   vpc_id      = aws_vpc.main.id
@@ -1444,7 +1743,7 @@ resource "aws_lb_listener" "https" {
   port              = 443
   protocol          = "HTTPS"
   ssl_policy        = "ELBSecurityPolicy-TLS13-1-2-2021-06"
-  certificate_arn   = aws_acm_certificate.main.arn
+  certificate_arn   = aws_acm_certificate_validation.alb.certificate_arn
 
   default_action {
     type             = "forward"
@@ -1483,7 +1782,9 @@ resource "aws_lb_listener" "http" {
 # SECTION: acm
 # -----------------------------------------------------------------------------
 
-# ─── ACM Certificate ──────────────────────────────────────────────────────────
+# ─── ACM Certificate (CloudFront, us-east-1) ─────────────────────────────────
+#
+# CloudFront only accepts certificates from us-east-1.
 
 resource "aws_acm_certificate" "main" {
   provider = aws.us_east_1
@@ -1493,7 +1794,26 @@ resource "aws_acm_certificate" "main" {
   validation_method         = "DNS"
 
   tags = {
-    Name = "${var.project_name}-${var.environment}-cert"
+    Name = "${var.project_name}-${var.environment}-cloudfront-cert"
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+# ─── ACM Certificate (Regional ALB) ──────────────────────────────────────────
+#
+# Application Load Balancers can only use certificates from their own region,
+# so a second certificate is required for the Bahrain ALB.
+
+resource "aws_acm_certificate" "alb" {
+  domain_name               = var.app_domain
+  subject_alternative_names = ["*.${var.app_domain}"]
+  validation_method         = "DNS"
+
+  tags = {
+    Name = "${var.project_name}-${var.environment}-alb-cert"
   }
 
   lifecycle {
@@ -1508,7 +1828,7 @@ data "aws_route53_zone" "main" {
   private_zone = false
 }
 
-# ─── Route 53 Records for ACM Validation ──────────────────────────────────────
+# ─── Route 53 Records for ACM Validation (CloudFront) ────────────────────────
 
 resource "aws_route53_record" "cert_validation" {
   for_each = {
@@ -1534,12 +1854,37 @@ resource "aws_acm_certificate_validation" "main" {
   validation_record_fqdns = [for record in aws_route53_record.cert_validation : record.fqdn]
 }
 
+# ─── Route 53 Records for ACM Validation (ALB) ───────────────────────────────
+
+resource "aws_route53_record" "alb_cert_validation" {
+  for_each = {
+    for dvo in aws_acm_certificate.alb.domain_validation_options : dvo.domain_name => {
+      name   = dvo.resource_record_name
+      record = dvo.resource_record_value
+      type   = dvo.resource_record_type
+    }
+  }
+
+  allow_overwrite = true
+  name            = each.value.name
+  records         = [each.value.record]
+  ttl             = 60
+  type            = each.value.type
+  zone_id         = data.aws_route53_zone.main.zone_id
+}
+
+resource "aws_acm_certificate_validation" "alb" {
+  certificate_arn         = aws_acm_certificate.alb.arn
+  validation_record_fqdns = [for record in aws_route53_record.alb_cert_validation : record.fqdn]
+}
+
 # ─── Route 53 Record for API ──────────────────────────────────────────────────
 
 resource "aws_route53_record" "api" {
-  zone_id = data.aws_route53_zone.main.zone_id
-  name    = "api.${var.app_domain}"
-  type    = "A"
+  allow_overwrite = true
+  zone_id         = data.aws_route53_zone.main.zone_id
+  name            = "api.${var.app_domain}"
+  type            = "A"
 
   alias {
     name                   = aws_lb.main.dns_name
@@ -1549,11 +1894,18 @@ resource "aws_route53_record" "api" {
 }
 
 # ─── Route 53 Record for Root Domain ──────────────────────────────────────────
+#
+# Disabled by default: the apex is commonly served by Vercel, and creating this
+# alias would either conflict with the existing record or take the apex away
+# from the frontend. Opt in with manage_root_record = true.
 
 resource "aws_route53_record" "root" {
-  zone_id = data.aws_route53_zone.main.zone_id
-  name    = var.app_domain
-  type    = "A"
+  count = var.manage_root_record ? 1 : 0
+
+  allow_overwrite = true
+  zone_id         = data.aws_route53_zone.main.zone_id
+  name            = var.app_domain
+  type            = "A"
 
   alias {
     name                   = aws_lb.main.dns_name
@@ -1581,7 +1933,7 @@ resource "aws_secretsmanager_secret" "app_key" {
 
 resource "aws_secretsmanager_secret_version" "app_key" {
   secret_id     = aws_secretsmanager_secret.app_key.id
-  secret_string = var.app_key
+  secret_string = local.app_key
 }
 
 # ─── Secrets Manager: OpenWA API Key ──────────────────────────────────────────
@@ -1597,6 +1949,8 @@ resource "aws_secretsmanager_secret" "openwa" {
 }
 
 resource "aws_secretsmanager_secret_version" "openwa" {
+  count = var.openwa_api_key != "" ? 1 : 0
+
   secret_id     = aws_secretsmanager_secret.openwa.id
   secret_string = var.openwa_api_key
 }
@@ -1614,42 +1968,10 @@ resource "aws_secretsmanager_secret" "mail" {
 }
 
 resource "aws_secretsmanager_secret_version" "mail" {
+  count = var.mail_password != "" ? 1 : 0
+
   secret_id     = aws_secretsmanager_secret.mail.id
   secret_string = var.mail_password
-}
-
-# ─── Secrets Manager: AWS Access Key ID ────────────────────────────────────────
-
-resource "aws_secretsmanager_secret" "aws_access_key_id" {
-  name                    = "${var.project_name}/${var.environment}/aws-access-key-id"
-  description             = "AWS access key ID for the documents bucket"
-  recovery_window_in_days = var.environment == "production" ? 30 : 7
-
-  tags = {
-    Name = "${var.project_name}-${var.environment}-aws-access-key-id"
-  }
-}
-
-resource "aws_secretsmanager_secret_version" "aws_access_key_id" {
-  secret_id     = aws_secretsmanager_secret.aws_access_key_id.id
-  secret_string = var.aws_access_key_id
-}
-
-# ─── Secrets Manager: AWS Secret Access Key ────────────────────────────────────
-
-resource "aws_secretsmanager_secret" "aws_secret_access_key" {
-  name                    = "${var.project_name}/${var.environment}/aws-secret-access-key"
-  description             = "AWS secret access key for the documents bucket"
-  recovery_window_in_days = var.environment == "production" ? 30 : 7
-
-  tags = {
-    Name = "${var.project_name}-${var.environment}-aws-secret-access-key"
-  }
-}
-
-resource "aws_secretsmanager_secret_version" "aws_secret_access_key" {
-  secret_id     = aws_secretsmanager_secret.aws_secret_access_key.id
-  secret_string = var.aws_secret_access_key
 }
 
 
@@ -1668,37 +1990,10 @@ resource "aws_cloudwatch_log_group" "backend" {
   }
 }
 
-# ─── CloudWatch Log Metric Filter: 5xx Errors ─────────────────────────────────
-
-resource "aws_cloudwatch_log_metric_filter" "http_5xx" {
-  name           = "${var.project_name}-${var.environment}-http-5xx"
-  pattern        = "{ $.status = 5* }"
-  log_group_name = aws_cloudwatch_log_group.backend.name
-
-  metric_transformation {
-    name          = "HTTP5xxCount"
-    namespace     = "${var.project_name}/${var.environment}"
-    value         = "1"
-    default_value = "0"
-  }
-}
-
-# ─── CloudWatch Log Metric Filter: 4xx Errors ─────────────────────────────────
-
-resource "aws_cloudwatch_log_metric_filter" "http_4xx" {
-  name           = "${var.project_name}-${var.environment}-http-4xx"
-  pattern        = "{ $.status = 4* }"
-  log_group_name = aws_cloudwatch_log_group.backend.name
-
-  metric_transformation {
-    name          = "HTTP4xxCount"
-    namespace     = "${var.project_name}/${var.environment}"
-    value         = "1"
-    default_value = "0"
-  }
-}
-
 # ─── CloudWatch Alarm: High 5xx Error Rate ────────────────────────────────────
+#
+# Use the ALB target metric rather than a log metric filter: Laravel's default
+# log lines are not JSON, so a `{ $.status = 5* }` filter would never match.
 
 resource "aws_cloudwatch_metric_alarm" "high_5xx" {
   count = var.enable_monitoring ? 1 : 0
@@ -1706,14 +2001,20 @@ resource "aws_cloudwatch_metric_alarm" "high_5xx" {
   alarm_name          = "${var.project_name}-${var.environment}-high-5xx"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 2
-  metric_name         = "HTTP5xxCount"
-  namespace           = "${var.project_name}/${var.environment}"
+  metric_name         = "HTTPCode_Target_5XX_Count"
+  namespace           = "AWS/ApplicationELB"
   period              = 300
   statistic           = "Sum"
   threshold           = 50
-  alarm_description   = "This metric monitors HTTP 5xx errors from the backend"
+  alarm_description   = "The backend target group returned more than 50 5xx responses in 5 minutes"
+  treat_missing_data  = "notBreaching"
   alarm_actions       = var.alarm_email != "" ? [aws_sns_topic.alarms[0].arn] : []
   ok_actions          = var.alarm_email != "" ? [aws_sns_topic.alarms[0].arn] : []
+
+  dimensions = {
+    LoadBalancer = aws_lb.main.arn_suffix
+    TargetGroup  = aws_lb_target_group.backend.arn_suffix
+  }
 
   tags = {
     Name = "${var.project_name}-${var.environment}-high-5xx-alarm"
@@ -1971,10 +2272,10 @@ resource "aws_cloudfront_distribution" "frontend" {
   default_root_object = "index.html"
   price_class         = "PriceClass_100"
 
-  aliases = var.frontend_domain != "" ? [var.frontend_domain] : [var.app_domain]
+  aliases = [var.frontend_domain]
 
   origin {
-    domain_name = var.frontend_domain != "" ? var.frontend_domain : var.app_domain
+    domain_name = var.frontend_origin
     origin_id   = "frontend-origin"
 
     custom_origin_config {
@@ -2028,7 +2329,7 @@ resource "aws_cloudfront_distribution" "frontend" {
   }
 
   origin {
-    domain_name = aws_lb.main.dns_name
+    domain_name = "api.${var.app_domain}"
     origin_id   = "api-origin"
 
     custom_origin_config {
@@ -2046,13 +2347,50 @@ resource "aws_cloudfront_distribution" "frontend" {
   }
 
   viewer_certificate {
-    acm_certificate_arn      = aws_acm_certificate.main.arn
+    acm_certificate_arn      = aws_acm_certificate_validation.main.certificate_arn
     ssl_support_method       = "sni-only"
     minimum_protocol_version = "TLSv1.2_2021"
   }
 
   tags = {
     Name = "${var.project_name}-${var.environment}-cloudfront"
+  }
+
+  depends_on = [
+    aws_acm_certificate_validation.main,
+    aws_lb_listener.https,
+    aws_route53_record.api,
+  ]
+
+  lifecycle {
+    precondition {
+      condition = (
+        var.frontend_domain != "" &&
+        var.frontend_origin != "" &&
+        var.frontend_domain != var.frontend_origin &&
+        var.frontend_domain != var.app_domain &&
+        endswith(var.frontend_domain, ".${var.app_domain}") &&
+        length(split(".", var.frontend_domain)) == length(split(".", var.app_domain)) + 1
+      )
+      error_message = "CloudFront requires frontend_domain (a single-label subdomain of app_domain, covered by the wildcard certificate) and frontend_origin (the Vercel hostname). They must differ to avoid an origin loop, and frontend_domain must not be the apex."
+    }
+  }
+}
+
+# ─── Route 53 Record for the CloudFront Frontend Alias ────────────────────────
+
+resource "aws_route53_record" "frontend" {
+  count = var.enable_cloudfront ? 1 : 0
+
+  allow_overwrite = true
+  zone_id         = data.aws_route53_zone.main.zone_id
+  name            = var.frontend_domain
+  type            = "A"
+
+  alias {
+    name                   = aws_cloudfront_distribution.frontend[0].domain_name
+    zone_id                = aws_cloudfront_distribution.frontend[0].hosted_zone_id
+    evaluate_target_health = false
   }
 }
 
@@ -2098,6 +2436,36 @@ output "ecs_service_name" {
 output "ecs_task_definition_arn" {
   description = "ARN of the backend task definition"
   value       = aws_ecs_task_definition.backend.arn
+}
+
+output "ecs_worker_service_name" {
+  description = "Name of the Laravel queue worker ECS service"
+  value       = aws_ecs_service.worker.name
+}
+
+output "ecs_scheduler_service_name" {
+  description = "Name of the Laravel scheduler ECS service"
+  value       = aws_ecs_service.scheduler.name
+}
+
+output "migration_task_definition_arn" {
+  description = "Task definition ARN to run one-off Laravel migrations"
+  value       = aws_ecs_task_definition.migrate.arn
+}
+
+output "backend_security_group_id" {
+  description = "Security group ID used by backend, worker, scheduler, and migration tasks"
+  value       = aws_security_group.backend.id
+}
+
+output "ecr_repository_url" {
+  description = "ECR repository URL for the backend image"
+  value       = aws_ecr_repository.backend.repository_url
+}
+
+output "backend_log_group_name" {
+  description = "CloudWatch log group receiving backend, worker, scheduler, and migration logs"
+  value       = aws_cloudwatch_log_group.backend.name
 }
 
 # ─── RDS ──────────────────────────────────────────────────────────────────────
@@ -2197,12 +2565,10 @@ output "root_fqdn" {
 output "secrets_manager_arns" {
   description = "Map of secret names to ARNs"
   value = {
-    app_key               = aws_secretsmanager_secret.app_key.arn
-    db_password           = aws_secretsmanager_secret.db_password.arn
-    openwa                = aws_secretsmanager_secret.openwa.arn
-    mail                  = aws_secretsmanager_secret.mail.arn
-    aws_access_key_id     = aws_secretsmanager_secret.aws_access_key_id.arn
-    aws_secret_access_key = aws_secretsmanager_secret.aws_secret_access_key.arn
+    app_key     = aws_secretsmanager_secret.app_key.arn
+    db_password = aws_secretsmanager_secret.db_password.arn
+    openwa      = aws_secretsmanager_secret.openwa.arn
+    mail        = aws_secretsmanager_secret.mail.arn
   }
 }
 

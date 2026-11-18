@@ -31,8 +31,8 @@
             aria-haspopup="true"
             (click)="toggleGroup(section.heading, $event)"
           >
+            <i class="pi pi-chevron-down chevron"></i>
             <span>{{ section.heading }}</span>
-            <i class="pi pi-angle-down chevron"></i>
           </button>
 
           @if (openGroup === section.heading) {
@@ -44,7 +44,7 @@
                   [routerLinkActiveOptions]="{ exact: !!item.exact }"
                   (click)="closeGroup()"
                 >
-                  <i [class]="item.icon"></i>
+                  <span class="nav-icon"><i [class]="item.icon"></i></span>
                   <span class="item-label">{{ item.label }}</span>
                   @if (item.badge) {
                     <span class="nav-badge">{{ item.badge }}</span>
@@ -59,24 +59,6 @@
         </div>
       }
     </nav>
-
-    <div class="header-actions">
-      <div class="protection-card">
-        <span class="protection-icon"><i class="pi pi-shield"></i></span>
-        <span class="protection-text">
-          <strong>Protection Plan</strong>
-          <small>Your rent safeguard</small>
-        </span>
-        <a class="protection-link" routerLink="/invoices" (click)="closeNav()">Learn More</a>
-      </div>
-
-      <p-menu #menu [popup]="true" [model]="profileMenu" styleClass="profile-menu" appendTo="body" />
-      <button type="button" class="profile-button" (click)="menu.toggle($event)">
-        <span class="avatar">{{ initial }}</span>
-        <span class="profile-name">John Smith</span>
-        <i class="pi pi-angle-down"></i>
-      </button>
-    </div>
   </header>
 
   <button type="button" class="scrim" aria-label="Close navigation" (click)="closeNav(true)"></button>
@@ -92,7 +74,7 @@
             [routerLinkActiveOptions]="{ exact: !!item.exact }"
             (click)="closeNav()"
           >
-            <i [class]="item.icon"></i>
+            <span class="nav-icon"><i [class]="item.icon"></i></span>
             <span>{{ item.label }}</span>
             @if (item.badge) {
               <span class="nav-badge">{{ item.badge }}</span>

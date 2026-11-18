@@ -422,7 +422,7 @@ class DemoDataSeeder extends Seeder
                 'due_day' => 5,
                 'status' => $status,
                 'payment_frequency' => $frequencies[array_rand($frequencies)],
-                'terms' => json_encode(['Tenant maintains interior', 'No subletting without consent']),
+                'terms' => ['Tenant maintains interior', 'No subletting without consent'],
                 'notes' => null,
                 'document_path' => null,
                 'created_by' => $manager?->id,

@@ -1,0 +1,23 @@
+# Build context is the repository root (see terraform/README.md).
+.git
+.gitignore
+.vercel
+.vscode
+*.log
+
+# Never bake local environment files or secrets into the image.
+**/.env
+**/.env.*
+
+# Build artefacts and dependencies are recreated inside the image.
+**/node_modules/
+**/vendor/
+**/dist/
+**/.angular/
+
+# Local runtime files.
+backend/storage/logs/*
+backend/storage/framework/cache/data/*
+backend/storage/framework/sessions/*
+backend/storage/framework/views/*
+backend/database/*.sqlite

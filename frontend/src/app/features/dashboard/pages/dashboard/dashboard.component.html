@@ -1,11 +1,11 @@
-<div class="dashboard">
+﻿<div class="dashboard">
 
   <header class="page-header">
-    <div>
+    <div class="header-left">
       <h1 class="page-title">Dashboard</h1>
       <p class="page-subtitle">Portfolio, occupancy, lease and receivables position at a glance.</p>
     </div>
-    <div class="page-actions">
+    <div class="header-right">
       @if (lastUpdated(); as stamp) {
         <span class="updated-stamp">
           <i class="pi pi-clock"></i>
@@ -18,161 +18,322 @@
         severity="secondary"
         [outlined]="true"
         [loading]="loading()"
-        (onClick)="loadData()" />
+        (onClick)="loadData()"
+      />
     </div>
   </header>
-
-  @if (loading()) {
-    <div class="kpi-grid">
-      @for (i of [0, 1, 2, 3]; track i) {
-        <div class="metric-tile">
-          <span class="metric-icon"><i class="pi pi-circle-fill skeleton-icon"></i></span>
-          <div class="min-w-0 flex-1">
-            <div class="skeleton-block h-3 w-24 mb-3"></div>
-            <div class="skeleton-block h-7 w-16 mb-3"></div>
-            <div class="skeleton-block h-3 w-32"></div>
+  <section class="welcome-strip">
+    <div class="welcome-content">
+      <span class="welcome-icon"><i class="pi pi-chart-pie"></i></span>
+      <div class="welcome-text">
+        <strong>Welcome back, John.</strong>
+        <p>Here is the live performance snapshot across your portfolio.</p>
+      </div>
+      <span class="welcome-trend">
+        <i class="pi pi-arrow-up-right"></i>
+        Revenue <strong class="trend-up">+12.4%</strong> vs last month
+      </span>
+    </div>
+  </section>
+  <div class="kpi-grid">
+    <article class="metric-tile metric-tile--orange">
+      <span class="metric-icon"><i class="pi pi-building"></i></span>
+      <div class="min-w-0">
+        <p class="metric-label">Total Properties</p>
+        <p class="metric-value">{{ stats().properties.total }}</p>
+        <ul class="metric-split">
+          <li><span class="dot dot--orange"></span>{{ stats().properties.active }} Active</li>
+          <li><span class="dot dot--muted"></span>{{ stats().properties.inactive }} Inactive</li>
+        </ul>
+      </div>
+    </article>
+    <article class="metric-tile metric-tile--purple">
+      <span class="metric-icon"><i class="pi pi-home"></i></span>
+      <div class="min-w-0">
+        <p class="metric-label">Units &amp; Occupancy</p>
+        <p class="metric-value">{{ stats().units.total }}</p>
+        <ul class="metric-split">
+          <li><span class="dot dot--purple"></span>{{ stats().units.occupied }} Occupied</li>
+          <li><span class="dot dot--pink"></span>{{ stats().units.vacant }} Vacant</li>
+        </ul>
+        <div class="mini-meter" role="presentation">
+          <span class="mini-meter-fill" [style.width.%]="occupancyRate()"></span>
+        </div>
+        <p class="metric-foot">{{ formatPercent(occupancyRate()) }} occupied</p>
+      </div>
+    </article>
+    <article class="metric-tile metric-tile--pink">
+      <span class="metric-icon"><i class="pi pi-file"></i></span>
+      <div class="min-w-0">
+        <p class="metric-label">Active Leases</p>
+        <p class="metric-value">{{ stats().leases.active }}</p>
+        <ul class="metric-split">
+          <li><span class="dot dot--pink"></span>{{ stats().leases.expiring_30 }} Expiring 30d</li>
+          <li><span class="dot dot--muted"></span>{{ stats().leases.expired }} Expired</li>
+        </ul>
+      </div>
+    </article>
+    <article class="metric-tile metric-tile--teal">
+      <span class="metric-icon"><i class="pi pi-wallet"></i></span>
+      <div class="min-w-0">
+        <p class="metric-label">Outstanding</p>
+        <p class="metric-value">{{ formatCurrency(stats().invoices.total_outstanding) }}</p>
+        <ul class="metric-split">
+          <li><span class="dot dot--teal"></span>{{ stats().invoices.overdue }} Overdue</li>
+          <li><span class="dot dot--muted"></span>{{ stats().invoices.pending }} Pending</li>
+        </ul>
+      </div>
+    </article>
+  </div>
+  <div class="widget-grid">
+    <section class="section-card widget widget--donut">
+      <header class="panel-head">
+        <div class="panel-title-wrap">
+          <h2 class="panel-title">
+            <i class="pi pi-chart-pie"></i>
+            <span class="panel-title-text">
+              <span class="panel-title-label">Portfolio Segments</span>
+              <span class="panel-sub">Occupied vs vacant vs reserved units</span>
+            </span>
+          </h2>
+        </div>
+        <span class="count-chip">{{ stats().units.total }} units</span>
+      </header>
+      <div class="widget-body">
+        @if (occupancySeries(); as series) {
+          <div class="donut-wrapper">
+            <canvas #occupancyCanvas aria-label="Portfolio segments donut chart"></canvas>
+            <div class="donut-legend">
+              <div class="legend-item">
+                <span class="legend-dot legend-dot--occupied"></span>
+                <span>{{ stats().units.occupied }} Occupied</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-dot legend-dot--vacant"></span>
+                <span>{{ stats().units.vacant }} Vacant</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-dot legend-dot--reserved"></span>
+                <span>{{ stats().units.reserved }} Reserved</span>
+              </div>
+            </div>
           </div>
-        </div>
-      }
-    </div>
-    <div class="panel-grid">
-      <section class="section-card">
-        <div class="skeleton-block h-4 w-40 mb-4"></div>
-        <div class="skeleton-block h-64 w-full"></div>
-      </section>
-      <section class="section-card">
-        <div class="skeleton-block h-4 w-40 mb-4"></div>
-        <div class="skeleton-block h-64 w-full"></div>
-      </section>
-    </div>
-  } @else {
-    <div class="kpi-grid">
-      <article class="metric-tile metric-tile--coral">
-        <span class="metric-icon"><i class="pi pi-building"></i></span>
-        <div class="min-w-0">
-          <p class="metric-label">Total Properties</p>
-          <p class="metric-value">{{ stats().properties.total }}</p>
-          <ul class="metric-split">
-            <li><span class="dot dot--coral"></span>{{ stats().properties.active }} Active</li>
-            <li><span class="dot dot--muted"></span>{{ stats().properties.inactive }} Inactive</li>
-          </ul>
-        </div>
-      </article>
-
-      <article class="metric-tile metric-tile--teal">
-        <span class="metric-icon"><i class="pi pi-home"></i></span>
-        <div class="min-w-0">
-          <p class="metric-label">Units &amp; Occupancy</p>
-          <p class="metric-value">{{ stats().units.total }}</p>
-          <ul class="metric-split">
-            <li><span class="dot dot--teal"></span>{{ stats().units.occupied }} Occupied</li>
-            <li><span class="dot dot--sunny"></span>{{ stats().units.vacant }} Vacant</li>
-          </ul>
-          <div class="mini-meter" role="presentation">
-            <span class="mini-meter-fill" [style.width.%]="occupancyRate()"></span>
+        } @else {
+          <div class="empty-state">
+            <i class="pi pi-chart-pie"></i>
+            <p>No occupancy data yet</p>
           </div>
-          <p class="metric-foot">{{ formatPercent(occupancyRate()) }} occupied</p>
-        </div>
-      </article>
-
-      <article class="metric-tile metric-tile--sunny">
-        <span class="metric-icon"><i class="pi pi-file"></i></span>
-        <div class="min-w-0">
-          <p class="metric-label">Active Leases</p>
-          <p class="metric-value">{{ stats().leases.active }}</p>
-          <ul class="metric-split">
-            <li><span class="dot dot--sunny"></span>{{ stats().leases.expiring_30 }} Expiring 30d</li>
-            <li><span class="dot dot--muted"></span>{{ stats().leases.expired }} Expired</li>
-          </ul>
-        </div>
-      </article>
-
-      <article class="metric-tile metric-tile--coral">
-        <span class="metric-icon"><i class="pi pi-dollar"></i></span>
-        <div class="min-w-0">
-          <p class="metric-label">Outstanding</p>
-          <p class="metric-value">{{ formatCurrency(stats().invoices.total_outstanding) }}</p>
-          <ul class="metric-split">
-            <li><span class="dot dot--coral"></span>{{ stats().invoices.overdue }} Overdue</li>
-            <li><span class="dot dot--muted"></span>{{ stats().invoices.pending }} Pending</li>
-          </ul>
-        </div>
-      </article>
-    </div>
-
-    <div class="panel-grid">
-      <section class="section-card panel panel--quiet panel--teal">
+        }
+      </div>
+    </section>
+    <div class="gauge-row">
+      <section class="section-card widget widget--gauge">
         <header class="panel-head">
-          <div>
+          <div class="panel-title-wrap">
             <h2 class="panel-title">
-              <i class="pi pi-chart-bar"></i>
+              <i class="pi pi-arrows-alt"></i>
               <span class="panel-title-text">
-                <span class="panel-title-label">Occupancy Trend</span>
-                <span class="panel-sub">Occupied vs vacant units, last 12 months</span>
+                <span class="panel-title-label">Occupancy Rate</span>
+                <span class="panel-sub">% of units occupied</span>
               </span>
             </h2>
           </div>
-          <span class="count-chip">{{ stats().units.vacant }} vacant now</span>
         </header>
-        <div class="chart-frame chart-frame--tall">
-          @if (occupancySeries(); as series) {
-            <canvas #occupancyCanvas aria-label="Occupancy trend over the last twelve months"></canvas>
-          } @else {
-            <div class="empty-state">
-              <i class="pi pi-chart-bar"></i>
-              <p>No occupancy history yet</p>
+        <div class="widget-body">
+          <div class="gauge-container">
+            <svg class="gauge-svg" viewBox="0 0 300 160">
+              <path
+                class="gauge-track"
+                d="M 30 130 A 120 120 0 0 1 270 130"
+                fill="none"
+                stroke="var(--ink-100)"
+                stroke-width="24"
+              />
+              <path
+                class="gauge-fill"
+                d="M 30 130 A 120 120 0 0 1 270 130"
+                fill="none"
+                [attr.stroke]="gaugeProgressColor()"
+                stroke-width="24"
+                stroke-linecap="round"
+                style="transition: stroke 0.6s ease;"
+              />
+              <path
+                class="gauge-zone zone--good"
+                d="M 150 130 A 120 120 0 0 1 270 130"
+                fill="none"
+                stroke="var(--teal-200)"
+                stroke-width="24"
+                stroke-linecap="round"
+              />
+              <path
+                class="gauge-zone zone--warning"
+                d="M 30 130 A 120 120 0 0 1 150 130"
+                fill="none"
+                stroke="var(--sunny-200)"
+                stroke-width="24"
+                stroke-linecap="round"
+              />
+              <path
+                class="gauge-zone zone--danger"
+                d="M 30 130 A 120 120 0 0 1 30 130"
+                fill="none"
+                stroke="var(--coral-200)"
+                stroke-width="24"
+                stroke-linecap="round"
+              />
+              <text x="150" y="105" text-anchor="middle" class="gauge-label">{{ formatPercent(occupancyRate()) }}</text>
+              <text x="150" y="125" text-anchor="middle" class="gauge-label">Occupancy</text>
+            </svg>
+            <div class="gauge-segments">
+              <div class="gauge-segment">
+                <span class="gauge-segment-dot zone--good"></span>
+                <span class="gauge-segment-label">80%+</span>
+              </div>
+              <div class="gauge-segment">
+                <span class="gauge-segment-dot zone--warning"></span>
+                <span class="gauge-segment-label">60-80%</span>
+              </div>
+              <div class="gauge-segment">
+                <span class="gauge-segment-dot zone--danger"></span>
+                <span class="gauge-segment-label">< 60%</span>
+              </div>
             </div>
-          }
+          </div>
         </div>
       </section>
-
-      <section class="section-card panel panel--quiet panel--coral">
+      <section class="section-card widget widget--gauge">
         <header class="panel-head">
-          <div>
+          <div class="panel-title-wrap">
             <h2 class="panel-title">
               <i class="pi pi-wallet"></i>
               <span class="panel-title-text">
-                <span class="panel-title-label">Revenue &amp; Receivables</span>
-                <span class="panel-sub">Collected against outstanding, last 12 months</span>
+                <span class="panel-title-label">Collection Rate</span>
+                <span class="panel-sub">% of invoices collected</span>
               </span>
             </h2>
           </div>
-          @if (revenueTrend(); as trend) {
-            <span class="trend-pill" [class.trend-pill--down]="!trend.up">
-              <i class="pi" [class.pi-arrow-up-right]="trend.up" [class.pi-arrow-down-right]="!trend.up"></i>
-              {{ formatPercent(trend.delta, 0) }} vs last month
-            </span>
-          }
         </header>
-        <div class="chart-frame chart-frame--tall">
+        <div class="widget-body">
+          <div class="gauge-container">
+            <svg class="gauge-svg" viewBox="0 0 300 160">
+              <path
+                class="gauge-track"
+                d="M 30 130 A 120 120 0 0 1 270 130"
+                fill="none"
+                stroke="var(--ink-100)"
+                stroke-width="24"
+              />
+              <path
+                class="gauge-fill"
+                d="M 30 130 A 120 120 0 0 1 270 130"
+                fill="none"
+                [attr.stroke]="gaugeCollectionColor()"
+                stroke-width="24"
+                stroke-linecap="round"
+                style="transition: stroke 0.6s ease;"
+              />
+              <path
+                class="gauge-zone zone--good"
+                d="M 150 130 A 120 120 0 0 1 270 130"
+                fill="none"
+                stroke="var(--teal-200)"
+                stroke-width="24"
+                stroke-linecap="round"
+              />
+              <path
+                class="gauge-zone zone--warning"
+                d="M 30 130 A 120 120 0 0 1 150 130"
+                fill="none"
+                stroke="var(--sunny-200)"
+                stroke-width="24"
+                stroke-linecap="round"
+              />
+              <path
+                class="gauge-zone zone--danger"
+                d="M 30 130 A 120 120 0 0 1 30 130"
+                fill="none"
+                stroke="var(--coral-200)"
+                stroke-width="24"
+                stroke-linecap="round"
+              />
+              <text x="150" y="105" text-anchor="middle" class="gauge-label">{{ formatPercent(collectionRate(), 0) }}</text>
+              <text x="150" y="125" text-anchor="middle" class="gauge-label">Collected</text>
+            </svg>
+            <div class="gauge-segments">
+              <div class="gauge-segment">
+                <span class="gauge-segment-dot zone--good"></span>
+                <span class="gauge-segment-label">95%+</span>
+              </div>
+              <div class="gauge-segment">
+                <span class="gauge-segment-dot zone--warning"></span>
+                <span class="gauge-segment-label">85-95%</span>
+              </div>
+              <div class="gauge-segment">
+                <span class="gauge-segment-dot zone--danger"></span>
+                <span class="gauge-segment-label">< 85%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+    <div class="chart-grid">
+      <section class="section-card widget widget--chart">
+        <header class="panel-head">
+          <div class="panel-title-wrap">
+            <h2 class="panel-title">
+              <i class="pi pi-chart-bar"></i>
+              <span class="panel-title-text">
+                <span class="panel-title-label">Revenue &amp; Receivables</span>
+                <span class="panel-sub">Monthly collected vs outstanding</span>
+              </span>
+            </h2>
+          </div>
+          <span class="count-chip">{{ stats().revenue.this_month }} this month</span>
+        </header>
+        <div class="widget-body">
           @if (revenueSeries(); as series) {
-            <canvas #revenueCanvas aria-label="Revenue collected versus outstanding"></canvas>
+            <div class="bar-chart-wrapper">
+              <canvas #revenueCanvas aria-label="Revenue collected vs outstanding"></canvas>
+              <div class="bar-chart-legend">
+                <div class="legend-item">
+                  <span class="legend-dot legend-dot--collected"></span>
+                  <span>Collected</span>
+                </div>
+                <div class="legend-item">
+                  <span class="legend-dot legend-dot--outstanding"></span>
+                  <span>Outstanding</span>
+                </div>
+              </div>
+            </div>
           } @else {
             <div class="empty-state">
-              <i class="pi pi-chart-line"></i>
-              <p>No revenue data yet</p>
+              <i class="pi pi-chart-bar"></i>
+              <p>No revenue data</p>
             </div>
           }
         </div>
       </section>
-    </div>
-
-    <div class="panel-grid panel-grid--halves">
-      <section class="section-card panel panel--quiet panel--sunny">
+      <section class="section-card widget widget--chart">
         <header class="panel-head">
-          <div>
+          <div class="panel-title-wrap">
             <h2 class="panel-title">
               <i class="pi pi-clock"></i>
               <span class="panel-title-text">
                 <span class="panel-title-label">Lease Expiry Outlook</span>
-                <span class="panel-sub">Leases reaching end of term, next 6 months</span>
+                <span class="panel-sub">Leases ending next 6 months</span>
               </span>
             </h2>
           </div>
+          <span class="count-chip">{{ stats().leases.expiring_30 + stats().leases.expiring_90 }} expiring</span>
         </header>
-        <div class="chart-frame chart-frame--grow">
+        <div class="widget-body">
           @if (expiringSeries(); as series) {
-            <canvas #expiringCanvas aria-label="Leases expiring in the next six months"></canvas>
+            <div class="bar-chart-wrapper">
+              <canvas #expiringCanvas aria-label="Leases expiring in next 6 months"></canvas>
+              <span class="count-chip">{{ expiringTotal() }} total</span>
+            </div>
           } @else {
             <div class="empty-state">
               <i class="pi pi-calendar"></i>
@@ -181,75 +342,123 @@
           }
         </div>
       </section>
-
-      <section class="section-card panel panel--quiet panel--teal">
-        <header class="panel-head">
-          <div>
-            <h2 class="panel-title">
-              <i class="pi pi-compass"></i>
-              <span class="panel-title-text">
-                <span class="panel-title-label">Portfolio Brief</span>
-                <span class="panel-sub">Where attention is needed right now</span>
-              </span>
-            </h2>
-          </div>
-        </header>
-        <ul class="detail-list">
-          <li>
-            <span>Buildings</span>
-            <strong>{{ stats().buildings.total }}</strong>
-          </li>
-          <li>
-            <span>Tenants</span>
-            <strong>{{ stats().tenants.total }} <em class="list-note">{{ stats().tenants.active }} active</em></strong>
-          </li>
-          <li>
-            <span>Units reserved</span>
-            <strong>{{ stats().units.reserved }}</strong>
-          </li>
-          <li>
-            <span>Collection rate</span>
-            <strong>{{ formatPercent(collectionRate(), 0) }}</strong>
-          </li>
-          <li>
-            <span>Revenue this month</span>
-            <strong>{{ formatCurrency(stats().revenue.this_month) }}</strong>
-          </li>
-          <li>
-            <span>Revenue YTD</span>
-            <strong>{{ formatCurrency(stats().revenue.ytd) }}</strong>
-          </li>
-          <li>
-            <span>Expiring in 30d</span>
-            <strong>{{ stats().leases.expiring_30 }}</strong>
-          </li>
-          <li>
-            <span>Leases needing action</span>
-            <strong [class.value-danger]="leasesAtRisk() > 0">{{ leasesAtRisk() }}</strong>
-          </li>
-        </ul>
-      </section>
     </div>
-
+    <section class="section-card panel panel--quiet panel--green">
+      <header class="panel-head">
+        <div class="panel-title-wrap">
+          <h2 class="panel-title">
+            <i class="pi pi-check-circle"></i>
+            <span class="panel-title-text">
+              <span class="panel-title-label">Portfolio Brief</span>
+              <span class="panel-sub">Key metrics at a glance</span>
+            </span>
+          </h2>
+        </div>
+      </header>
+      <div class="brief-list">
+        <div class="brief-item">
+          <span class="brief-label">Buildings</span>
+          <strong class="brief-value">{{ stats().buildings.total }}</strong>
+        </div>
+        <div class="brief-item">
+          <span class="brief-label">Tenants</span>
+          <strong class="brief-value">{{ stats().tenants.total }} <em class="list-note">{{ stats().tenants.active }} active</em></strong>
+        </div>
+        <div class="brief-item">
+          <span class="brief-label">Units reserved</span>
+          <strong class="brief-value">{{ stats().units.reserved }}</strong>
+        </div>
+        <div class="brief-item">
+          <span class="brief-label">Collection rate</span>
+          <strong class="brief-value">{{ formatPercent(collectionRate(), 0) }}</strong>
+        </div>
+        <div class="brief-item">
+          <span class="brief-label">Revenue this month</span>
+          <strong class="brief-value">{{ formatCurrency(stats().revenue.this_month) }}</strong>
+        </div>
+        <div class="brief-item">
+          <span class="brief-label">Revenue YTD</span>
+          <strong class="brief-value">{{ formatCurrency(stats().revenue.ytd) }}</strong>
+        </div>
+        <div class="brief-item">
+          <span class="brief-label">Expiring in 30d</span>
+          <strong class="brief-value">{{ stats().leases.expiring_30 }}</strong>
+        </div>
+        <div class="brief-item">
+          <span class="brief-label">Leases needing action</span>
+          <strong [class.value-danger]="leasesAtRisk() > 0">{{ leasesAtRisk() }}</strong>
+        </div>
+      </div>
+    </section>
+    <section class="section-card panel panel--quiet panel--purple">
+      <header class="panel-head">
+        <div class="panel-title-wrap">
+          <h2 class="panel-title">
+            <i class="pi pi-tasks"></i>
+            <span class="panel-title-text">
+              <span class="panel-title-label">Portfolio Progress</span>
+              <span class="panel-sub">Performance metrics across segments</span>
+            </span>
+          </h2>
+        </div>
+      </header>
+      <div class="progress-grid">
+        <div class="progress-item">
+          <div class="progress-header">
+            <span class="progress-label">Properties Occupied</span>
+            <span class="progress-value">{{ formatPercent(occupancyRate()) }}</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" [style.background]="progressFillGradient()"></div>
+          </div>
+        </div>
+        <div class="progress-item">
+          <div class="progress-header">
+            <span class="progress-label">Revenue Collected</span>
+            <span class="progress-value">{{ formatPercent(collectionRate() * 0.85, 0) }}</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" [style.background]="progressFillGradient()"></div>
+          </div>
+        </div>
+        <div class="progress-item">
+          <div class="progress-header">
+            <span class="progress-label">Leases Active</span>
+            <span class="progress-value">{{ stats().leases.active | number }}</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" [style.background]="progressFillGradient()"></div>
+          </div>
+        </div>
+        <div class="progress-item">
+          <div class="progress-header">
+            <span class="progress-label">Tenants Secured</span>
+            <span class="progress-value">{{ stats().tenants.active | number }}</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" [style.background]="progressFillGradient()"></div>
+          </div>
+        </div>
+      </div>
+    </section>
     <section class="section-card panel panel--quiet">
       <header class="panel-head">
-        <div>
+        <div class="panel-title-wrap">
           <h2 class="panel-title">
             <i class="pi pi-history"></i>
             <span class="panel-title-text">
               <span class="panel-title-label">Recent Activity</span>
-              <span class="panel-sub">The last 10 events across leases, invoices and tenants</span>
+              <span class="panel-sub">Last 10 events across leases, invoices and tenants</span>
             </span>
           </h2>
         </div>
         <span class="count-chip">{{ recentActivity().length }} events</span>
       </header>
-
       @if (recentActivity().length) {
         <ul class="activity-list">
           @for (item of recentActivity(); track item.id) {
             <li class="activity-item">
-              <span class="activity-icon" [ngClass]="'activity-icon--' + activityStyle(item.type).tone">
+              <span class="activity-icon activity-icon--purple">
                 <i [class]="activityStyle(item.type).icon"></i>
               </span>
               <div class="activity-body">
@@ -259,9 +468,7 @@
                 </div>
                 <p class="activity-desc">{{ item.description }}</p>
               </div>
-              <span class="chip" [ngClass]="'chip--' + activityStyle(item.type).tone">
-                {{ activityStyle(item.type).label }}
-              </span>
+              <span class="chip chip--purple">{{ activityStyle(item.type).label }}</span>
             </li>
           }
         </ul>
@@ -272,5 +479,5 @@
         </div>
       }
     </section>
-  }
+  </div>
 </div>

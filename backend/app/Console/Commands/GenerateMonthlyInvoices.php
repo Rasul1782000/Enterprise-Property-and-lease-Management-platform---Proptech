@@ -20,7 +20,7 @@ class GenerateMonthlyInvoices extends Command
         $today = $this->option('test-date') ? Carbon::parse($this->option('test-date')) : now();
         $periodStart = $today->copy()->startOfMonth();
         $periodEnd = $today->copy()->endOfMonth();
-        $dueDay = (int) config('app.invoice_due_day', env('INVOICE_DUE_DAY', 5));
+        $dueDay = (int) config('app.invoice_due_day', 5);
         $dueDate = $periodStart->copy()->day(min($dueDay, $periodStart->daysInMonth));
 
         $this->info("Generating invoices for period {$periodStart->toDateString()} - {$periodEnd->toDateString()} (due {$dueDate->toDateString()})");
@@ -64,7 +64,7 @@ class GenerateMonthlyInvoices extends Command
                 'amount' => $lease->rent_amount,
                 'late_fee' => 0,
                 'total_amount' => $lease->rent_amount,
-                'status' => 'pending',
+                'status' => 'draft',
             ]);
 
 

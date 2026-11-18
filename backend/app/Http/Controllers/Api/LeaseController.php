@@ -57,6 +57,10 @@ class LeaseController extends Controller
             'yearly',
             $data['payment_frequency'] ?? 'monthly'
         );
+        // Convert terms from comma-separated string to array if needed
+        if (isset($data['terms']) && is_string($data['terms']) && trim($data['terms'])) {
+            $data['terms'] = array_map('trim', explode(',', $data['terms']));
+        }
         $lease = Lease::create($data);
 
         return new LeaseResource($lease->load(['unit.building.property', 'tenant']));

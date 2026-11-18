@@ -32,3 +32,5 @@ override.tf.json
 terraform.rc
 tfplan
 *.auto.tfvars
+*.tfvars
+!*.tfvars.example

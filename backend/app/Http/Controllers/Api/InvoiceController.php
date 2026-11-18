@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\InvoiceResource;
+use App\Http\Resources\PaymentResource;
 use App\Mail\RentInvoiceMail;
 use App\Models\Invoice;
 use App\Models\InvoiceLineItem;

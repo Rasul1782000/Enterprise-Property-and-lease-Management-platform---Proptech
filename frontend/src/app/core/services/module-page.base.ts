@@ -71,9 +71,9 @@ export abstract class ModulePage<T extends { id: number }> implements OnInit {
   load(): void {
     this.loading.set(true);
     this.api.list<T>(this.endpoint, this.params()).subscribe({
-      next: (res: PaginatedResponse<T>) => {
-        this.rows.set(res.data);
-        this.total.set(res.meta.total);
+      next: (res: any) => {
+        this.rows.set(res.data || res);
+        this.total.set(res.total || res.meta?.total || 0);
         this.loading.set(false);
       },
       error: () => this.loading.set(false)
@@ -89,20 +89,20 @@ export abstract class ModulePage<T extends { id: number }> implements OnInit {
       search: this.searchTerm || undefined
     };
     if (this.statusFilter) {
-      params['filter[status]'] = this.statusFilter;
+      params.status = this.statusFilter;
     }
     Object.entries(this.filters).forEach(([field, value]) => {
       if (value !== null && value !== undefined && value !== '') {
-        params[`filter[${field}]`] = value;
+        params[field] = value;
       }
     });
     return params;
   }
 
   onLazyLoad(event: any): void {
-    if (event?.sortField) {
-      this.sort = event.field;
-      this.dir = event.order === 1 ? 'asc' : 'desc';
+    if (event?.sortField !== undefined) {
+      this.sort = event.sortField;
+      this.dir = event.sortOrder === 1 ? 'asc' : 'desc';
     } else if (event) {
       this.perPage = event.rows;
       this.page = Math.floor(event.first / event.rows) + 1;

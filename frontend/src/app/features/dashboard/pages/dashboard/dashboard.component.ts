@@ -82,6 +82,10 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     return leases.expiring_30 + leases.expired;
   });
 
+  readonly expiringTotal = computed(() =>
+    (this.expiringSeries()?.expiring ?? []).reduce((sum, n) => sum + n, 0)
+  );
+
   ngOnInit(): void {
     this.loadData();
   }
@@ -186,6 +190,26 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   private pickSeries(source: { datasets?: { data?: unknown[] }[] } | null, index: number): number[] {
     const data = source?.datasets?.[index]?.data;
     return Array.isArray(data) ? data.map(v => Number(v) || 0) : [];
+  }
+
+  // --- Gauge meter colors ---
+  gaugeProgressColor(): string {
+    const rate = this.occupancyRate();
+    if (rate >= 80) return 'var(--teal-500)';
+    if (rate >= 60) return 'var(--sunny-500)';
+    return 'var(--coral-500)';
+  }
+
+  gaugeCollectionColor(): string {
+    const rate = this.collectionRate();
+    if (rate >= 95) return 'var(--teal-500)';
+    if (rate >= 85) return 'var(--sunny-500)';
+    return 'var(--coral-500)';
+  }
+
+  // --- Progress bar gradient ---
+  progressFillGradient(): string {
+    return 'linear-gradient(90deg, var(--purple-400), var(--pink-400), var(--purple-600))';
   }
 
   private renderCharts(): void {
