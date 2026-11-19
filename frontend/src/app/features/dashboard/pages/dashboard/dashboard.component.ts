@@ -214,20 +214,16 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private renderCharts(): void {
     if (this.loading()) return;
-    const occupancy = this.occupancySeries();
     const revenue = this.revenueSeries();
     const expiring = this.expiringSeries();
-    if (!occupancy || !revenue || !expiring) return;
+    if (!revenue || !expiring) return;
 
-    this.occupancyChart = this.renderBarChart(
-      this.occupancyCanvas,
-      occupancy.labels,
-      [
-        { label: 'Occupied', data: occupancy.occupied, backgroundColor: 'rgba(78, 205, 196, 0.85)', borderColor: '#3DBEB5' },
-        { label: 'Vacant', data: occupancy.vacant, backgroundColor: 'rgba(255, 230, 109, 0.85)', borderColor: '#F5D44E' }
-      ],
-      { stacked: true }
-    );
+    const units = this.stats().units;
+    this.occupancyChart = this.renderDonutChart(this.occupancyCanvas, [
+      { label: 'Occupied', value: units.occupied, color: this.cssColor('--orange-500', '#ff8a5c') },
+      { label: 'Vacant', value: units.vacant, color: this.cssColor('--ink-300', '#d1d5db') },
+      { label: 'Reserved', value: units.reserved, color: this.cssColor('--purple-400', '#b17fc4') }
+    ]);
 
     this.revenueChart = this.renderBarChart(
       this.revenueCanvas,
@@ -247,6 +243,52 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       ],
       { stacked: false, legend: false }
     );
+  }
+
+  private renderDonutChart(
+    host: ElementRef<HTMLCanvasElement> | undefined,
+    segments: { label: string; value: number; color: string }[]
+  ): Chart | undefined {
+    const canvas = host?.nativeElement;
+    if (!canvas || !segments.some(segment => segment.value > 0)) return undefined;
+
+    const config: ChartConfiguration<'doughnut'> = {
+      type: 'doughnut',
+      data: {
+        labels: segments.map(segment => segment.label),
+        datasets: [{
+          data: segments.map(segment => segment.value),
+          backgroundColor: segments.map(segment => segment.color),
+          borderWidth: 0,
+          hoverOffset: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '68%',
+        animation: { duration: 450, easing: 'easeOutQuart' },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: 'rgba(31, 41, 55, 0.95)',
+            padding: 12,
+            cornerRadius: 14,
+            callbacks: {
+              label: (context) => ` ${context.label}: ${Number(context.parsed ?? 0).toLocaleString('en-US')}`
+            }
+          }
+        }
+      }
+    };
+
+    const existing = Chart.getChart(canvas);
+    if (existing) existing.destroy();
+    return new Chart(canvas, config);
+  }
+
+  private cssColor(variable: string, fallback: string): string {
+    return getComputedStyle(document.documentElement).getPropertyValue(variable).trim() || fallback;
   }
 
   private renderBarChart(

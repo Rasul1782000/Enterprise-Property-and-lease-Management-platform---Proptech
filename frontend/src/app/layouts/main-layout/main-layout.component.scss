@@ -4,7 +4,7 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(180deg, #fafbfc 0%, var(--surface-page) 240px);
+  background: var(--surface-page);
 }
 
 .skip-link {
@@ -179,7 +179,7 @@
   gap: 12px;
   min-height: var(--touch-target);
   padding: 10px 14px;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-sm);
   color: var(--ink-700);
   text-decoration: none;
   font-size: 0.9375rem;
@@ -195,7 +195,6 @@
   background: var(--orange-50);
   color: var(--orange-700);
   font-weight: 600;
-  box-shadow: inset 3px 0 0 var(--orange-500);
 }
 
 .nav-group a.is-active .nav-icon i {
@@ -286,7 +285,7 @@
   width: 100%;
   max-width: 1280px;
   margin: 0 auto;
-  padding: 36px 32px 64px;
+  padding: 36px 24px 64px;
   box-sizing: border-box;
 }
 
@@ -376,14 +375,6 @@
 
 .portal-shell.nav-open .scrim {
   display: block;
-}
-
-@media (max-width: 1180px) {
-  .protection-text { display: none; }
-}
-
-@media (max-width: 980px) {
-  .protection-card { display: none; }
 }
 
 @media (max-width: 860px) {
@@ -492,32 +483,7 @@
   }
 }
 
-@media (max-width: 420px) {
-  .profile-name { display: none; }
-}
 /* ===== Color utility classes for main layout ===== */
-.nav-icon {
-  flex: 0 0 36px;
-  height: 36px;
-  display: grid;
-  place-items: center;
-  border-radius: var(--radius-sm);
-  background: var(--ink-100);
-  color: var(--ink-400);
-  font-size: 1.125rem;
-}
-
-.nav-group a.is-active .nav-icon {
-  background: var(--orange-500);
-  color: #fff;
-  box-shadow: 0 2px 8px rgba(255, 138, 92, 0.35);
-}
-
-.nav-group a:hover .nav-icon {
-  background: var(--orange-100);
-  color: var(--orange-600);
-}
-
 .dot--orange  { background: var(--orange-500); }
 .dot--purple  { background: var(--purple-500); }
 .dot--pink    { background: var(--pink-500); }
@@ -530,9 +496,6 @@
   color: var(--purple-600);
 }
 
-/* ===== Panel accent colors ===== */
-.panel--green { border-top-color: var(--teal-500); }
-.panel--purple { border-top-color: var(--purple-500); }
 .activity-icon--coral {
   background: var(--coral-100);
   color: var(--coral-800);
@@ -547,3 +510,7 @@
   background: var(--sunny-100);
   color: var(--sunny-800);
 }
+
+/* ===== Panel accent colors ===== */
+.panel--green { border-top-color: var(--teal-500); }
+.panel--purple { border-top-color: var(--purple-500); }

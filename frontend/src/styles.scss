@@ -57,6 +57,17 @@
   --teal-800: #277a75;
   --teal-900: #215f5c;
 
+  --sunny-50: #fdf3e3;
+  --sunny-100: #fce8cf;
+  --sunny-200: #fbdba5;
+  --sunny-300: #facc7c;
+  --sunny-400: #f9c253;
+  --sunny-500: #f5b03a;
+  --sunny-600: #d8942e;
+  --sunny-700: #b97a26;
+  --sunny-800: #956320;
+  --sunny-900: #724c1a;
+
   --dark-teal-50: #edf6f5;
   --dark-teal-100: #cfe8e2;
   --dark-teal-200: #a5d8d0;
@@ -69,6 +80,7 @@
   --dark-teal-900: #122e35;
 
   --color-primary: var(--orange-500);
+  --color-primary-50: var(--orange-50);
   --color-primary-hover: var(--orange-600);
   --color-secondary: var(--teal-500);
   --color-secondary-hover: var(--teal-600);
@@ -122,6 +134,7 @@
   --text-h4: 18px;
   --text-body: 16px;
   --text-small: 14px;
+  --text-sm: 13px;
   --text-xs: 12px;
 
   --radius-sm: 12px;

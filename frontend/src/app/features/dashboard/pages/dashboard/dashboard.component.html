@@ -9,7 +9,7 @@
       @if (lastUpdated(); as stamp) {
         <span class="updated-stamp">
           <i class="pi pi-clock"></i>
-          Updated {{ stamp | date: 'h:mm a' }}
+          Updated {{ stamp | date: 'shortTime' }}
         </span>
       }
       <p-button
@@ -26,64 +26,75 @@
     <div class="welcome-content">
       <span class="welcome-icon"><i class="pi pi-chart-pie"></i></span>
       <div class="welcome-text">
-        <strong>Welcome back, John.</strong>
+        <strong>Welcome back.</strong>
         <p>Here is the live performance snapshot across your portfolio.</p>
       </div>
-      <span class="welcome-trend">
-        <i class="pi pi-arrow-up-right"></i>
-        Revenue <strong class="trend-up">+12.4%</strong> vs last month
-      </span>
+      @if (revenueTrend(); as trend) {
+        <span class="welcome-trend" [class.welcome-trend--down]="!trend.up">
+          <i class="pi" [class.pi-arrow-up-right]="trend.up" [class.pi-arrow-down-right]="!trend.up"></i>
+          Revenue
+          <strong [class.trend-up]="trend.up" [class.trend-down]="!trend.up">{{ trend.up ? '+' : '' }}{{ formatPercent(trend.delta, 1) }}</strong>
+          vs last month
+        </span>
+      } @else {
+        <span class="welcome-trend">
+          <i class="pi pi-info-circle"></i>
+          No prior month revenue to compare
+        </span>
+      }
     </div>
   </section>
   <div class="kpi-grid">
-    <article class="metric-tile metric-tile--orange">
-      <span class="metric-icon"><i class="pi pi-building"></i></span>
-      <div class="min-w-0">
-        <p class="metric-label">Total Properties</p>
-        <p class="metric-value">{{ stats().properties.total }}</p>
-        <ul class="metric-split">
-          <li><span class="dot dot--orange"></span>{{ stats().properties.active }} Active</li>
-          <li><span class="dot dot--muted"></span>{{ stats().properties.inactive }} Inactive</li>
-        </ul>
-      </div>
-    </article>
-    <article class="metric-tile metric-tile--purple">
-      <span class="metric-icon"><i class="pi pi-home"></i></span>
-      <div class="min-w-0">
-        <p class="metric-label">Units &amp; Occupancy</p>
-        <p class="metric-value">{{ stats().units.total }}</p>
-        <ul class="metric-split">
-          <li><span class="dot dot--purple"></span>{{ stats().units.occupied }} Occupied</li>
-          <li><span class="dot dot--pink"></span>{{ stats().units.vacant }} Vacant</li>
-        </ul>
-        <div class="mini-meter" role="presentation">
-          <span class="mini-meter-fill" [style.width.%]="occupancyRate()"></span>
+    @if (stats(); as s) {
+      <article class="metric-tile metric-tile--orange">
+        <span class="metric-icon"><i class="pi pi-building"></i></span>
+        <div class="metric-body">
+          <p class="metric-label">Total Properties</p>
+          <p class="metric-value">{{ s.properties.total }}</p>
+          <ul class="metric-split">
+            <li><span class="dot dot--orange"></span>{{ s.properties.active }} Active</li>
+            <li><span class="dot dot--muted"></span>{{ s.properties.inactive }} Inactive</li>
+          </ul>
         </div>
-        <p class="metric-foot">{{ formatPercent(occupancyRate()) }} occupied</p>
-      </div>
-    </article>
-    <article class="metric-tile metric-tile--pink">
-      <span class="metric-icon"><i class="pi pi-file"></i></span>
-      <div class="min-w-0">
-        <p class="metric-label">Active Leases</p>
-        <p class="metric-value">{{ stats().leases.active }}</p>
-        <ul class="metric-split">
-          <li><span class="dot dot--pink"></span>{{ stats().leases.expiring_30 }} Expiring 30d</li>
-          <li><span class="dot dot--muted"></span>{{ stats().leases.expired }} Expired</li>
-        </ul>
-      </div>
-    </article>
-    <article class="metric-tile metric-tile--teal">
-      <span class="metric-icon"><i class="pi pi-wallet"></i></span>
-      <div class="min-w-0">
-        <p class="metric-label">Outstanding</p>
-        <p class="metric-value">{{ formatCurrency(stats().invoices.total_outstanding) }}</p>
-        <ul class="metric-split">
-          <li><span class="dot dot--teal"></span>{{ stats().invoices.overdue }} Overdue</li>
-          <li><span class="dot dot--muted"></span>{{ stats().invoices.pending }} Pending</li>
-        </ul>
-      </div>
-    </article>
+      </article>
+      <article class="metric-tile metric-tile--purple">
+        <span class="metric-icon"><i class="pi pi-home"></i></span>
+        <div class="metric-body">
+          <p class="metric-label">Units &amp; Occupancy</p>
+          <p class="metric-value">{{ s.units.total }}</p>
+          <ul class="metric-split">
+            <li><span class="dot dot--purple"></span>{{ s.units.occupied }} Occupied</li>
+            <li><span class="dot dot--pink"></span>{{ s.units.vacant }} Vacant</li>
+          </ul>
+          <div class="mini-meter" role="presentation">
+            <span class="mini-meter-fill" [style.width.%]="occupancyRate()"></span>
+          </div>
+          <p class="metric-foot">{{ formatPercent(occupancyRate()) }} occupied</p>
+        </div>
+      </article>
+      <article class="metric-tile metric-tile--pink">
+        <span class="metric-icon"><i class="pi pi-file"></i></span>
+        <div class="metric-body">
+          <p class="metric-label">Active Leases</p>
+          <p class="metric-value">{{ s.leases.active }}</p>
+          <ul class="metric-split">
+            <li><span class="dot dot--pink"></span>{{ s.leases.expiring_30 }} Expiring 30d</li>
+            <li><span class="dot dot--muted"></span>{{ s.leases.expired }} Expired</li>
+          </ul>
+        </div>
+      </article>
+      <article class="metric-tile metric-tile--teal">
+        <span class="metric-icon"><i class="pi pi-wallet"></i></span>
+        <div class="metric-body">
+          <p class="metric-label">Outstanding</p>
+          <p class="metric-value">{{ formatCurrency(s.invoices.total_outstanding) }}</p>
+          <ul class="metric-split">
+            <li><span class="dot dot--teal"></span>{{ s.invoices.overdue }} Overdue</li>
+            <li><span class="dot dot--muted"></span>{{ s.invoices.pending }} Pending</li>
+          </ul>
+        </div>
+      </article>
+    }
   </div>
   <div class="widget-grid">
     <section class="section-card widget widget--donut">
@@ -97,32 +108,36 @@
             </span>
           </h2>
         </div>
-        <span class="count-chip">{{ stats().units.total }} units</span>
+        @if (stats(); as s) {
+          <span class="count-chip">{{ s.units.total }} units</span>
+        }
       </header>
       <div class="widget-body">
-        @if (occupancySeries(); as series) {
-          <div class="donut-wrapper">
-            <canvas #occupancyCanvas aria-label="Portfolio segments donut chart"></canvas>
-            <div class="donut-legend">
-              <div class="legend-item">
-                <span class="legend-dot legend-dot--occupied"></span>
-                <span>{{ stats().units.occupied }} Occupied</span>
-              </div>
-              <div class="legend-item">
-                <span class="legend-dot legend-dot--vacant"></span>
-                <span>{{ stats().units.vacant }} Vacant</span>
-              </div>
-              <div class="legend-item">
-                <span class="legend-dot legend-dot--reserved"></span>
-                <span>{{ stats().units.reserved }} Reserved</span>
+        @if (stats(); as s) {
+          @if (s.units.total) {
+            <div class="donut-wrapper">
+              <canvas #occupancyCanvas aria-label="Portfolio segments donut chart"></canvas>
+              <div class="donut-legend">
+                <div class="legend-item">
+                  <span class="legend-dot legend-dot--occupied"></span>
+                  <span>{{ s.units.occupied | number }} Occupied</span>
+                </div>
+                <div class="legend-item">
+                  <span class="legend-dot legend-dot--vacant"></span>
+                  <span>{{ s.units.vacant | number }} Vacant</span>
+                </div>
+                <div class="legend-item">
+                  <span class="legend-dot legend-dot--reserved"></span>
+                  <span>{{ s.units.reserved | number }} Reserved</span>
+                </div>
               </div>
             </div>
-          </div>
-        } @else {
-          <div class="empty-state">
-            <i class="pi pi-chart-pie"></i>
-            <p>No occupancy data yet</p>
-          </div>
+          } @else {
+            <div class="empty-state">
+              <i class="pi pi-chart-pie"></i>
+              <p>No occupancy data yet</p>
+            </div>
+          }
         }
       </div>
     </section>
@@ -196,7 +211,7 @@
               </div>
               <div class="gauge-segment">
                 <span class="gauge-segment-dot zone--danger"></span>
-                <span class="gauge-segment-label">< 60%</span>
+                <span class="gauge-segment-label">&lt; 60%</span>
               </div>
             </div>
           </div>
@@ -271,7 +286,7 @@
               </div>
               <div class="gauge-segment">
                 <span class="gauge-segment-dot zone--danger"></span>
-                <span class="gauge-segment-label">< 85%</span>
+                <span class="gauge-segment-label">&lt; 85%</span>
               </div>
             </div>
           </div>
@@ -290,7 +305,9 @@
               </span>
             </h2>
           </div>
-          <span class="count-chip">{{ stats().revenue.this_month }} this month</span>
+          @if (stats(); as s) {
+            <span class="count-chip">{{ s.revenue.this_month | number }} this month</span>
+          }
         </header>
         <div class="widget-body">
           @if (revenueSeries(); as series) {
@@ -326,7 +343,9 @@
               </span>
             </h2>
           </div>
-          <span class="count-chip">{{ stats().leases.expiring_30 + stats().leases.expiring_90 }} expiring</span>
+          @if (stats(); as s) {
+            <span class="count-chip">{{ s.leases.expiring_30 + s.leases.expiring_90 }} expiring</span>
+          }
         </header>
         <div class="widget-body">
           @if (expiringSeries(); as series) {
@@ -356,38 +375,40 @@
         </div>
       </header>
       <div class="brief-list">
-        <div class="brief-item">
-          <span class="brief-label">Buildings</span>
-          <strong class="brief-value">{{ stats().buildings.total }}</strong>
-        </div>
-        <div class="brief-item">
-          <span class="brief-label">Tenants</span>
-          <strong class="brief-value">{{ stats().tenants.total }} <em class="list-note">{{ stats().tenants.active }} active</em></strong>
-        </div>
-        <div class="brief-item">
-          <span class="brief-label">Units reserved</span>
-          <strong class="brief-value">{{ stats().units.reserved }}</strong>
-        </div>
-        <div class="brief-item">
-          <span class="brief-label">Collection rate</span>
-          <strong class="brief-value">{{ formatPercent(collectionRate(), 0) }}</strong>
-        </div>
-        <div class="brief-item">
-          <span class="brief-label">Revenue this month</span>
-          <strong class="brief-value">{{ formatCurrency(stats().revenue.this_month) }}</strong>
-        </div>
-        <div class="brief-item">
-          <span class="brief-label">Revenue YTD</span>
-          <strong class="brief-value">{{ formatCurrency(stats().revenue.ytd) }}</strong>
-        </div>
-        <div class="brief-item">
-          <span class="brief-label">Expiring in 30d</span>
-          <strong class="brief-value">{{ stats().leases.expiring_30 }}</strong>
-        </div>
-        <div class="brief-item">
-          <span class="brief-label">Leases needing action</span>
-          <strong [class.value-danger]="leasesAtRisk() > 0">{{ leasesAtRisk() }}</strong>
-        </div>
+        @if (stats(); as s) {
+          <div class="brief-item">
+            <span class="brief-label">Buildings</span>
+            <strong class="brief-value">{{ s.buildings.total }}</strong>
+          </div>
+          <div class="brief-item">
+            <span class="brief-label">Tenants</span>
+            <strong class="brief-value">{{ s.tenants.total }} <em class="list-note">{{ s.tenants.active }} active</em></strong>
+          </div>
+          <div class="brief-item">
+            <span class="brief-label">Units reserved</span>
+            <strong class="brief-value">{{ s.units.reserved }}</strong>
+          </div>
+          <div class="brief-item">
+            <span class="brief-label">Collection rate</span>
+            <strong class="brief-value">{{ formatPercent(collectionRate(), 0) }}</strong>
+          </div>
+          <div class="brief-item">
+            <span class="brief-label">Revenue this month</span>
+            <strong class="brief-value">{{ formatCurrency(s.revenue.this_month) }}</strong>
+          </div>
+          <div class="brief-item">
+            <span class="brief-label">Revenue YTD</span>
+            <strong class="brief-value">{{ formatCurrency(s.revenue.ytd) }}</strong>
+          </div>
+          <div class="brief-item">
+            <span class="brief-label">Expiring in 30d</span>
+            <strong class="brief-value">{{ s.leases.expiring_30 }}</strong>
+          </div>
+          <div class="brief-item">
+            <span class="brief-label">Leases needing action</span>
+            <strong [class.value-danger]="leasesAtRisk() > 0">{{ leasesAtRisk() }}</strong>
+          </div>
+        }
       </div>
     </section>
     <section class="section-card panel panel--quiet panel--purple">
@@ -403,42 +424,44 @@
         </div>
       </header>
       <div class="progress-grid">
-        <div class="progress-item">
-          <div class="progress-header">
-            <span class="progress-label">Properties Occupied</span>
-            <span class="progress-value">{{ formatPercent(occupancyRate()) }}</span>
+        @if (stats(); as s) {
+          <div class="progress-item">
+            <div class="progress-header">
+              <span class="progress-label">Properties Occupied</span>
+              <span class="progress-value">{{ formatPercent(occupancyRate()) }}</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" [style.width.%]="occupancyRate()" [style.background]="progressFillGradient()"></div>
+            </div>
           </div>
-          <div class="progress-track">
-            <div class="progress-fill" [style.background]="progressFillGradient()"></div>
+          <div class="progress-item">
+            <div class="progress-header">
+              <span class="progress-label">Revenue Collected</span>
+              <span class="progress-value">{{ formatPercent(collectionRate() * 0.85, 0) }}</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" [style.width.%]="collectionRate() * 0.85" [style.background]="progressFillGradient()"></div>
+            </div>
           </div>
-        </div>
-        <div class="progress-item">
-          <div class="progress-header">
-            <span class="progress-label">Revenue Collected</span>
-            <span class="progress-value">{{ formatPercent(collectionRate() * 0.85, 0) }}</span>
+          <div class="progress-item">
+            <div class="progress-header">
+              <span class="progress-label">Leases Active</span>
+              <span class="progress-value">{{ s.leases.active | number }}</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" [style.background]="progressFillGradient()"></div>
+            </div>
           </div>
-          <div class="progress-track">
-            <div class="progress-fill" [style.background]="progressFillGradient()"></div>
+          <div class="progress-item">
+            <div class="progress-header">
+              <span class="progress-label">Tenants Secured</span>
+              <span class="progress-value">{{ s.tenants.active | number }}</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" [style.background]="progressFillGradient()"></div>
+            </div>
           </div>
-        </div>
-        <div class="progress-item">
-          <div class="progress-header">
-            <span class="progress-label">Leases Active</span>
-            <span class="progress-value">{{ stats().leases.active | number }}</span>
-          </div>
-          <div class="progress-track">
-            <div class="progress-fill" [style.background]="progressFillGradient()"></div>
-          </div>
-        </div>
-        <div class="progress-item">
-          <div class="progress-header">
-            <span class="progress-label">Tenants Secured</span>
-            <span class="progress-value">{{ stats().tenants.active | number }}</span>
-          </div>
-          <div class="progress-track">
-            <div class="progress-fill" [style.background]="progressFillGradient()"></div>
-          </div>
-        </div>
+        }
       </div>
     </section>
     <section class="section-card panel panel--quiet">
@@ -452,31 +475,35 @@
             </span>
           </h2>
         </div>
-        <span class="count-chip">{{ recentActivity().length }} events</span>
+        @if (recentActivity(); as acts) {
+          <span class="count-chip">{{ acts.length }} events</span>
+        }
       </header>
-      @if (recentActivity().length) {
-        <ul class="activity-list">
-          @for (item of recentActivity(); track item.id) {
-            <li class="activity-item">
-              <span class="activity-icon activity-icon--purple">
-                <i [class]="activityStyle(item.type).icon"></i>
-              </span>
-              <div class="activity-body">
-                <div class="activity-top">
-                  <strong>{{ item.title }}</strong>
-                  <span class="activity-time">{{ formatTime(item.timestamp) }}</span>
+      @if (recentActivity(); as acts) {
+        @if (acts.length) {
+          <ul class="activity-list">
+            @for (item of acts; track item.id) {
+              <li class="activity-item">
+                <span class="activity-icon activity-icon--purple">
+                  <i [class]="activityStyle(item.type).icon"></i>
+                </span>
+                <div class="activity-body">
+                  <div class="activity-top">
+                    <strong>{{ item.title }}</strong>
+                    <span class="activity-time">{{ formatTime(item.timestamp) }}</span>
+                  </div>
+                  <p class="activity-desc">{{ item.description }}</p>
                 </div>
-                <p class="activity-desc">{{ item.description }}</p>
-              </div>
-              <span class="chip chip--purple">{{ activityStyle(item.type).label }}</span>
-            </li>
-          }
-        </ul>
-      } @else {
-        <div class="empty-state">
-          <i class="pi pi-inbox"></i>
-          <p>No activity recorded yet</p>
-        </div>
+                <span class="chip chip--purple">{{ activityStyle(item.type).label }}</span>
+              </li>
+            }
+          </ul>
+        } @else {
+          <div class="empty-state">
+            <i class="pi pi-inbox"></i>
+            <p>No activity recorded yet</p>
+          </div>
+        }
       }
     </section>
   </div>
