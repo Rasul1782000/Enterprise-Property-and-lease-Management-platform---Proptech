@@ -364,37 +364,69 @@
       </header>
       <div class="brief-list">
         @if (stats(); as s) {
-          <div class="brief-item">
-            <span class="brief-label">Buildings</span>
-            <strong class="brief-value">{{ s.buildings.total }}</strong>
+          <div class="brief-item brief-item--teal">
+            <span class="brief-icon"><i class="pi pi-building"></i></span>
+            <div class="brief-copy">
+              <span class="brief-label">Buildings</span>
+              <strong class="brief-value">{{ s.buildings.total }}</strong>
+              <span class="brief-note">Across {{ s.properties.total }} properties</span>
+            </div>
           </div>
-          <div class="brief-item">
-            <span class="brief-label">Tenants</span>
-            <strong class="brief-value">{{ s.tenants.total }} <em class="list-note">{{ s.tenants.active }} active</em></strong>
+          <div class="brief-item brief-item--purple">
+            <span class="brief-icon"><i class="pi pi-users"></i></span>
+            <div class="brief-copy">
+              <span class="brief-label">Tenants</span>
+              <strong class="brief-value">{{ s.tenants.total }}</strong>
+              <span class="brief-note">{{ s.tenants.active }} active tenants</span>
+            </div>
           </div>
-          <div class="brief-item">
-            <span class="brief-label">Units reserved</span>
-            <strong class="brief-value">{{ s.units.reserved }}</strong>
+          <div class="brief-item brief-item--sunny">
+            <span class="brief-icon"><i class="pi pi-th-large"></i></span>
+            <div class="brief-copy">
+              <span class="brief-label">Units reserved</span>
+              <strong class="brief-value">{{ s.units.reserved }}</strong>
+              <span class="brief-note">of {{ s.units.total }} total units</span>
+            </div>
           </div>
-          <div class="brief-item">
-            <span class="brief-label">Collection rate</span>
-            <strong class="brief-value">{{ formatPercent(collectionRate(), 0) }}</strong>
+          <div class="brief-item brief-item--teal">
+            <span class="brief-icon"><i class="pi pi-chart-line"></i></span>
+            <div class="brief-copy">
+              <span class="brief-label">Collection rate</span>
+              <strong class="brief-value">{{ formatPercent(collectionRate(), 0) }}</strong>
+              <span class="brief-note">Invoices collected</span>
+            </div>
           </div>
-          <div class="brief-item">
-            <span class="brief-label">Revenue this month</span>
-            <strong class="brief-value">{{ formatCurrency(s.revenue.this_month) }}</strong>
+          <div class="brief-item brief-item--teal">
+            <span class="brief-icon"><i class="pi pi-wallet"></i></span>
+            <div class="brief-copy">
+              <span class="brief-label">Revenue this month</span>
+              <strong class="brief-value">{{ formatCurrency(s.revenue.this_month) }}</strong>
+              <span class="brief-note">Current month</span>
+            </div>
           </div>
-          <div class="brief-item">
-            <span class="brief-label">Revenue YTD</span>
-            <strong class="brief-value">{{ formatCurrency(s.revenue.ytd) }}</strong>
+          <div class="brief-item brief-item--purple">
+            <span class="brief-icon"><i class="pi pi-chart-bar"></i></span>
+            <div class="brief-copy">
+              <span class="brief-label">Revenue YTD</span>
+              <strong class="brief-value">{{ formatCurrency(s.revenue.ytd) }}</strong>
+              <span class="brief-note">Year to date</span>
+            </div>
           </div>
-          <div class="brief-item">
-            <span class="brief-label">Expiring in 30d</span>
-            <strong class="brief-value">{{ s.leases.expiring_30 }}</strong>
+          <div class="brief-item brief-item--sunny">
+            <span class="brief-icon"><i class="pi pi-calendar"></i></span>
+            <div class="brief-copy">
+              <span class="brief-label">Expiring in 30d</span>
+              <strong class="brief-value">{{ s.leases.expiring_30 }}</strong>
+              <span class="brief-note">Leases nearing end</span>
+            </div>
           </div>
-          <div class="brief-item">
-            <span class="brief-label">Leases needing action</span>
-            <strong [class.value-danger]="leasesAtRisk() > 0">{{ leasesAtRisk() }}</strong>
+          <div class="brief-item brief-item--coral">
+            <span class="brief-icon"><i class="pi pi-exclamation-triangle"></i></span>
+            <div class="brief-copy">
+              <span class="brief-label">Leases needing action</span>
+              <strong class="brief-value" [class.value-danger]="leasesAtRisk() > 0">{{ leasesAtRisk() }}</strong>
+              <span class="brief-note">Requires follow-up</span>
+            </div>
           </div>
         }
       </div>
@@ -421,6 +453,7 @@
             <div class="progress-track">
               <div class="progress-fill" [style.width.%]="occupancyRate()" [style.background]="progressFillGradient()"></div>
             </div>
+            <span class="progress-caption">{{ s.units.occupied }} of {{ s.units.total }} units occupied</span>
           </div>
           <div class="progress-item">
             <div class="progress-header">
@@ -430,6 +463,7 @@
             <div class="progress-track">
               <div class="progress-fill" [style.width.%]="collectionRate() * 0.85" [style.background]="progressFillGradient()"></div>
             </div>
+            <span class="progress-caption">Against invoiced revenue this period</span>
           </div>
           <div class="progress-item">
             <div class="progress-header">
@@ -437,8 +471,9 @@
               <span class="progress-value">{{ s.leases.active | number }}</span>
             </div>
             <div class="progress-track">
-              <div class="progress-fill" [style.background]="progressFillGradient()"></div>
+              <div class="progress-fill" [style.width.%]="(s.leases.active / (s.leases.total || 1)) * 100" [style.background]="progressFillGradient()"></div>
             </div>
+            <span class="progress-caption">{{ s.leases.total }} leases in the portfolio</span>
           </div>
           <div class="progress-item">
             <div class="progress-header">
@@ -446,8 +481,9 @@
               <span class="progress-value">{{ s.tenants.active | number }}</span>
             </div>
             <div class="progress-track">
-              <div class="progress-fill" [style.background]="progressFillGradient()"></div>
+              <div class="progress-fill" [style.width.%]="(s.tenants.active / (s.tenants.total || 1)) * 100" [style.background]="progressFillGradient()"></div>
             </div>
+            <span class="progress-caption">{{ s.tenants.total }} tenants registered</span>
           </div>
         }
       </div>
