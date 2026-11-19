@@ -12,14 +12,6 @@
           Updated {{ stamp | date: 'shortTime' }}
         </span>
       }
-      <p-button
-        label="Refresh"
-        icon="pi pi-refresh"
-        severity="secondary"
-        [outlined]="true"
-        [loading]="loading()"
-        (onClick)="loadData()"
-      />
     </div>
   </header>
   <section class="welcome-strip">
@@ -97,6 +89,7 @@
     }
   </div>
   <div class="widget-grid">
+    <div class="overview-grid">
     <section class="section-card widget widget--donut">
       <header class="panel-head">
         <div class="panel-title-wrap">
@@ -116,7 +109,9 @@
         @if (stats(); as s) {
           @if (s.units.total) {
             <div class="donut-wrapper">
-              <canvas #occupancyCanvas aria-label="Portfolio segments donut chart"></canvas>
+              <div class="donut-canvas-box">
+                <canvas #occupancyCanvas aria-label="Portfolio segments donut chart"></canvas>
+              </div>
               <div class="donut-legend">
                 <div class="legend-item">
                   <span class="legend-dot legend-dot--occupied"></span>
@@ -165,13 +160,12 @@
                 stroke-width="24"
               />
               <path
-                class="gauge-fill"
-                d="M 30 130 A 120 120 0 0 1 270 130"
+                class="gauge-zone zone--warning"
+                d="M 30 130 A 120 120 0 0 1 150 130"
                 fill="none"
-                [attr.stroke]="gaugeProgressColor()"
+                stroke="var(--sunny-200)"
                 stroke-width="24"
                 stroke-linecap="round"
-                style="transition: stroke 0.6s ease;"
               />
               <path
                 class="gauge-zone zone--good"
@@ -182,20 +176,15 @@
                 stroke-linecap="round"
               />
               <path
-                class="gauge-zone zone--warning"
-                d="M 30 130 A 120 120 0 0 1 150 130"
+                class="gauge-fill"
+                d="M 30 130 A 120 120 0 0 1 270 130"
                 fill="none"
-                stroke="var(--sunny-200)"
+                [attr.stroke]="gaugeProgressColor()"
                 stroke-width="24"
                 stroke-linecap="round"
-              />
-              <path
-                class="gauge-zone zone--danger"
-                d="M 30 130 A 120 120 0 0 1 30 130"
-                fill="none"
-                stroke="var(--coral-200)"
-                stroke-width="24"
-                stroke-linecap="round"
+                [attr.stroke-dasharray]="gaugeArcLength"
+                [attr.stroke-dashoffset]="gaugeProgressOffset()"
+                style="transition: stroke-dashoffset 0.6s ease, stroke 0.6s ease;"
               />
               <text x="150" y="105" text-anchor="middle" class="gauge-label">{{ formatPercent(occupancyRate()) }}</text>
               <text x="150" y="125" text-anchor="middle" class="gauge-label">Occupancy</text>
@@ -240,13 +229,12 @@
                 stroke-width="24"
               />
               <path
-                class="gauge-fill"
-                d="M 30 130 A 120 120 0 0 1 270 130"
+                class="gauge-zone zone--warning"
+                d="M 30 130 A 120 120 0 0 1 150 130"
                 fill="none"
-                [attr.stroke]="gaugeCollectionColor()"
+                stroke="var(--sunny-200)"
                 stroke-width="24"
                 stroke-linecap="round"
-                style="transition: stroke 0.6s ease;"
               />
               <path
                 class="gauge-zone zone--good"
@@ -257,20 +245,15 @@
                 stroke-linecap="round"
               />
               <path
-                class="gauge-zone zone--warning"
-                d="M 30 130 A 120 120 0 0 1 150 130"
+                class="gauge-fill"
+                d="M 30 130 A 120 120 0 0 1 270 130"
                 fill="none"
-                stroke="var(--sunny-200)"
+                [attr.stroke]="gaugeCollectionColor()"
                 stroke-width="24"
                 stroke-linecap="round"
-              />
-              <path
-                class="gauge-zone zone--danger"
-                d="M 30 130 A 120 120 0 0 1 30 130"
-                fill="none"
-                stroke="var(--coral-200)"
-                stroke-width="24"
-                stroke-linecap="round"
+                [attr.stroke-dasharray]="gaugeArcLength"
+                [attr.stroke-dashoffset]="gaugeCollectionOffset()"
+                style="transition: stroke-dashoffset 0.6s ease, stroke 0.6s ease;"
               />
               <text x="150" y="105" text-anchor="middle" class="gauge-label">{{ formatPercent(collectionRate(), 0) }}</text>
               <text x="150" y="125" text-anchor="middle" class="gauge-label">Collected</text>
@@ -293,6 +276,7 @@
         </div>
       </section>
     </div>
+    </div>
     <div class="chart-grid">
       <section class="section-card widget widget--chart">
         <header class="panel-head">
@@ -309,19 +293,19 @@
             <span class="count-chip">{{ s.revenue.this_month | number }} this month</span>
           }
         </header>
-        <div class="widget-body">
+        <div class="widget-body chart-widget-body">
           @if (revenueSeries(); as series) {
-            <div class="bar-chart-wrapper">
+            <div class="chart-canvas-box">
               <canvas #revenueCanvas aria-label="Revenue collected vs outstanding"></canvas>
-              <div class="bar-chart-legend">
-                <div class="legend-item">
-                  <span class="legend-dot legend-dot--collected"></span>
-                  <span>Collected</span>
-                </div>
-                <div class="legend-item">
-                  <span class="legend-dot legend-dot--outstanding"></span>
-                  <span>Outstanding</span>
-                </div>
+            </div>
+            <div class="chart-legend">
+              <div class="legend-item">
+                <span class="legend-dot legend-dot--collected"></span>
+                <span>Collected</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-dot legend-dot--outstanding"></span>
+                <span>Outstanding</span>
               </div>
             </div>
           } @else {
@@ -347,11 +331,14 @@
             <span class="count-chip">{{ s.leases.expiring_30 + s.leases.expiring_90 }} expiring</span>
           }
         </header>
-        <div class="widget-body">
+        <div class="widget-body chart-widget-body">
           @if (expiringSeries(); as series) {
-            <div class="bar-chart-wrapper">
+            <div class="chart-canvas-box">
               <canvas #expiringCanvas aria-label="Leases expiring in next 6 months"></canvas>
-              <span class="count-chip">{{ expiringTotal() }} total</span>
+            </div>
+            <div class="chart-legend chart-legend--muted">
+              <span class="legend-dot legend-dot--expiring"></span>
+              <span>{{ expiringTotal() }} leases expiring in the next 6 months</span>
             </div>
           } @else {
             <div class="empty-state">
@@ -362,6 +349,7 @@
         </div>
       </section>
     </div>
+    <div class="detail-grid">
     <section class="section-card panel panel--quiet panel--green">
       <header class="panel-head">
         <div class="panel-title-wrap">
@@ -464,6 +452,7 @@
         }
       </div>
     </section>
+    </div>
     <section class="section-card panel panel--quiet">
       <header class="panel-head">
         <div class="panel-title-wrap">

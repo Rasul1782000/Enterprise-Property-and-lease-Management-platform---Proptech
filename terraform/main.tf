@@ -23,7 +23,7 @@ terraform {
   }
 
   backend "s3" {
-    bucket         = "gaarbejana-terraform-state"
+    bucket         = "gaarbejana-AWS-S3-state"
     key            = "infrastructure/terraform.tfstate"
     region         = "me-south-1"
     encrypt        = true

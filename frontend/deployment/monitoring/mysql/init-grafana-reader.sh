@@ -8,8 +8,12 @@ case "${GRAFANA_MYSQL_PASSWORD:-}" in
         ;;
 esac
 
+DB_NAME="${MYSQL_DATABASE:-Gaarbejana}"
+
 MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql --protocol=socket --user=root <<SQL
+CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE USER IF NOT EXISTS 'grafana_reader'@'%' IDENTIFIED BY '${GRAFANA_MYSQL_PASSWORD}';
 ALTER USER 'grafana_reader'@'%' IDENTIFIED BY '${GRAFANA_MYSQL_PASSWORD}';
-GRANT SELECT, SHOW VIEW ON property_lease.* TO 'grafana_reader'@'%';
+GRANT SELECT, SHOW VIEW ON \`${DB_NAME}\`.* TO 'grafana_reader'@'%';
+FLUSH PRIVILEGES;
 SQL

@@ -39,9 +39,14 @@ class DashboardController extends Controller
             ->sum('amount');
 
         $outstanding = (float) DB::table('invoices')
-            ->whereIn('status', ['sent', 'partial', 'overdue'])
-            ->leftJoin('payments', 'payments.invoice_id', '=', 'invoices.id')
-            ->selectRaw('coalesce(sum(invoices.total_amount), 0) - coalesce(sum(payments.amount), 0) as due')
+            ->leftJoin(
+                DB::raw('(select invoice_id, sum(amount) as paid from payments group by invoice_id) as payment_totals'),
+                'payment_totals.invoice_id',
+                '=',
+                'invoices.id'
+            )
+            ->whereIn('invoices.status', ['pending', 'sent', 'partial', 'overdue'])
+            ->selectRaw('coalesce(sum(invoices.total_amount - coalesce(payment_totals.paid, 0)), 0) as due')
             ->value('due');
 
         return response()->json([
@@ -76,7 +81,7 @@ class DashboardController extends Controller
             'invoices' => [
                 'total' => (int) $invoiceCounts->sum(),
                 'paid' => (int) ($invoiceCounts['paid'] ?? 0),
-                'pending' => (int) (($invoiceCounts['sent'] ?? 0) + ($invoiceCounts['draft'] ?? 0)),
+                'pending' => (int) (($invoiceCounts['pending'] ?? 0) + ($invoiceCounts['sent'] ?? 0) + ($invoiceCounts['draft'] ?? 0)),
                 'overdue' => (int) ($invoiceCounts['overdue'] ?? 0),
                 'total_outstanding' => $outstanding,
             ],
@@ -173,7 +178,7 @@ class DashboardController extends Controller
             ->map(fn ($group) => (float) $group->sum('amount'));
 
         $outstandingByMonth = Invoice::query()
-            ->whereIn('status', ['sent', 'partial', 'overdue'])
+            ->whereIn('status', ['pending', 'sent', 'partial', 'overdue'])
             ->where('due_date', '>=', now()->subMonths($months)->startOfMonth())
             ->get(['due_date', 'total_amount'])
             ->groupBy(fn ($invoice) => $invoice->due_date->format('Y-m'))

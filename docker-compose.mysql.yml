@@ -1,0 +1,34 @@
+# Minimal MySQL-only stack for Gaarbejana seeding.
+# Generates the MySQL image/container first, then you can migrate and seed.
+#
+# Usage:
+#   docker compose -f docker-compose.mysql.yml up -d --build --wait
+#   # then from backend/ with DB_* pointing at this container:
+#   php artisan migrate:fresh --seed --force
+
+services:
+  db:
+    image: gaarbejana-mysql:local
+    build:
+      context: ./frontend/deployment
+      dockerfile: Dockerfile.mysql
+    container_name: gaarbejana-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-RootGaarbejana123!}
+      MYSQL_DATABASE: Gaarbejana
+      MYSQL_USER: ${DB_USERNAME:-property_lease}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-GaarbejanaLocal123!}
+    ports:
+      - "127.0.0.1:${DB_PORT_HOST:-3307}:3306"
+    volumes:
+      - gaarbejana-mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${DB_ROOT_PASSWORD:-RootGaarbejana123!}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    restart: unless-stopped
+
+volumes:
+  gaarbejana-mysql-data:

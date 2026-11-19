@@ -13,7 +13,7 @@ services:
       DB_CONNECTION: mysql
       DB_HOST: db
       DB_PORT: 3306
-      DB_DATABASE: property_lease
+      DB_DATABASE: Gaarbejana
       DB_USERNAME: property_lease
       DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in frontend/deployment/.env}
       MAIL_MAILER: log
@@ -51,16 +51,21 @@ services:
           memory: 512M
 
   db:
-    image: mysql:8.0
+    image: gaarbejana-mysql:local
+    build:
+      context: .
+      dockerfile: Dockerfile.mysql
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?Set DB_ROOT_PASSWORD in frontend/deployment/.env}
-      MYSQL_DATABASE: property_lease
+      MYSQL_DATABASE: Gaarbejana
       MYSQL_USER: property_lease
       MYSQL_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in frontend/deployment/.env}
       GRAFANA_MYSQL_PASSWORD: ${GRAFANA_MYSQL_PASSWORD:?Set GRAFANA_MYSQL_PASSWORD in frontend/deployment/.env}
     volumes:
-      - db-data:/var/lib/mysql
+      - gaarbejana-db-data:/var/lib/mysql
       - ./monitoring/mysql/init-grafana-reader.sh:/docker-entrypoint-initdb.d/20-grafana-reader.sh:ro
+    ports:
+      - "127.0.0.1:${DB_PORT_HOST:-3306}:3306"
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
@@ -189,7 +194,7 @@ services:
       retries: 3
 
 volumes:
-  db-data:
+  gaarbejana-db-data:
   app-storage:
   floci-data:
   floci-azure-data:

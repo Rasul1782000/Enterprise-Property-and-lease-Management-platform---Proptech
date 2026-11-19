@@ -192,7 +192,17 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     return Array.isArray(data) ? data.map(v => Number(v) || 0) : [];
   }
 
-  // --- Gauge meter colors ---
+  // --- Gauge meters ---
+  readonly gaugeArcLength = Math.PI * 120;
+
+  gaugeProgressOffset(): number {
+    return this.gaugeArcLength * (1 - Math.min(100, Math.max(0, this.occupancyRate())) / 100);
+  }
+
+  gaugeCollectionOffset(): number {
+    return this.gaugeArcLength * (1 - Math.min(100, Math.max(0, this.collectionRate())) / 100);
+  }
+
   gaugeProgressColor(): string {
     const rate = this.occupancyRate();
     if (rate >= 80) return 'var(--teal-500)';
@@ -232,7 +242,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
         { label: 'Collected', data: revenue.collected, backgroundColor: 'rgba(78, 205, 196, 0.85)', borderColor: '#3DBEB5' },
         { label: 'Outstanding', data: revenue.outstanding, backgroundColor: 'rgba(255, 107, 107, 0.85)', borderColor: '#E85D5D' }
       ],
-      { stacked: false, currency: true }
+      { stacked: false, currency: true, legend: false }
     );
 
     this.expiringChart = this.renderBarChart(
