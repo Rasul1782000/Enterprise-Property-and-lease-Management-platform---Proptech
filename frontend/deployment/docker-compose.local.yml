@@ -31,7 +31,7 @@ services:
       AWS_STORAGE_BUCKET: gaarbejana-documents
       AWS_STORAGE_PREFIX: portal
       AWS_USE_PATH_STYLE_ENDPOINT: "true"
-      DEMO_SEED_ENABLED: ${DEMO_SEED_ENABLED:-false}
+      PORTAL_SEED_USERS: ${PORTAL_SEED_USERS:-3000}
       LOG_CHANNEL: stderr
     volumes:
       - app-storage:/var/www/html/storage

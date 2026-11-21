@@ -11,7 +11,8 @@
       <p-table
         [value]="tenants()"
         [paginator]="true"
-        [rows]="10"
+        [rows]="perPage"
+        [totalRecords]="total()"
         [rowsPerPageOptions]="[5, 10, 20, 50]"
         [loading]="loading()"
         [rowHover]="true"

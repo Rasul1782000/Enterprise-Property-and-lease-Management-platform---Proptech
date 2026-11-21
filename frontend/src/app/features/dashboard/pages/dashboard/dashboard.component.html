@@ -458,10 +458,10 @@
           <div class="progress-item">
             <div class="progress-header">
               <span class="progress-label">Revenue Collected</span>
-              <span class="progress-value">{{ formatPercent(collectionRate() * 0.85, 0) }}</span>
+              <span class="progress-value">{{ formatPercent(collectionRate(), 0) }}</span>
             </div>
             <div class="progress-track">
-              <div class="progress-fill" [style.width.%]="collectionRate() * 0.85" [style.background]="progressFillGradient()"></div>
+              <div class="progress-fill" [style.width.%]="collectionRate()" [style.background]="progressFillGradient()"></div>
             </div>
             <span class="progress-caption">Against invoiced revenue this period</span>
           </div>

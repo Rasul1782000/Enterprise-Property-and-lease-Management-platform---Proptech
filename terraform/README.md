@@ -161,8 +161,8 @@ aws ecs describe-tasks --cluster $cluster --tasks $taskArn `
 terraform output -raw backend_log_group_name
 ```
 
-Run seeders only when you explicitly want demo data; they are not part of the
-migration task.
+Run seeders only when you explicitly want to populate the database; they are
+not part of the migration task.
 
 ## 7. DNS and certificates
 

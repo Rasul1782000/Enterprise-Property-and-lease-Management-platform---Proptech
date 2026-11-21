@@ -1,5 +1,7 @@
-import { Component, DestroyRef, ElementRef, inject, viewChild } from '@angular/core';
+import { Component, DestroyRef, ElementRef, inject, signal, viewChild } from '@angular/core';
 import { Router } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
+import { ApiService } from '@core/services/api.service';
 import { PropertyContextService } from '@core/services/property-context.service';
 
 interface NavItem {
@@ -25,6 +27,8 @@ interface NavSection {
 export class MainLayoutComponent {
   ctx = inject(PropertyContextService);
   private router = inject(Router);
+  private api = inject(ApiService);
+  readonly propertyCount = signal<number | null>(null);
 
   navSections: NavSection[] = [
     {
@@ -45,7 +49,7 @@ export class MainLayoutComponent {
     {
       heading: 'Portfolio',
       items: [
-        { label: 'Listing', icon: 'pi pi-building', route: '/properties', badge: '3' },
+        { label: 'Listing', icon: 'pi pi-building', route: '/properties' },
         { label: 'Contact', icon: 'pi pi-user', route: '/tenants' },
         { label: 'Units', icon: 'pi pi-th-large', route: '/units' }
       ]
@@ -70,8 +74,6 @@ export class MainLayoutComponent {
     { label: 'Units', icon: 'pi pi-th-large', command: () => this.router.navigate(['/units']) },
   ];
 
-  readonly initial = 'J';
-
   navOpen = false;
 
   openGroup: string | null = null;
@@ -82,6 +84,11 @@ export class MainLayoutComponent {
   constructor() {
     document.addEventListener('keydown', this.onKeydown);
     document.addEventListener('click', this.onDocumentClick);
+    void firstValueFrom(
+      this.api.getPaginated<{ id: number }>('properties', { per_page: 1 })
+    )
+      .then((res) => this.propertyCount.set(res.meta.total))
+      .catch(() => this.propertyCount.set(null));
     this.destroyRef.onDestroy(() => {
       document.removeEventListener('keydown', this.onKeydown);
       document.removeEventListener('click', this.onDocumentClick);

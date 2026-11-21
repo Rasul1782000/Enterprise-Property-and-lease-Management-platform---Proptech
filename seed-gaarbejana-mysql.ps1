@@ -51,18 +51,18 @@ try {
     $env:DB_DATABASE = $DbName
     $env:DB_USERNAME = $DbUser
     $env:DB_PASSWORD = $DbPassword
-    $env:DEMO_SEED_ENABLED = "true"
+    $env:PORTAL_SEED_USERS = "3000"
 
     if (-not (Select-String -Path ".env" -Pattern '^APP_KEY=.+')) {
         Write-Host "==> Generating a local application key..."
         php artisan key:generate --force
     }
 
-    Write-Host "==> Rebuilding schema and seeding demo data into database '$DbName'..."
+    Write-Host "==> Rebuilding schema and seeding portal data into database '$DbName'..."
     php artisan migrate:fresh --seed --force
 
     Write-Host "==> Done. Seeded Gaarbejana MySQL database."
-    Write-Host "    Expected KPIs: 5 properties, 100 units (100% occupied), 10 active leases, 261,006.00 outstanding."
+    Write-Host "    Expected KPIs: 15 properties, 150 buildings, 3000 units, 3000 tenant users, 3000 active leases."
 } finally {
     Pop-Location
 }

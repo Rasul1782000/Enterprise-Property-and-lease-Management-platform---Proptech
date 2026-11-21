@@ -158,32 +158,32 @@ export class WhatsAppChatComponent implements OnInit, OnDestroy {
   }
 
   async loadConversations(): Promise<void> {
-    this.conversations.set([
-      {
-        id: '1',
-        tenantName: 'Ahmed Al Rashid',
-        phone: '+971501234567',
-        lastMessage: 'When is the maintenance scheduled?',
-        lastMessageTime: new Date().toISOString(),
-        unreadCount: 2,
-      },
-      {
-        id: '2',
-        tenantName: 'Sara Mohammed',
-        phone: '+971509876543',
-        lastMessage: 'Thank you for the quick response!',
-        lastMessageTime: new Date(Date.now() - 3600000).toISOString(),
-        unreadCount: 0,
-      },
-      {
-        id: '3',
-        tenantName: 'Omar Hassan',
-        phone: '+971505551234',
-        lastMessage: 'I have a question about the parking',
-        lastMessageTime: new Date(Date.now() - 86400000).toISOString(),
-        unreadCount: 1,
-      },
-    ]);
+    try {
+      const res = await firstValueFrom(
+        this.api.getPaginated<{
+          id: number;
+          first_name: string;
+          last_name: string;
+          phone: string | null;
+          created_at: string;
+        }>('tenants', { per_page: 50, sort: 'created_at', direction: 'desc' })
+      );
+
+      this.conversations.set(
+        (res.data ?? [])
+          .filter((tenant) => !!tenant.phone)
+          .map((tenant) => ({
+            id: String(tenant.id),
+            tenantName: `${tenant.first_name} ${tenant.last_name}`.trim(),
+            phone: tenant.phone as string,
+            lastMessage: '',
+            lastMessageTime: tenant.created_at,
+            unreadCount: 0,
+          }))
+      );
+    } catch {
+      this.conversations.set([]);
+    }
   }
 
   async loadMessages(conversation: Conversation): Promise<void> {

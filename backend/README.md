@@ -15,8 +15,10 @@ php artisan storage:link
 php artisan serve  # http://localhost:8000
 ```
 
-For local sample data only, set `DEMO_SEED_ENABLED=true` in `.env`, then run
-`php artisan db:seed`. Demo seeding is rejected in production.
+To seed the database with the portal dataset (15 properties, 3000 tenant users,
+one active lease per user), run `php artisan db:seed --force`. Set
+`PORTAL_SEED_USERS` in `.env` to change the number of tenant users (default
+3000). Seeding truncates the data tables first and is rejected in production.
 
 The dashboard and API do not use authentication or authorization; all API
 endpoints are public. Do not use this configuration with sensitive data on an

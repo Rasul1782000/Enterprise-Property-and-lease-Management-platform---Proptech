@@ -20,8 +20,9 @@ Copy-Item .env.example .env
 php artisan key:generate
 # edit .env: DB_DATABASE=property_lease, DB_USERNAME/DB_PASSWORD, MAIL_*, FRONTEND_URL=http://localhost:4200
 php artisan migrate
-# Optional local-only sample data: set DEMO_SEED_ENABLED=true in backend/.env
-# before php artisan db:seed.
+# Seed the database portfolio (15 properties, 3000 tenant users with leases):
+# set PORTAL_SEED_USERS in backend/.env (defaults to 3000), then:
+# php artisan db:seed --force
 php artisan storage:link
 php artisan serve --port=8000  # http://127.0.0.1:8000
 # in another terminal for scheduler:

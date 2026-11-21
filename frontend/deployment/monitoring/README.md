@@ -32,15 +32,16 @@ cd frontend\deployment
 docker compose -f docker-compose.local.yml up -d --build app
 ```
 
-For a local dashboard with sample records, run the explicitly gated demo seeder
-against the non-production database:
+For a local dashboard populated from the database, run the portal seeder
+against a non-production database:
 
 ```powershell
-docker exec -e DEMO_SEED_ENABLED=true deployment-app-1 php artisan db:seed --class=DemoDataSeeder
+docker exec deployment-app-1 php artisan db:seed --force
 ```
 
-It adds synthetic sample properties, leases, invoices, and related records; do
-not run it against production or a database containing real data.
+It truncates the data tables and inserts 15 properties, 3000 tenant users with
+one active lease each, and the matching invoices/payments. Do not run it against
+production or a database containing real data.
 
 The default project name creates the `deployment_default` network expected by
 this monitoring stack. The API is published on `127.0.0.1:8000` by default;

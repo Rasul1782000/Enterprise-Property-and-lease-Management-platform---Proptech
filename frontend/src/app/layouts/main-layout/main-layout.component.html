@@ -46,7 +46,11 @@
                 >
                   <span class="nav-icon"><i [class]="item.icon"></i></span>
                   <span class="item-label">{{ item.label }}</span>
-                  @if (item.badge) {
+                  @if (item.route === '/properties') {
+                    @if (propertyCount() !== null) {
+                      <span class="nav-badge">{{ propertyCount() }}</span>
+                    }
+                  } @else if (item.badge) {
                     <span class="nav-badge">{{ item.badge }}</span>
                   }
                   @if (item.tag) {
@@ -76,7 +80,11 @@
           >
             <span class="nav-icon"><i [class]="item.icon"></i></span>
             <span>{{ item.label }}</span>
-            @if (item.badge) {
+            @if (item.route === '/properties') {
+              @if (propertyCount() !== null) {
+                <span class="nav-badge">{{ propertyCount() }}</span>
+              }
+            } @else if (item.badge) {
               <span class="nav-badge">{{ item.badge }}</span>
             }
             @if (item.tag) {

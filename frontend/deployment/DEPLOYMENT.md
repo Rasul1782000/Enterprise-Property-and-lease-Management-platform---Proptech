@@ -20,7 +20,7 @@ it. See [`../../VERCEL_DEPLOYMENT.md`](../../VERCEL_DEPLOYMENT.md).
 ## Local API, MySQL, Redis, and Floci
 
 Create `frontend\deployment\.env` and set `APP_KEY`, `DB_PASSWORD`, and
-`DB_ROOT_PASSWORD`, plus the optional `DEMO_SEED_ENABLED` value; the Compose
+`DB_ROOT_PASSWORD`, plus the optional `PORTAL_SEED_USERS` value; the Compose
 file in `docker-compose.local.yml` lists the required
 names. Generate an application key with `php artisan key:generate --show` from
 `backend\` and put the returned `base64:...` value in `APP_KEY`. Compose loads
@@ -44,14 +44,16 @@ Stop containers without deleting those volumes with:
 docker compose -f frontend\deployment\docker-compose.local.yml down
 ```
 
-To create local sample records, set `DEMO_SEED_ENABLED=true` in `.env`, then run:
+To seed the database with the portal dataset (15 properties and 3000 tenant
+users with leases), optionally set `PORTAL_SEED_USERS` in `.env`, then run:
 
 ```powershell
 docker compose -f frontend\deployment\docker-compose.local.yml run --rm app php artisan db:seed --force
 ```
 
-The API and dashboard are public and require no login. Demo seeding is rejected
-in production and is never run automatically by migrations.
+The API and dashboard are public and require no login. Seeding truncates the
+data tables first, is rejected in production, and is never run automatically by
+migrations.
 
 Start the Angular development server separately from `frontend\` with
 `npm ci` and `npm start`.
