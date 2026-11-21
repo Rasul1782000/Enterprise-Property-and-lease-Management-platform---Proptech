@@ -47,7 +47,9 @@ class PortalDataSeeder extends Seeder
 
     public function run(): void
     {
-        if (App::environment('production')) {
+        // Production seeding stays off by default. The Render bootstrap command
+        // sets PORTAL_ALLOW_PRODUCTION_SEED only when the database is empty.
+        if (App::environment('production') && ! env('PORTAL_ALLOW_PRODUCTION_SEED', false)) {
             throw new RuntimeException('Portal data seeding is not allowed in production.');
         }
 

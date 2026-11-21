@@ -36,14 +36,12 @@ start, so the service binds to Render's dynamically assigned port. Do **not**
 set `PORT` manually or use the local `Dockerfile.backend` for Render — the
 local image hardcodes port 8000 and serves the frontend separately.
 
-After the first deploy, open the service's **Shell** tab and run:
-
-```bash
-php artisan migrate --force
-```
-
-Migrations are not automatic on Render's free plan. Run them again after any
-deployment that adds a migration.
+The entrypoint runs `php artisan portal:bootstrap` on every container start:
+it applies migrations and, **only when the `properties` table is empty**, seeds
+a small demo dataset (`PORTAL_SEED_USERS`, default 30). Existing data is never
+truncated. Production seeding stays disabled unless this bootstrap command
+explicitly enables it. You can still run migrations manually in the **Shell**
+tab with `php artisan migrate --force`.
 
 ## Local API, MySQL, Redis, and Floci
 

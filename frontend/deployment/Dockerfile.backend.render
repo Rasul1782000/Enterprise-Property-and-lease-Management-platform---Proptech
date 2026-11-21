@@ -23,7 +23,7 @@ RUN apk add --no-cache \
         libpng-dev libjpeg-turbo-dev freetype-dev libzip-dev oniguruma-dev icu-dev \
         linux-headers $PHPIZE_DEPS \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j"$(nproc)" pdo_mysql gd zip intl opcache bcmath pcntl \
+    && docker-php-ext-install -j"$(nproc)" pdo_mysql pdo_sqlite gd zip intl opcache bcmath pcntl \
     && pecl install redis \
     && docker-php-ext-enable redis \
     && apk del .build-deps \

@@ -1,8 +1,9 @@
 # Deploying the frontend to Vercel
 
 The Angular frontend (`frontend/`) is deployed to **Vercel**. The Laravel API is
-**not** part of this deployment — it runs at `https://api.rasul17.indevs.in`,
-which is the `apiUrl` compiled into `environment.prod.ts`. Jenkins deploys to
+**not** part of this deployment - it runs at
+`https://gaarbejana-api.onrender.com`, which is the `apiUrl` compiled into
+`environment.prod.ts`. Jenkins deploys to
 Vercel and to nothing else (the Docker/Traefik production host is no longer a
 deploy target).
 
