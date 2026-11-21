@@ -1,0 +1,55 @@
+# Render web service image for the Laravel API.
+# Build context must be the repository root so both backend/ and the shared
+# nginx/php-fpm config files are available.
+FROM composer:2.7 AS build
+
+WORKDIR /app
+
+COPY backend/composer.json backend/composer.lock ./
+RUN composer install --no-dev --no-interaction --prefer-dist --no-scripts --no-autoloader
+
+COPY backend/ ./
+RUN composer dump-autoload --optimize --classmap-authoritative
+
+
+FROM php:8.3.36-fpm-alpine AS runtime
+
+# gettext provides envsubst, which renders ${PORT} into the nginx config
+# at container start. The pinned PHP patch version includes the Oct 2026
+# PHP2Shell security fixes.
+RUN apk add --no-cache \
+        nginx supervisor curl gettext libpng libjpeg-turbo freetype libzip oniguruma icu-libs \
+    && apk add --no-cache --virtual .build-deps \
+        libpng-dev libjpeg-turbo-dev freetype-dev libzip-dev oniguruma-dev icu-dev \
+        linux-headers $PHPIZE_DEPS \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j"$(nproc)" pdo_mysql gd zip intl opcache bcmath pcntl \
+    && pecl install redis \
+    && docker-php-ext-enable redis \
+    && apk del .build-deps \
+    && rm -rf /tmp/pear
+
+COPY --from=build /app /var/www/html
+COPY frontend/deployment/backend-docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY frontend/deployment/backend-docker/php.ini /usr/local/etc/php/conf.d/custom.ini
+COPY frontend/deployment/backend-docker/nginx.render.conf.template /etc/nginx/templates/nginx.conf.template
+COPY frontend/deployment/backend-docker/render-entrypoint.sh /usr/local/bin/render-entrypoint.sh
+
+WORKDIR /var/www/html
+
+RUN mkdir -p storage/framework/sessions storage/framework/views \
+             storage/framework/cache/data storage/logs \
+    && touch storage/logs/laravel.log \
+    && chown -R www-data:www-data storage bootstrap/cache \
+    && chmod -R ug+rwX storage bootstrap/cache \
+    && chmod +x /usr/local/bin/render-entrypoint.sh
+
+# Render overrides this at runtime with its dynamically assigned port.
+ENV PORT=10000
+EXPOSE 10000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+    CMD curl -fsS "http://127.0.0.1:${PORT}/up" || exit 1
+
+ENTRYPOINT ["/usr/local/bin/render-entrypoint.sh"]
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

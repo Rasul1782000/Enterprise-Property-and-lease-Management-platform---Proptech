@@ -2,11 +2,11 @@
 
 ## Production architecture
 
-Vercel hosts the Angular frontend only. The Laravel API, MySQL database, and
-persistent object storage must be hosted separately; this repository does not
-configure or deploy those production services. Floci is a local/CI AWS emulator,
-not production storage. Do not use local Compose volumes as a production
-database or document backup.
+Vercel hosts the Angular frontend only. The Laravel API can be deployed to
+Render as a Docker Web Service using the root `render.yaml` blueprint; MySQL and
+persistent object storage must still be hosted separately. Floci is a local/CI
+AWS emulator, not production storage. Do not use local Compose volumes as a
+production database or document backup.
 
 The API and dashboard do not have authentication or authorization: every API
 endpoint is public, including data reads and management changes. Do not deploy
@@ -16,6 +16,34 @@ use persistent S3-compatible storage with least-privilege credentials. Store
 production secrets in the chosen hosting provider's secret manager. Run
 migrations and smoke tests against that environment before directing users to
 it. See [`../../VERCEL_DEPLOYMENT.md`](../../VERCEL_DEPLOYMENT.md).
+
+## Render (Laravel API web service)
+
+Render has no native PHP runtime, so the API is deployed as a Docker Web
+Service. The root `render.yaml` blueprint builds
+`frontend/deployment/Dockerfile.backend.render` with the repository root as
+the Docker context. Create it from **New → Blueprint** in the Render dashboard
+and select this repository and branch `main`.
+
+The blueprint prompts for `APP_KEY` (paste the output of
+`php artisan key:generate --show`), `FRONTEND_URL`, the `DB_*` credentials, and
+the S3 credentials. `APP_URL` is mapped from Render's `RENDER_EXTERNAL_URL`.
+Render does not provide managed MySQL; use an external MySQL instance that
+accepts Render connections. The health check path is `/up`.
+
+`render-entrypoint.sh` renders `${PORT}` into the nginx config at container
+start, so the service binds to Render's dynamically assigned port. Do **not**
+set `PORT` manually or use the local `Dockerfile.backend` for Render — the
+local image hardcodes port 8000 and serves the frontend separately.
+
+After the first deploy, open the service's **Shell** tab and run:
+
+```bash
+php artisan migrate --force
+```
+
+Migrations are not automatic on Render's free plan. Run them again after any
+deployment that adds a migration.
 
 ## Local API, MySQL, Redis, and Floci
 
