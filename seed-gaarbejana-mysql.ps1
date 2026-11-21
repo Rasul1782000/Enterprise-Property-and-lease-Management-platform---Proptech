@@ -41,7 +41,7 @@ Write-Host "==> Preparing Laravel environment for MySQL seeding..."
 Push-Location $backendDir
 try {
     if (-not (Test-Path ".env")) {
-        Copy-Item ".env.docker.mysql" ".env"
+        Copy-Item ".env.example" ".env"
     }
 
     $env:APP_ENV = "local"
@@ -52,6 +52,11 @@ try {
     $env:DB_USERNAME = $DbUser
     $env:DB_PASSWORD = $DbPassword
     $env:DEMO_SEED_ENABLED = "true"
+
+    if (-not (Select-String -Path ".env" -Pattern '^APP_KEY=.+')) {
+        Write-Host "==> Generating a local application key..."
+        php artisan key:generate --force
+    }
 
     Write-Host "==> Rebuilding schema and seeding demo data into database '$DbName'..."
     php artisan migrate:fresh --seed --force
