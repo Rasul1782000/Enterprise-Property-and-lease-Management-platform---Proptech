@@ -15,7 +15,8 @@
 **/dist/
 **/.angular/
 
-# Local runtime files.
+# Local/runtime caches that should never be baked into images.
+backend/bootstrap/cache/*.php
 backend/storage/logs/*
 backend/storage/framework/cache/data/*
 backend/storage/framework/sessions/*

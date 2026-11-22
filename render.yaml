@@ -1,21 +1,26 @@
-# Render Blueprint for the Laravel API only.
+# Render Blueprint for the Laravel API.
 # Render has no native PHP runtime, so this is a Docker web service.
 # Deploy with: Render Dashboard -> New -> Blueprint -> select this repo/main.
 #
-# MySQL is NOT provided by Render. Point DB_* at an external MySQL instance
-# that accepts connections from Render, then run migrations once from the
-# service's Shell tab: php artisan migrate --force
+# MariaDB runs inside the same container and stores its data on a persistent
+# disk mounted at /var/lib/mysql. This requires a paid compute plan; Render
+# does not allow disks on free web services.
 
 services:
   - type: web
     name: gaarbejana-api
     runtime: docker
     region: virginia
-    plan: free
+    plan: 0.5c-512mb
+    numInstances: 1
     branch: main
     dockerfilePath: ./frontend/deployment/Dockerfile.backend.render
     dockerContext: .
     healthCheckPath: /up
+    disk:
+      name: mysql-data
+      mountPath: /var/lib/mysql
+      sizeGB: 1
     envVars:
       - key: APP_NAME
         value: Gaarbejana
@@ -23,9 +28,9 @@ services:
         value: production
       - key: APP_DEBUG
         value: "false"
-      # Paste the output of: php artisan key:generate --show
+      # Generated once by Render; the entrypoint adds Laravel's base64: prefix.
       - key: APP_KEY
-        sync: false
+        generateValue: true
       # Self-reference so Laravel always uses the service's Render URL.
       - key: APP_URL
         fromService:
@@ -36,18 +41,21 @@ services:
         sync: false
       - key: LOG_CHANNEL
         value: stderr
+      # Bundled MariaDB (localhost inside this container).
       - key: DB_CONNECTION
         value: mysql
       - key: DB_HOST
-        sync: false
+        value: 127.0.0.1
       - key: DB_PORT
         value: "3306"
       - key: DB_DATABASE
-        sync: false
+        value: Gaarbejana
       - key: DB_USERNAME
-        sync: false
+        value: property_lease
       - key: DB_PASSWORD
-        sync: false
+        generateValue: true
+      - key: DB_DATA_DIR
+        value: /var/lib/mysql
       # Apply migrations on start and seed a small dataset only when empty.
       - key: PORTAL_BOOTSTRAP
         value: "true"

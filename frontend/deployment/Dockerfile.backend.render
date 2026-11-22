@@ -9,7 +9,8 @@ COPY backend/composer.json backend/composer.lock ./
 RUN composer install --no-dev --no-interaction --prefer-dist --no-scripts --no-autoloader
 
 COPY backend/ ./
-RUN composer dump-autoload --optimize --classmap-authoritative
+RUN composer dump-autoload --optimize --classmap-authoritative \
+    && rm -f bootstrap/cache/packages.php bootstrap/cache/services.php bootstrap/cache/config.php bootstrap/cache/routes-v7.php
 
 
 FROM php:8.3.36-fpm-alpine AS runtime
@@ -19,6 +20,7 @@ FROM php:8.3.36-fpm-alpine AS runtime
 # PHP2Shell security fixes.
 RUN apk add --no-cache \
         nginx supervisor curl gettext libpng libjpeg-turbo freetype libzip oniguruma icu-libs sqlite-libs \
+        mariadb mariadb-client \
     && apk add --no-cache --virtual .build-deps \
         libpng-dev libjpeg-turbo-dev freetype-dev libzip-dev oniguruma-dev icu-dev sqlite-dev \
         linux-headers $PHPIZE_DEPS \
@@ -34,15 +36,23 @@ COPY frontend/deployment/backend-docker/supervisord.conf /etc/supervisor/conf.d/
 COPY frontend/deployment/backend-docker/php.ini /usr/local/etc/php/conf.d/custom.ini
 COPY frontend/deployment/backend-docker/nginx.render.conf.template /etc/nginx/templates/nginx.conf.template
 COPY frontend/deployment/backend-docker/render-entrypoint.sh /usr/local/bin/render-entrypoint.sh
+COPY frontend/deployment/backend-docker/init-mysql.sh /usr/local/bin/init-mysql.sh
+COPY frontend/deployment/backend-docker/start-mysql.sh /usr/local/bin/start-mysql.sh
+COPY frontend/deployment/backend-docker/portal-bootstrap.sh /usr/local/bin/portal-bootstrap.sh
 
 WORKDIR /var/www/html
 
 RUN mkdir -p storage/framework/sessions storage/framework/views \
              storage/framework/cache/data storage/logs \
+             /run/mysqld /run/supervisor /var/log/supervisor /var/lib/mysql \
     && touch storage/logs/laravel.log \
     && chown -R www-data:www-data storage bootstrap/cache \
+    && chown -R mysql:mysql /run/mysqld /var/lib/mysql \
     && chmod -R ug+rwX storage bootstrap/cache \
-    && chmod +x /usr/local/bin/render-entrypoint.sh
+    && chmod +x /usr/local/bin/render-entrypoint.sh \
+                /usr/local/bin/init-mysql.sh \
+                /usr/local/bin/start-mysql.sh \
+                /usr/local/bin/portal-bootstrap.sh
 
 # Render overrides this at runtime with its dynamically assigned port.
 ENV PORT=10000
