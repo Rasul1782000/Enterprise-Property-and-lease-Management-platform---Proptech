@@ -25,11 +25,15 @@ Service. The root `render.yaml` blueprint builds
 the Docker context. Create it from **New → Blueprint** in the Render dashboard
 and select this repository and branch `main`.
 
-The blueprint prompts for `APP_KEY` (paste the output of
-`php artisan key:generate --show`), `FRONTEND_URL`, the `DB_*` credentials, and
-the S3 credentials. `APP_URL` is mapped from Render's `RENDER_EXTERNAL_URL`.
-Render does not provide managed MySQL; use an external MySQL instance that
-accepts Render connections. The health check path is `/up`.
+The blueprint generates `APP_KEY` and the MySQL passwords, prompts only for
+`FRONTEND_URL` and the S3 credentials, and maps `APP_URL` from Render's
+`RENDER_EXTERNAL_URL`.
+
+MySQL 8 is deployed as a second, private service in the same blueprint using
+`frontend/deployment/Dockerfile.mysql.render` (Oracle's official MySQL Server
+image). It listens only on Render's private network, stores its data on a
+persistent disk mounted at `/var/lib/mysql`, and the API receives `DB_HOST` and
+`DB_PASSWORD` from it automatically. The health check path is `/up`.
 
 `render-entrypoint.sh` renders `${PORT}` into the nginx config at container
 start, so the service binds to Render's dynamically assigned port. Do **not**

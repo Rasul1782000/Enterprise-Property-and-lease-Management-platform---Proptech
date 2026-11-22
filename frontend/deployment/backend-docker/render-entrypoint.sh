@@ -19,20 +19,37 @@ rm -f bootstrap/cache/packages.php bootstrap/cache/services.php bootstrap/cache/
 
 envsubst '${PORT}' < /etc/nginx/templates/nginx.conf.template > /etc/nginx/nginx.conf
 
-# This image bundles MariaDB, so keep Laravel's connection settings in sync
-# with it even when Render has not injected every DB_* variable. Without this,
-# Laravel silently falls back to config/database.php's "forge" default and the
-# migration check fails with SQLSTATE[HY000] [2002] Connection refused.
-: "${DB_CONNECTION:=mysql}"
-: "${DB_HOST:=127.0.0.1}"
-: "${DB_PORT:=3306}"
-: "${DB_DATABASE:=Gaarbejana}"
-: "${DB_USERNAME:=property_lease}"
-: "${DB_PASSWORD:=GaarbejanaLocal123!}"
-export DB_CONNECTION DB_HOST DB_PORT DB_DATABASE DB_USERNAME DB_PASSWORD
+# Fail loudly instead of letting Laravel fall back to config/database.php's
+# "forge" defaults (the cause of SQLSTATE[HY000] [2002] Connection refused).
+: "${DB_HOST:?DB_HOST must be set (see render.yaml)}"
+: "${DB_PORT:?DB_PORT must be set (see render.yaml)}"
+: "${DB_DATABASE:?DB_DATABASE must be set (see render.yaml)}"
+: "${DB_USERNAME:?DB_USERNAME must be set (see render.yaml)}"
+: "${DB_PASSWORD:?DB_PASSWORD must be set (see render.yaml)}"
 
-# Prepare the persistent MySQL data directory and application credentials.
-# Supervisor then runs MariaDB, bootstrap, PHP-FPM, and nginx in order.
-/usr/local/bin/init-mysql.sh
+# Apply migrations and seed a small dataset only when the portal is empty.
+# Wait for the MySQL private service first so a slow DB boot cannot fail the
+# deploy. The command itself is idempotent and safe on every container start.
+if [ "${PORTAL_BOOTSTRAP:-true}" = "true" ]; then
+    attempts=0
+    while [ "$attempts" -lt 90 ]; do
+        if php -r '
+            $dsn = "mysql:host=" . getenv("DB_HOST") . ";port=" . getenv("DB_PORT") . ";dbname=" . getenv("DB_DATABASE");
+            try {
+                new PDO($dsn, getenv("DB_USERNAME"), getenv("DB_PASSWORD"), [PDO::ATTR_TIMEOUT => 2]);
+                exit(0);
+            } catch (Throwable $e) {
+                exit(1);
+            }
+        ' 2>/dev/null; then
+            break
+        fi
+        attempts=$((attempts + 1))
+        sleep 2
+    done
+    php artisan portal:bootstrap --no-interaction
+else
+    echo 'PORTAL_BOOTSTRAP is not true; skipping portal bootstrap.'
+fi
 
 exec "$@"

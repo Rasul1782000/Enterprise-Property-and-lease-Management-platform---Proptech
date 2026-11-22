@@ -1,10 +1,7 @@
-# Render Blueprint for the Laravel API.
-# Render has no native PHP runtime, so this is a Docker web service.
-# Deploy with: Render Dashboard -> New -> Blueprint -> select this repo/main.
-#
-# MariaDB runs inside the same container and stores its data on a persistent
-# disk mounted at /var/lib/mysql. This requires a paid compute plan; Render
-# does not allow disks on free web services.
+# Render Blueprint: Laravel API (Docker) + MySQL 8 private service.
+# The database is Oracle's official MySQL Server image, reachable only from
+# other services on Render's private network, with data on a persistent disk.
+# https://render.com/docs/deploy-mysql
 
 services:
   - type: web
@@ -17,10 +14,6 @@ services:
     dockerfilePath: ./frontend/deployment/Dockerfile.backend.render
     dockerContext: .
     healthCheckPath: /up
-    disk:
-      name: mysql-data
-      mountPath: /var/lib/mysql
-      sizeGB: 1
     envVars:
       - key: APP_NAME
         value: Gaarbejana
@@ -41,21 +34,26 @@ services:
         sync: false
       - key: LOG_CHANNEL
         value: stderr
-      # Bundled MariaDB (localhost inside this container).
+      # MySQL 8 runs in the private service defined below.
       - key: DB_CONNECTION
         value: mysql
       - key: DB_HOST
-        value: 127.0.0.1
+        fromService:
+          name: gaarbejana-mysql
+          type: pserv
+          property: host
       - key: DB_PORT
         value: "3306"
       - key: DB_DATABASE
         value: Gaarbejana
       - key: DB_USERNAME
         value: property_lease
+      # Share the exact password the MySQL service generates.
       - key: DB_PASSWORD
-        generateValue: true
-      - key: DB_DATA_DIR
-        value: /var/lib/mysql
+        fromService:
+          name: gaarbejana-mysql
+          type: pserv
+          envVarKey: MYSQL_PASSWORD
       # Apply migrations on start and seed a small dataset only when empty.
       - key: PORTAL_BOOTSTRAP
         value: "true"
@@ -82,3 +80,26 @@ services:
       # false for AWS S3; set to true for R2/other S3-compatible endpoints.
       - key: AWS_USE_PATH_STYLE_ENDPOINT
         value: "false"
+
+  - type: pserv
+    name: gaarbejana-mysql
+    runtime: docker
+    region: virginia
+    plan: 0.5c-512mb
+    dockerfilePath: ./frontend/deployment/Dockerfile.mysql.render
+    dockerContext: .
+    # Restarting MySQL on every API commit is unnecessary and risks downtime.
+    autoDeployTrigger: off
+    disk:
+      name: gaarbejana-mysql-data
+      mountPath: /var/lib/mysql
+      sizeGB: 10
+    envVars:
+      - key: MYSQL_DATABASE
+        value: Gaarbejana
+      - key: MYSQL_USER
+        value: property_lease
+      - key: MYSQL_PASSWORD
+        generateValue: true
+      - key: MYSQL_ROOT_PASSWORD
+        generateValue: true
