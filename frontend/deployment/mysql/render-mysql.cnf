@@ -1,6 +1,0 @@
-[mysqld]
-# Listen on all interfaces so Render's private network can reach the service.
-bind-address=0.0.0.0
-
-# Keep broad client compatibility (Laravel/PDO works with either plugin).
-default-authentication-plugin=mysql_native_password

@@ -19,37 +19,25 @@ rm -f bootstrap/cache/packages.php bootstrap/cache/services.php bootstrap/cache/
 
 envsubst '${PORT}' < /etc/nginx/templates/nginx.conf.template > /etc/nginx/nginx.conf
 
-# Fail loudly instead of letting Laravel fall back to config/database.php's
-# "forge" defaults (the cause of SQLSTATE[HY000] [2002] Connection refused).
-: "${DB_HOST:?DB_HOST must be set (see render.yaml)}"
-: "${DB_PORT:?DB_PORT must be set (see render.yaml)}"
-: "${DB_DATABASE:?DB_DATABASE must be set (see render.yaml)}"
-: "${DB_USERNAME:?DB_USERNAME must be set (see render.yaml)}"
-: "${DB_PASSWORD:?DB_PASSWORD must be set (see render.yaml)}"
+# Self-contained defaults: the MySQL server lives in this container, so a
+# plain "push to main" deploy works even if Render has not injected any DB_*
+# variables. Render-provided values always win.
+: "${DB_CONNECTION:=mysql}"
+: "${DB_HOST:=127.0.0.1}"
+: "${DB_PORT:=3306}"
+: "${DB_DATABASE:=Gaarbejana}"
+: "${DB_USERNAME:=property_lease}"
+: "${DB_PASSWORD:=GaarbejanaLocal123!}"
+export DB_CONNECTION DB_HOST DB_PORT DB_DATABASE DB_USERNAME DB_PASSWORD
 
-# Apply migrations and seed a small dataset only when the portal is empty.
-# Wait for the MySQL private service first so a slow DB boot cannot fail the
-# deploy. The command itself is idempotent and safe on every container start.
-if [ "${PORTAL_BOOTSTRAP:-true}" = "true" ]; then
-    attempts=0
-    while [ "$attempts" -lt 90 ]; do
-        if php -r '
-            $dsn = "mysql:host=" . getenv("DB_HOST") . ";port=" . getenv("DB_PORT") . ";dbname=" . getenv("DB_DATABASE");
-            try {
-                new PDO($dsn, getenv("DB_USERNAME"), getenv("DB_PASSWORD"), [PDO::ATTR_TIMEOUT => 2]);
-                exit(0);
-            } catch (Throwable $e) {
-                exit(1);
-            }
-        ' 2>/dev/null; then
-            break
-        fi
-        attempts=$((attempts + 1))
-        sleep 2
-    done
-    php artisan portal:bootstrap --no-interaction
-else
-    echo 'PORTAL_BOOTSTRAP is not true; skipping portal bootstrap.'
-fi
+# The MySQL image reads MYSQL_* on first boot to create the schema and user.
+# Derive them from the app settings so the two can never drift apart.
+: "${MYSQL_DATABASE:=$DB_DATABASE}"
+: "${MYSQL_USER:=$DB_USERNAME}"
+: "${MYSQL_PASSWORD:=$DB_PASSWORD}"
+: "${MYSQL_ROOT_PASSWORD:=GaarbejanaRoot123!}"
+export MYSQL_DATABASE MYSQL_USER MYSQL_PASSWORD MYSQL_ROOT_PASSWORD
+
+chown mysql:mysql /var/lib/mysql /var/run/mysqld 2>/dev/null || true
 
 exec "$@"

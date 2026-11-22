@@ -1,7 +1,7 @@
-# Render web service image for the Laravel API.
-# Build context must be the repository root so backend/ and the shared
-# nginx/php-fpm config files are available. The database runs separately as
-# the MySQL 8 private service defined in render.yaml.
+# Render image for the Laravel API.
+# Real MySQL 8 Community Server runs inside this container under supervisor.
+# No MariaDB and no separate database service / Blueprint is required: data is
+# stored on the disk mounted at /var/lib/mysql by render.yaml.
 FROM composer:2.7 AS build
 
 WORKDIR /app
@@ -14,44 +14,43 @@ RUN composer dump-autoload --optimize --classmap-authoritative \
     && rm -f bootstrap/cache/packages.php bootstrap/cache/services.php bootstrap/cache/config.php bootstrap/cache/routes-v7.php
 
 
-FROM php:8.3.36-fpm-alpine AS runtime
+# The official MySQL 8 image is Debian bookworm based and brings the full
+# MySQL server plus its initialization entrypoint. We add PHP 8.2, nginx and
+# supervisor on top of it.
+FROM mysql:8.0 AS runtime
 
-# gettext provides envsubst, which renders ${PORT} into the nginx config
-# at container start. The pinned PHP patch version includes the Oct 2026
-# PHP2Shell security fixes. pdo_mysql is PHP's MySQL driver (no server here).
-RUN apk add --no-cache \
-        nginx supervisor curl gettext libpng libjpeg-turbo freetype libzip oniguruma icu-libs sqlite-libs \
-    && apk add --no-cache --virtual .build-deps \
-        libpng-dev libjpeg-turbo-dev freetype-dev libzip-dev oniguruma-dev icu-dev sqlite-dev \
-        linux-headers $PHPIZE_DEPS \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j"$(nproc)" pdo_mysql pdo_sqlite gd zip intl opcache bcmath pcntl \
-    && pecl install redis \
-    && docker-php-ext-enable redis \
-    && apk del .build-deps \
-    && rm -rf /tmp/pear
+RUN apt-get update \
+ && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        nginx supervisor gettext-base curl ca-certificates \
+        php8.2-fpm php8.2-cli php8.2-mysql php8.2-gd php8.2-zip php8.2-intl \
+        php8.2-bcmath php8.2-opcache php8.2-curl php8.2-sqlite3 php8.2-xml \
+        php8.2-mbstring php8.2-redis \
+ && rm -rf /var/lib/apt/lists/*
 
 COPY --from=build /app /var/www/html
 COPY frontend/deployment/backend-docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-COPY frontend/deployment/backend-docker/php.ini /usr/local/etc/php/conf.d/custom.ini
+COPY frontend/deployment/backend-docker/php.ini /etc/php/8.2/fpm/conf.d/99-custom.ini
+COPY frontend/deployment/backend-docker/php.ini /etc/php/8.2/cli/conf.d/99-custom.ini
+COPY frontend/deployment/backend-docker/www.conf /etc/php/8.2/fpm/pool.d/www.conf
 COPY frontend/deployment/backend-docker/nginx.render.conf.template /etc/nginx/templates/nginx.conf.template
 COPY frontend/deployment/backend-docker/render-entrypoint.sh /usr/local/bin/render-entrypoint.sh
+COPY frontend/deployment/backend-docker/portal-bootstrap.sh /usr/local/bin/portal-bootstrap.sh
 
 WORKDIR /var/www/html
 
 RUN mkdir -p storage/framework/sessions storage/framework/views \
              storage/framework/cache/data storage/logs \
-             /run/supervisor /var/log/supervisor \
+             /run/supervisor /var/log/supervisor /var/log/nginx \
     && touch storage/logs/laravel.log \
     && chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R ug+rwX storage bootstrap/cache \
-    && chmod +x /usr/local/bin/render-entrypoint.sh
+    && chmod +x /usr/local/bin/render-entrypoint.sh /usr/local/bin/portal-bootstrap.sh
 
-# Render overrides this at runtime with its dynamically assigned port.
+# Render overrides PORT at runtime with its dynamically assigned port.
 ENV PORT=10000
-EXPOSE 10000
+EXPOSE 10000 3306
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
     CMD curl -fsS "http://127.0.0.1:${PORT}/up" || exit 1
 
 ENTRYPOINT ["/usr/local/bin/render-entrypoint.sh"]

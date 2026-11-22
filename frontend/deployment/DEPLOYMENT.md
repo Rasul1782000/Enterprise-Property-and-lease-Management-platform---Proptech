@@ -29,11 +29,13 @@ The blueprint generates `APP_KEY` and the MySQL passwords, prompts only for
 `FRONTEND_URL` and the S3 credentials, and maps `APP_URL` from Render's
 `RENDER_EXTERNAL_URL`.
 
-MySQL 8 is deployed as a second, private service in the same blueprint using
-`frontend/deployment/Dockerfile.mysql.render` (Oracle's official MySQL Server
-image). It listens only on Render's private network, stores its data on a
-persistent disk mounted at `/var/lib/mysql`, and the API receives `DB_HOST` and
-`DB_PASSWORD` from it automatically. The health check path is `/up`.
+MySQL 8 Community Server is bundled into the Docker image itself: the runtime
+stage is based on the official `mysql:8.0` image with PHP 8.2, nginx and
+supervisor installed. Supervisor starts MySQL first, then the bootstrap script
+runs migrations/seed and finally releases nginx and PHP-FPM. MySQL data lives
+on a persistent disk mounted at `/var/lib/mysql`. The image supplies matching
+`DB_*` / `MYSQL_*` defaults, so the service also works without a Blueprint.
+The health check path is `/up`.
 
 `render-entrypoint.sh` renders `${PORT}` into the nginx config at container
 start, so the service binds to Render's dynamically assigned port. Do **not**
