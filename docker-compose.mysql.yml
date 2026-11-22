@@ -11,7 +11,8 @@ services:
     image: gaarbejana-mysql:local
     build:
       context: ./frontend/deployment
-      dockerfile: Dockerfile.mysql
+      dockerfile: Dockerfile
+      target: mysql
     container_name: gaarbejana-mysql
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-RootGaarbejana123!}

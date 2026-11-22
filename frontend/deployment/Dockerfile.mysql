@@ -1,3 +1,0 @@
-FROM mysql:8.0
-
-COPY mysql-init/01-create-gaarbejana.sql /docker-entrypoint-initdb.d/01-create-gaarbejana.sql

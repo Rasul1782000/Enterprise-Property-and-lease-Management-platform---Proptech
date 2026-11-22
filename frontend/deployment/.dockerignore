@@ -1,5 +1,0 @@
-**
-!Dockerfile.mysql
-!mysql-init/
-!mysql-init/01-create-gaarbejana.sql
-!jenkins-casc.yaml

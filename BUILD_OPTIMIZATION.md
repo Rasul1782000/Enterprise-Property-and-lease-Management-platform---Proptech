@@ -39,8 +39,8 @@ secrets, then follow
 
 - **Lockfile-driven installs:** `composer install` and `npm ci` reproduce an
   exact dependency tree.
-- **Single Laravel API image:** one Dockerfile
-  (`frontend/deployment/Dockerfile.backend`) serves the local stack and CI.
+- **Single Dockerfile:** `frontend/deployment/Dockerfile` has `backend`,
+  `render`, `jenkins`, and `mysql` targets for every backend use case.
 - **Named volumes:** MySQL and object data persist across container restarts.
 - **Health-gated startup:** the API waits for the MySQL and Redis health
   checks before it starts.

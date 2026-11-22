@@ -20,27 +20,23 @@ it. See [`../../VERCEL_DEPLOYMENT.md`](../../VERCEL_DEPLOYMENT.md).
 ## Render (Laravel API web service)
 
 Render has no native PHP runtime, so the API is deployed as a Docker Web
-Service. The root `render.yaml` blueprint builds
-`frontend/deployment/Dockerfile.backend.render` with the repository root as
-the Docker context. Create it from **New → Blueprint** in the Render dashboard
-and select this repository and branch `main`.
+Service. Configure it with `frontend/deployment/Dockerfile`, Docker context
+equal to the repository root, and `--target render`. All config scripts and
+SQL bootstrap code are embedded in that one Dockerfile.
 
-The blueprint generates `APP_KEY` and the MySQL passwords, prompts only for
-`FRONTEND_URL` and the S3 credentials, and maps `APP_URL` from Render's
-`RENDER_EXTERNAL_URL`.
+The `render` target contains only the API (Debian bookworm, PHP 8.2, nginx and
+supervisor). MySQL is **not** installed there — it runs as its own container
+from the `mysql` target of the same Dockerfile (`docker-compose.local.yml`
+uses DB_HOST `db`). Set `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME` and
+`DB_PASSWORD` for your hosted MySQL; defaults are provided for the bundled
+Compose stack. The bootstrap script waits for that MySQL, then runs
+migrations/seed and releases nginx and PHP-FPM. The health check path is
+`/up`.
 
-MySQL 8 Community Server is bundled into the Docker image itself: the runtime
-stage is based on the official `mysql:8.0` image with PHP 8.2, nginx and
-supervisor installed. Supervisor starts MySQL first, then the bootstrap script
-runs migrations/seed and finally releases nginx and PHP-FPM. MySQL data lives
-on a persistent disk mounted at `/var/lib/mysql`. The image supplies matching
-`DB_*` / `MYSQL_*` defaults, so the service also works without a Blueprint.
-The health check path is `/up`.
-
-`render-entrypoint.sh` renders `${PORT}` into the nginx config at container
-start, so the service binds to Render's dynamically assigned port. Do **not**
-set `PORT` manually or use the local `Dockerfile.backend` for Render — the
-local image hardcodes port 8000 and serves the frontend separately.
+The embedded `render-entrypoint.sh` renders `${PORT}` into the nginx config at
+container start, so the service binds to Render's dynamically assigned port.
+Do **not** set `PORT` manually or use the local `backend` target for Render —
+that target hardcodes port 8000 and serves the frontend separately.
 
 The entrypoint runs `php artisan portal:bootstrap` on every container start:
 it applies migrations and, **only when the `properties` table is empty**, seeds

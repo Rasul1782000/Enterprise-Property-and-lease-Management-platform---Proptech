@@ -109,12 +109,12 @@ aws ecr get-login-password --region me-south-1 |
 
 # Run from the repository root, not from terraform/.
 cd ..
-docker build -f frontend/deployment/Dockerfile.backend -t "${repo}:latest" .
+docker build -f frontend/deployment/Dockerfile --target backend -t "${repo}:latest" .
 docker push "${repo}:latest"
 ```
 
 The Docker build context must be the repository root because the Dockerfile
-copies `backend/` and `frontend/deployment/backend-docker/`.
+copies `backend/` and `frontend/deployment/jenkins-casc.yaml`.
 
 ## 5. Apply the rest of the stack
 
@@ -227,7 +227,7 @@ aws ecs update-service --cluster <cluster> --service <service> --force-new-deplo
 or build with an immutable tag and apply it:
 
 ```powershell
-docker build -f frontend/deployment/Dockerfile.backend -t "${repo}:2026-10-24" .
+docker build -f frontend/deployment/Dockerfile --target backend -t "${repo}:2026-10-24" .
 docker push "${repo}:2026-10-24"
 cd terraform
 terraform apply -var="backend_image=${repo}:2026-10-24"
