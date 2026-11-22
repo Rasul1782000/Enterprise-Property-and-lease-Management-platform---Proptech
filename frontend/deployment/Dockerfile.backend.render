@@ -18,9 +18,9 @@ FROM php:8.3.36-fpm-alpine AS runtime
 # at container start. The pinned PHP patch version includes the Oct 2026
 # PHP2Shell security fixes.
 RUN apk add --no-cache \
-        nginx supervisor curl gettext libpng libjpeg-turbo freetype libzip oniguruma icu-libs \
+        nginx supervisor curl gettext libpng libjpeg-turbo freetype libzip oniguruma icu-libs sqlite-libs \
     && apk add --no-cache --virtual .build-deps \
-        libpng-dev libjpeg-turbo-dev freetype-dev libzip-dev oniguruma-dev icu-dev \
+        libpng-dev libjpeg-turbo-dev freetype-dev libzip-dev oniguruma-dev icu-dev sqlite-dev \
         linux-headers $PHPIZE_DEPS \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j"$(nproc)" pdo_mysql pdo_sqlite gd zip intl opcache bcmath pcntl \
